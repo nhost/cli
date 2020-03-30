@@ -1,0 +1,57 @@
+{
+  "name": "nhost-cli",
+  "description": "Nhost's command-line",
+  "version": "0.0.0",
+  "author": "Nuno Pato @nhost",
+  "bin": {
+    "nhost-cli": "./bin/run"
+  },
+  "bugs": "https://github.com/nhost/cli/issues",
+  "dependencies": {
+    "@oclif/command": "^1.5.19",
+    "@oclif/config": "^1.14.0",
+    "@oclif/plugin-help": "^2.2.3",
+    "js-yaml": "^3.13.1",
+    "nunjucks": "^3.2.1"
+  },
+  "devDependencies": {
+    "@oclif/dev-cli": "^1.22.2",
+    "@oclif/test": "^1.2.5",
+    "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-oclif": "^3.1.0",
+    "globby": "^10.0.2",
+    "mocha": "^5.2.0",
+    "nyc": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "files": [
+    "/bin",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json",
+    "/src"
+  ],
+  "homepage": "https://github.com/nhost/cli",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "src/index.js",
+  "oclif": {
+    "commands": "./src/commands",
+    "bin": "nhost-cli",
+    "plugins": [
+      "@oclif/plugin-help"
+    ]
+  },
+  "repository": "nhost/cli",
+  "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "posttest": "eslint .",
+    "prepack": "oclif-dev manifest && oclif-dev readme",
+    "test": "nyc mocha --forbid-only \"test/**/*.test.js\"",
+    "version": "oclif-dev readme && git add README.md"
+  }
+}
