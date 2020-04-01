@@ -1,7 +1,7 @@
-const { Command, flags } = require("@oclif/command");
-const fs = require("fs");
-const { exec } = require("child_process");
-const crypto = require("crypto");
+const {Command, flags} = require('@oclif/command')
+const fs = require('fs')
+const {exec} = require('child_process')
+const crypto = require('crypto')
 
 const composeContent = `version: '3.6'
 services:
@@ -54,7 +54,7 @@ services:
       JWT_TOKEN_EXPIRES: 15
     ports:
       - 9000:9000
-`;
+`
 
 class InitCommand extends Command {
   getConfigData(admin_secret) {
@@ -63,71 +63,71 @@ class InitCommand extends Command {
 # hasura graphql configuration
 graphql_version: v1.1.0.cli-migrations
 graphql_server_port: 8080
-graphql_admin_secret: ${admin_secret} 
+graphql_admin_secret: ${admin_secret}
 
 # postgres configuration
 postgres_version: 12.0
 postgres_port: 5432
 postgres_user: postgres
 postgres_password: postgres
-`;
-    return configData;
+`
+    return configData
   }
 
   async run() {
-    const { flags } = this.parse(InitCommand);
-    const directory = flags.directory || "nhost_project";
+    const {flags} = this.parse(InitCommand)
+    const directory = flags.directory || 'nhost_project'
 
     // make sure the provided directory does not exist
     if (!fs.existsSync(directory)) {
-      fs.mkdirSync(directory);
+      fs.mkdirSync(directory)
     } else {
-      return this.log("Directory already exists");
+      return this.log('Directory already exists')
     }
 
     // create docker-compose.yaml
-    const dockerComposeFile = `./${directory}/docker-compose.example`;
-    fs.writeFileSync(dockerComposeFile, composeContent);
-    this.log(`${dockerComposeFile} created`);
+    const dockerComposeFile = `./${directory}/docker-compose.example`
+    fs.writeFileSync(dockerComposeFile, composeContent)
+    this.log(`${dockerComposeFile} created`)
 
     // create the migrations directory for hasura
-    const migrationsDir = `./${directory}/migrations`;
-    fs.mkdirSync(migrationsDir);
-    this.log(`${migrationsDir} directory created...`);
+    const migrationsDir = `./${directory}/migrations`
+    fs.mkdirSync(migrationsDir)
+    this.log(`${migrationsDir} directory created...`)
 
-    const configYamlFile = `./${directory}/config.yaml`;
+    const configYamlFile = `./${directory}/config.yaml`
     fs.writeFileSync(
       configYamlFile,
       this.getConfigData(
         crypto
-          .randomBytes(32)
-          .toString("hex")
-          .slice(0, 32)
+        .randomBytes(32)
+        .toString('hex')
+        .slice(0, 32)
       )
-    );
-    this.log(`${configYamlFile} created`);
+    )
+    this.log(`${configYamlFile} created`)
 
     // finally check if hasura's CLI is installed
-    exec("command -v hasura", error => {
+    exec('command -v hasura', error => {
       if (error) {
         this.log(
-          "The hasura CLI is a dependency. Please check out the installation instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html"
-        );
+          'The hasura CLI is a dependency. Please check out the installation instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html'
+        )
       }
-    });
+    })
   }
 }
 
 InitCommand.description = `Describe the command here
 ...
 Extra documentation goes here
-`;
+`
 
 InitCommand.flags = {
   directory: flags.string({
-    char: "d",
-    description: "directory where to create the files"
-  })
-};
+    char: 'd',
+    description: 'directory where to create the files',
+  }),
+}
 
-module.exports = InitCommand;
+module.exports = InitCommand
