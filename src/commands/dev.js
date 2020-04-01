@@ -12,7 +12,7 @@ class DevCommand extends Command {
       !fs.existsSync("./config.yaml")
     ) {
       return this.log(
-        "Please run `nhost-cli init` before starting a development environment."
+        "Please run `nhost init` before starting a development environment."
       );
     }
 
@@ -43,7 +43,7 @@ class DevCommand extends Command {
     this.log(
       `development environment is launching...console will be launched at http://localhost:${nhostConfig.graphql_server_port}`
     );
-    
+
     if (dockerFirstRun) {
       this.log(
         "This seems to be the first time running nhost dev in this project so it might take longer to start..."

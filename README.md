@@ -1,13 +1,13 @@
-nhost-cli
+nhost
 =========
 
 Nhost&#39;s command-line
 
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![Version](https://img.shields.io/npm/v/nhost-cli.svg)](https://npmjs.org/package/nhost-cli)
+[![Version](https://img.shields.io/npm/v/nhost.svg)](https://npmjs.org/package/nhost)
 [![CircleCI](https://circleci.com/gh/nhost/nhost/tree/master.svg?style=shield)](https://circleci.com/gh/nhost/nhost/tree/master)
-[![Downloads/week](https://img.shields.io/npm/dw/nhost-cli.svg)](https://npmjs.org/package/nhost-cli)
-[![License](https://img.shields.io/npm/l/nhost-cli.svg)](https://github.com/nhost/nhost/blob/master/package.json)
+[![Downloads/week](https://img.shields.io/npm/dw/nhost.svg)](https://npmjs.org/package/nhost)
+[![License](https://img.shields.io/npm/l/nhost.svg)](https://github.com/nhost/nhost/blob/master/package.json)
 
 <!-- toc -->
 * [Usage](#usage)
@@ -16,31 +16,31 @@ Nhost&#39;s command-line
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g nhost-cli
-$ nhost-cli COMMAND
+$ npm install -g nhost
+$ nhost COMMAND
 running command...
-$ nhost-cli (-v|--version|version)
-nhost-cli/0.0.0 darwin-x64 node-v12.16.1
-$ nhost-cli --help [COMMAND]
+$ nhost (-v|--version|version)
+nhost/0.0.0 darwin-x64 node-v12.16.1
+$ nhost --help [COMMAND]
 USAGE
-  $ nhost-cli COMMAND
+  $ nhost COMMAND
 ...
 ```
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`nhost-cli dev`](#nhost-cli-dev)
-* [`nhost-cli hello`](#nhost-cli-hello)
-* [`nhost-cli help [COMMAND]`](#nhost-cli-help-command)
-* [`nhost-cli init`](#nhost-cli-init)
+* [`nhost dev`](#nhost-dev)
+* [`nhost hello`](#nhost-hello)
+* [`nhost help [COMMAND]`](#nhost-help-command)
+* [`nhost init`](#nhost-init)
 
-## `nhost-cli dev`
+## `nhost dev`
 
 Describe the command here
 
 ```
 USAGE
-  $ nhost-cli dev
+  $ nhost dev
 
 OPTIONS
   -n, --name=name  name to print
@@ -52,13 +52,13 @@ DESCRIPTION
 
 _See code: [src/commands/dev.js](https://github.com/nhost/nhost/blob/v0.0.0/src/commands/dev.js)_
 
-## `nhost-cli hello`
+## `nhost hello`
 
 Describe the command here
 
 ```
 USAGE
-  $ nhost-cli hello
+  $ nhost hello
 
 OPTIONS
   -n, --name=name  name to print
@@ -70,13 +70,13 @@ DESCRIPTION
 
 _See code: [src/commands/hello.js](https://github.com/nhost/nhost/blob/v0.0.0/src/commands/hello.js)_
 
-## `nhost-cli help [COMMAND]`
+## `nhost help [COMMAND]`
 
-display help for nhost-cli
+display help for nhost
 
 ```
 USAGE
-  $ nhost-cli help [COMMAND]
+  $ nhost help [COMMAND]
 
 ARGUMENTS
   COMMAND  command to show help for
@@ -87,13 +87,13 @@ OPTIONS
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
 
-## `nhost-cli init`
+## `nhost init`
 
 Describe the command here
 
 ```
 USAGE
-  $ nhost-cli init
+  $ nhost init
 
 OPTIONS
   -n, --name=name  name to print

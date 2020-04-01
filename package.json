@@ -1,10 +1,10 @@
 {
-  "name": "nhost-cli",
+  "name": "nhost",
   "description": "Nhost's command-line",
   "version": "0.0.0",
   "author": "Nuno Pato @nhost",
   "bin": {
-    "nhost-cli": "./bin/run"
+    "nhost": "./bin/run"
   },
   "bugs": "https://github.com/nhost/cli/issues",
   "dependencies": {
@@ -41,7 +41,7 @@
   "main": "src/index.js",
   "oclif": {
     "commands": "./src/commands",
-    "bin": "nhost-cli",
+    "bin": "nhost",
     "plugins": [
       "@oclif/plugin-help"
     ]
