@@ -1,6 +1,6 @@
 const { Command, flags } = require("@oclif/command");
 const fs = require("fs");
-const { execSync } = require("child_process");
+const { spawn, execSync } = require("child_process");
 const yaml = require("js-yaml");
 const nunjucks = require("nunjucks");
 const crypto = require("crypto");
@@ -17,8 +17,9 @@ class DevCommand extends Command {
     }
 
     const nhostConfig = yaml.safeLoad(
-      fs.readFileSync("config.yaml", { encoding: "utf8" })
+      fs.readFileSync("./config.yaml", { encoding: "utf8" })
     );
+
     const dockerComposeTemplate = fs.readFileSync("docker-compose.example", {
       encoding: "utf8"
     });
@@ -40,27 +41,47 @@ class DevCommand extends Command {
     execSync("docker-compose -f ./docker-compose.yaml config");
     execSync("docker-compose up -d > /dev/null 2>&1");
 
-    this.log(
-      `development environment is launching...console will be launched at http://localhost:${nhostConfig.graphql_server_port}`
-    );
-
+    this.log(`development environment is launching...`);
+    
+    // additional warning because Postgres takes needs more time on its first startup (db_data)
     if (dockerFirstRun) {
       this.log(
         "This seems to be the first time running nhost dev in this project so it might take longer to start..."
       );
     }
 
-    // check whether the graphql-engine endpoint is up & running
-    let reachable = false;
-    while (!reachable) {
+    // check whether the graphql-engine is up & running
+    let engineReachable = false;
+    while (!engineReachable) {
       try {
         execSync(
-          `hasura console --endpoint=http://localhost:${nhostConfig.graphql_server_port} --admin-secret=${nhostConfig.graphql_admin_secret} > /dev/null 2>&1`
+          `curl -X GET http://localhost:${nhostConfig.graphql_server_port}/v1/version > /dev/null 2>&1`
         );
       } catch (Error) {
         continue;
       }
+
+      engineReachable = true;
     }
+
+    this.log(
+      `ready...console is running at http://localhost:${nhostConfig.graphql_server_port}`
+    );
+
+    const consoleCommand = spawn(
+      "hasura",
+      [
+        "console",
+        `--endpoint=http://localhost:${nhostConfig.graphql_server_port}`,
+        `--admin-secret=${nhostConfig.graphql_admin_secret}`
+      ],
+      { detached: true, stdio: "ignore" }
+    );
+
+    fs.writeFileSync("./.console.pid", consoleCommand.pid);
+
+    consoleCommand.unref();
+    this.log("to tear down your environment simply issue 'nhost destroy'");
   }
 }
 
