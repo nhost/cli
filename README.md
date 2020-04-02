@@ -29,10 +29,29 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
+* [`nhost destroy`](#nhost-destroy)
 * [`nhost dev`](#nhost-dev)
 * [`nhost hello`](#nhost-hello)
 * [`nhost help [COMMAND]`](#nhost-help-command)
 * [`nhost init`](#nhost-init)
+
+## `nhost destroy`
+
+Describe the command here
+
+```
+USAGE
+  $ nhost destroy
+
+OPTIONS
+  -n, --name=name  name to print
+
+DESCRIPTION
+  ...
+  Extra documentation goes here
+```
+
+_See code: [src/commands/destroy.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/destroy.js)_
 
 ## `nhost dev`
 
@@ -50,7 +69,7 @@ DESCRIPTION
   Extra documentation goes here
 ```
 
-_See code: [src/commands/dev.js](https://github.com/nhost/nhost/blob/v0.0.0/src/commands/dev.js)_
+_See code: [src/commands/dev.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/dev.js)_
 
 ## `nhost hello`
 
@@ -68,7 +87,7 @@ DESCRIPTION
   Extra documentation goes here
 ```
 
-_See code: [src/commands/hello.js](https://github.com/nhost/nhost/blob/v0.0.0/src/commands/hello.js)_
+_See code: [src/commands/hello.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/hello.js)_
 
 ## `nhost help [COMMAND]`
 
@@ -96,12 +115,12 @@ USAGE
   $ nhost init
 
 OPTIONS
-  -n, --name=name  name to print
+  -d, --directory=directory  directory where to create the files
 
 DESCRIPTION
   ...
   Extra documentation goes here
 ```
 
-_See code: [src/commands/init.js](https://github.com/nhost/nhost/blob/v0.0.0/src/commands/init.js)_
+_See code: [src/commands/init.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/init.js)_
 <!-- commandsstop -->
