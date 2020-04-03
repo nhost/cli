@@ -1,12 +1,12 @@
 const { Command, flags } = require("@oclif/command");
 const process = require("process");
-const { exec } = require("child_process");
+const { execSync } = require("child_process");
 const fs = require("fs");
 
 class DestroyCommand extends Command {
   async run() {
     this.log("shutting down all services...");
-    exec("docker-compose down > /dev/null 2>&1");
+    execSync("docker-compose down > /dev/null 2>&1");
 
     const pidFile = "./.console.pid";
     if (!fs.existsSync(pidFile)) {
