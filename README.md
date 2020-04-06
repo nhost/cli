@@ -6,8 +6,8 @@ Nhost&#39;s CLI. Get a local Nhost backend for development.
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
 
 <!-- toc -->
+* [Quick Start](#quick-start)
 * [Usage](#usage)
-* [Quick Start](#quickstart)
 * [Commands](#commands)
 <!-- tocstop -->
 
@@ -44,7 +44,7 @@ $ npm install -g nhost
 $ nhost COMMAND
 running command...
 $ nhost (-v|--version|version)
-nhost/0.0.0 darwin-x64 node-v12.16.1
+nhost/0.0.1 darwin-x64 node-v12.13.1
 $ nhost --help [COMMAND]
 USAGE
   $ nhost COMMAND
@@ -75,7 +75,7 @@ DESCRIPTION
   Extra documentation goes here
 ```
 
-_See code: [src/commands/destroy.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/destroy.js)_
+_See code: [src/commands/destroy.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/destroy.js)_
 
 ## `nhost dev`
 
@@ -93,7 +93,7 @@ DESCRIPTION
   Extra documentation goes here
 ```
 
-_See code: [src/commands/dev.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/dev.js)_
+_See code: [src/commands/dev.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/dev.js)_
 
 ## `nhost hello`
 
@@ -111,7 +111,7 @@ DESCRIPTION
   Extra documentation goes here
 ```
 
-_See code: [src/commands/hello.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/hello.js)_
+_See code: [src/commands/hello.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/hello.js)_
 
 ## `nhost help [COMMAND]`
 
@@ -146,5 +146,5 @@ DESCRIPTION
   Extra documentation goes here
 ```
 
-_See code: [src/commands/init.js](https://github.com/nhost/cli/blob/v0.0.0/src/commands/init.js)_
+_See code: [src/commands/init.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/init.js)_
 <!-- commandsstop -->
