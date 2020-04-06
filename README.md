@@ -1,18 +1,42 @@
 nhost
 =========
 
-Nhost&#39;s command-line
+Nhost&#39;s CLI. Get a local Nhost backend for development.
 
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![Version](https://img.shields.io/npm/v/nhost.svg)](https://npmjs.org/package/nhost)
-[![CircleCI](https://circleci.com/gh/nhost/nhost/tree/master.svg?style=shield)](https://circleci.com/gh/nhost/nhost/tree/master)
-[![Downloads/week](https://img.shields.io/npm/dw/nhost.svg)](https://npmjs.org/package/nhost)
-[![License](https://img.shields.io/npm/l/nhost.svg)](https://github.com/nhost/nhost/blob/master/package.json)
 
 <!-- toc -->
 * [Usage](#usage)
+* [Quick Start](#quickstart)
 * [Commands](#commands)
 <!-- tocstop -->
+
+# Quick Start
+<!-- quickstart-->
+
+### Install
+
+```bash
+$ git clone https://github.com/nhost/cli
+$ cd cli
+$ npm install
+$ npm link
+```
+
+### Usage
+
+Open a new terminal window
+
+```bash
+$ nhost init -d facebook2
+$ cd facebook2
+$ nhost dev
+```
+
+<!-- quickstartstop -->
+
+
+
 # Usage
 <!-- usage -->
 ```sh-session
