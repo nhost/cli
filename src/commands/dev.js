@@ -60,13 +60,18 @@ services:
 
 class DevCommand extends Command {
   async run() {
-    if (
-      !fs.existsSync("./config.yaml")
-    ) {
+    if (!fs.existsSync("./config.yaml")) {
       return this.log(
         "Please run `nhost init` before starting a development environment."
       );
     }
+
+    const firstRun = !fs.existsSync("./db_data");
+    let startMessage = "development environment is launching...";
+    if (firstRun) {
+      startMessage += "first run takes a bit longer to start";
+    }
+    this.log(startMessage);
 
     const nhostConfig = yaml.safeLoad(
       fs.readFileSync("./config.yaml", { encoding: "utf8" })
@@ -77,13 +82,9 @@ class DevCommand extends Command {
       .toString("hex")
       .slice(0, 32);
 
-    const jwtSecret = crypto
-      .randomBytes(128)
-      .toString("hex")
-      .slice(0, 128);
+    const jwtSecret = crypto.randomBytes(128).toString("hex").slice(0, 128);
 
-    
-    // create .nhost to hold the docker-compose file
+    // create temp dir .nhost to hold docker-compose.yaml
     const tempDir = "./.nhost";
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir);
@@ -96,19 +97,11 @@ class DevCommand extends Command {
       nunjucks.renderString(dockerComposeTemplate, nhostConfig)
     );
 
-    const firstRun = !fs.existsSync("./db_data");
     // validate compose file
     execSync(`docker-compose -f ${tempDir}/docker-compose.yaml config`);
-    execSync(`docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`);
-
-    this.log(`development environment is launching...`);
-    
-    // additional warning because Postgres takes needs more time on its first startup (db_data)
-    if (firstRun) {
-      this.log(
-        "This seems to be the first time running nhost dev in this project so it might take longer to start..."
-      );
-    }
+    execSync(
+      `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
+    );
 
     // check whether the graphql-engine is up & running
     let engineReachable = false;
@@ -124,36 +117,35 @@ class DevCommand extends Command {
       engineReachable = true;
     }
 
-    this.log(
-      `ready...console is running at http://localhost:${nhostConfig.graphql_server_port}`
-    );
-
-    const consoleCommand = spawn(
+    // launch hasura console and inherit it's stdio/stdout/stderr
+    spawn(
       "hasura",
       [
         "console",
         `--endpoint=http://localhost:${nhostConfig.graphql_server_port}`,
-        `--admin-secret=${nhostConfig.graphql_admin_secret}`
+        `--admin-secret=${nhostConfig.graphql_admin_secret}`,
       ],
-      { detached: true, stdio: "ignore" }
+      { stdio: "inherit" }
     );
-
-    fs.writeFileSync("./.console.pid", consoleCommand.pid);
-
-    consoleCommand.unref();
-    this.log("to tear down your environment simply issue 'nhost destroy'");
   }
 }
 
-DevCommand.description = `Describe the command here
+DevCommand.description = `Starts Nhost local development
 ...
-Extra documentation goes here
+Starts a full Nhost environment with Postgres, hasura (graphql-engine) and Auth 
 `;
 
 DevCommand.flags = {
-  name: flags.string({ char: "n", description: "name to print" })
+  name: flags.string({ char: "n", description: "name to print" }),
 };
 
 nunjucks.configure({ autoescape: true });
+
+process.on("SIGINT", function () {
+  console.log("shutting down...");
+  execSync("docker-compose -f ./.nhost/docker-compose.yaml down");
+  fs.rmdirSync("./.nhost", { recursive: true });
+  process.exit();
+});
 
 module.exports = DevCommand;

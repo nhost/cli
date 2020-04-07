@@ -31,7 +31,8 @@ postgres_password: postgres
           "Directory already exists. Please run `nhost init` within it and without the -d option if intended."
         );
       }
-    } else { // if no directory is provided through the -d option, assume current working directory 
+    } else {
+      // if no directory is provided through the -d option, assume current working directory
       directory = ".";
     }
 
@@ -74,8 +75,8 @@ Prepares an existing project (or creates a new one from scratch) to run in devel
 InitCommand.flags = {
   directory: flags.string({
     char: "d",
-    description: "Where to create your project"
-  })
+    description: "Where to create your project",
+  }),
 };
 
 module.exports = InitCommand;
