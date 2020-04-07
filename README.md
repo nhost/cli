@@ -53,82 +53,13 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`nhost destroy`](#nhost-destroy)
-* [`nhost dev`](#nhost-dev)
-* [`nhost hello`](#nhost-hello)
-* [`nhost help [COMMAND]`](#nhost-help-command)
 * [`nhost init`](#nhost-init)
-
-## `nhost destroy`
-
-Describe the command here
-
-```
-USAGE
-  $ nhost destroy
-
-OPTIONS
-  -n, --name=name  name to print
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/destroy.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/destroy.js)_
+* [`nhost dev`](#nhost-dev)
+* [`nhost help [COMMAND]`](#nhost-help-command)
 
 ## `nhost dev`
 
 Describe the command here
-
-```
-USAGE
-  $ nhost dev
-
-OPTIONS
-  -n, --name=name  name to print
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/dev.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/dev.js)_
-
-## `nhost hello`
-
-Describe the command here
-
-```
-USAGE
-  $ nhost hello
-
-OPTIONS
-  -n, --name=name  name to print
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/hello.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/hello.js)_
-
-## `nhost help [COMMAND]`
-
-display help for nhost
-
-```
-USAGE
-  $ nhost help [COMMAND]
-
-ARGUMENTS
-  COMMAND  command to show help for
-
-OPTIONS
-  --all  see all commands in CLI
-```
-
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
 
 ## `nhost init`
 
@@ -147,4 +78,36 @@ DESCRIPTION
 ```
 
 _See code: [src/commands/init.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/init.js)_
+
+```
+USAGE
+  $ nhost dev
+
+OPTIONS
+  -n, --name=name  name to print
+
+DESCRIPTION
+  ...
+  Extra documentation goes here
+```
+
+_See code: [src/commands/dev.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/dev.js)_
+
+## `nhost help [COMMAND]`
+
+display help for nhost
+
+```
+USAGE
+  $ nhost help [COMMAND]
+
+ARGUMENTS
+  COMMAND  command to show help for
+
+OPTIONS
+  --all  see all commands in CLI
+```
+
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
+
 <!-- commandsstop -->
