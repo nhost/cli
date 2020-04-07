@@ -11,7 +11,7 @@ services:
       - '{{ postgres_port }}:{{ postgres_port }}'
     restart: always
     environment:
-      POSTGRES_USER: {{ postgres_password }}
+      POSTGRES_USER: {{ postgres_user }}
       POSTGRES_PASSWORD: {{ postgres_password }}
     volumes:
       - ./db_data:/var/lib/postgresql/data
