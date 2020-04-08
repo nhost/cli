@@ -77,12 +77,17 @@ class DevCommand extends Command {
       fs.readFileSync("./config.yaml", { encoding: "utf8" })
     );
 
-    const graphqlAdminSecret = crypto
-      .randomBytes(32)
-      .toString("hex")
-      .slice(0, 32);
+    if (!nhostConfig.graphql_admin_secret) {
+      nhostConfig.graphql_admin_secret = crypto
+        .randomBytes(32)
+        .toString("hex")
+        .slice(0, 32);
+    }
 
-    const jwtSecret = crypto.randomBytes(128).toString("hex").slice(0, 128);
+    nhostConfig.graphql_jwt_key = crypto
+      .randomBytes(128)
+      .toString("hex")
+      .slice(0, 128);
 
     // create temp dir .nhost to hold docker-compose.yaml
     const tempDir = "./.nhost";
@@ -90,8 +95,6 @@ class DevCommand extends Command {
       fs.mkdirSync(tempDir);
     }
 
-    nhostConfig.graphql_jwt_key = jwtSecret;
-    nhostConfig.graphql_admin_secret = graphqlAdminSecret;
     fs.writeFileSync(
       `${tempDir}/docker-compose.yaml`,
       nunjucks.renderString(dockerComposeTemplate, nhostConfig)
