@@ -18,7 +18,7 @@ services:
     volumes:
       - ../db_data:/var/lib/postgresql/data
   nhost-graphql-engine:
-    image: hasura/graphql-engine:v1.1.0.cli-migrations
+    image: hasura/graphql-engine:{{ graphql_version }}
     ports:
       - '{{ graphql_server_port }}:{{ graphql_server_port }}'
     depends_on:
@@ -39,12 +39,14 @@ services:
     volumes:
       - ../migrations:/hasura-migrations
   hasura-backend-plus:
-    image: nhost/hasura-backend-plus:v1.2.3
+    image: nhost/hasura-backend-plus:{{ backend_plus_version }}
+    ports:
+      - '{{ backend_plus_port }}:{{ backend_plus_port }}'
     depends_on:
     - nhost-graphql-engine
     restart: always
     environment:
-      PORT: 9000
+      PORT: {{ backend_plus_port }}
       USER_FIELDS: ''
       USER_REGISTRATION_AUTO_ACTIVE: 'true'
       HASURA_GRAPHQL_ENDPOINT: http://nhost-graphql-engine:{{ graphql_server_port }}/v1/graphql
@@ -54,8 +56,6 @@ services:
       AUTH_LOCAL_ACTIVE: 'true'
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
-    ports:
-      - 9000:9000
 `;
 
 class DevCommand extends Command {

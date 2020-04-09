@@ -8,7 +8,7 @@ class InitCommand extends Command {
     let configData = `# values here are used by 'nhost dev' to start your dev environment
 
 # hasura graphql configuration
-graphql_version: v1.1.0.cli-migrations
+graphql_version: 'v1.1.0.cli-migrations'
 graphql_server_port: 8080
 #graphql_admin_secret: 123456 (optional: if not specified, it will be handled on 'nhost dev')
 
@@ -17,6 +17,10 @@ postgres_version: 12.0
 postgres_port: 5432
 postgres_user: postgres
 postgres_password: postgres
+
+# hasura backend plus configuration
+backend_plus_version: v1.2.3
+backend_plus_port: 9000
 `;
     return configData;
   }
