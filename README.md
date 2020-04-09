@@ -63,3 +63,9 @@ ARGUMENTS
 OPTIONS
   --all  see all commands in CLI
 ```
+
+### External dependencies
+
+## Hasura GraphQL Engine CLI
+
+https://github.com/hasura/graphql-engine/tree/master/cli#installation

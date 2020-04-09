@@ -10,7 +10,7 @@ class InitCommand extends Command {
 # hasura graphql configuration
 graphql_version: v1.1.0.cli-migrations
 graphql_server_port: 8080
-#graphql_admin_secret: set it here or it will otherwise be generated on 'nhost dev'
+#graphql_admin_secret: 123456 (optional: if not specified, it will be handled on 'nhost dev')
 
 # postgres configuration
 postgres_version: 12.0
