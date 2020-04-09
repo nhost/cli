@@ -20,7 +20,7 @@ $ npm link
 
 ### Usage
 
-## `nhost init`
+### nhost init
 
 Initialize Nhost project
 
@@ -36,7 +36,7 @@ DESCRIPTION
   Initializes a new project (or an existing one) with configuration for running the Nhost environment
 ```
 
-## `nhost dev`
+### nhost dev
 
 Start the project development environment
 
@@ -49,7 +49,7 @@ DESCRIPTION
   Starts a complete Nhost environment with PostgreSQL, Hasura GraphQL Engine and Hasura Backend Plus (HBP)
 ```
 
-## `nhost help [COMMAND]`
+### nhost help [COMMAND]
 
 Display help for nhost
 
