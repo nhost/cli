@@ -1,6 +1,7 @@
 const { Command, flags } = require("@oclif/command");
 const fs = require("fs");
 const { exec, execSync } = require("child_process");
+const createAndPopulateMigrations = require("../migrations");
 
 class InitCommand extends Command {
   getConfigData() {
@@ -37,9 +38,8 @@ postgres_password: postgres
       directory = ".";
     }
 
-    // create the migrations directory
-    const migrationsDir = `${directory}/migrations`;
-    fs.mkdirSync(migrationsDir);
+    // create the migrations directory and copy the initial migration there
+    createAndPopulateMigrations(`${directory}/migrations`);
 
     const nhostConfigFile = `${directory}/config.yaml`;
     fs.writeFileSync(nhostConfigFile, this.getConfigData());

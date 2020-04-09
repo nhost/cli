@@ -39,7 +39,7 @@ services:
     volumes:
       - ../migrations:/hasura-migrations
   hasura-backend-plus:
-    image: elitan/hasura-backend-plus:v1.1.1
+    image: nhost/hasura-backend-plus:v1.2.3
     depends_on:
     - nhost-graphql-engine
     restart: always
@@ -69,7 +69,7 @@ class DevCommand extends Command {
     const firstRun = !fs.existsSync("./db_data");
     let startMessage = "development environment is launching...";
     if (firstRun) {
-      startMessage += "first run takes a bit longer to start";
+      startMessage += "first run takes longer to start";
     }
     this.log(startMessage);
 
