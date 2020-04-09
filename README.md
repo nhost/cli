@@ -66,6 +66,6 @@ OPTIONS
 
 ### External dependencies
 
-## Hasura GraphQL Engine CLI
+### Hasura GraphQL Engine CLI
 
 https://github.com/hasura/graphql-engine/tree/master/cli#installation
