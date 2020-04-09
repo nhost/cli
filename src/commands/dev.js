@@ -135,7 +135,7 @@ class DevCommand extends Command {
 
 DevCommand.description = `Starts Nhost local development
 ...
-Starts a full Nhost environment with Postgres, hasura (graphql-engine) and Auth 
+Starts a complete Nhost environment with PostgreSQL, Hasura GraphQL Engine and Hasura Backend Plus (HBP)
 `;
 
 DevCommand.flags = {

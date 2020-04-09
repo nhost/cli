@@ -70,7 +70,7 @@ postgres_password: postgres
 
 InitCommand.description = `Prepares a project to run with Nhost
 ...
-Prepares an existing project (or creates a new one from scratch) to run in development alongside Nhost
+Initializes a new project (or an existing one) with configuration for running the Nhost environment
 `;
 
 InitCommand.flags = {
