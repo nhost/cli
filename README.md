@@ -1,20 +1,15 @@
-nhost
+Nhost CLI
 =========
 
-Nhost&#39;s CLI. Get a local Nhost backend for development.
-
-[![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-
-<!-- toc -->
-* [Quick Start](#quick-start)
-* [Usage](#usage)
-* [Commands](#commands)
-<!-- tocstop -->
-
-# Quick Start
-<!-- quickstart-->
+The easiast way to develop with Nhost in your development environment.
 
 ### Install
+
+```bash
+npm install -g nhost
+```
+
+or
 
 ```bash
 $ git clone https://github.com/nhost/cli
@@ -25,97 +20,38 @@ $ npm link
 
 ### Usage
 
-Open a new terminal window
+## `nhost init`
 
-```bash
-$ nhost init -d facebook2
-$ cd facebook2
-$ nhost dev
-```
-
-<!-- quickstartstop -->
-
-
-
-# Usage
-<!-- usage -->
-```sh-session
-$ npm install -g nhost
-$ nhost COMMAND
-running command...
-$ nhost (-v|--version|version)
-nhost/0.0.1 darwin-x64 node-v12.13.1
-$ nhost --help [COMMAND]
-USAGE
-  $ nhost COMMAND
-...
-```
-<!-- usagestop -->
-# Commands
-<!-- commands -->
-* [`nhost destroy`](#nhost-destroy)
-* [`nhost dev`](#nhost-dev)
-* [`nhost hello`](#nhost-hello)
-* [`nhost help [COMMAND]`](#nhost-help-command)
-* [`nhost init`](#nhost-init)
-
-## `nhost destroy`
-
-Describe the command here
+Initialize Nhost project
 
 ```
 USAGE
-  $ nhost destroy
+  $ nhost init
 
 OPTIONS
-  -n, --name=name  name to print
+  -d, --directory=directory  Where to create a project (working directory assumed if not specified)
 
 DESCRIPTION
   ...
-  Extra documentation goes here
+  Initializes a new project (or an existing one) with configuration for running the Nhost environment
 ```
-
-_See code: [src/commands/destroy.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/destroy.js)_
 
 ## `nhost dev`
 
-Describe the command here
+Start the project development environment
 
 ```
 USAGE
   $ nhost dev
 
-OPTIONS
-  -n, --name=name  name to print
-
 DESCRIPTION
   ...
-  Extra documentation goes here
+  Starts a complete Nhost environment with PostgreSQL, Hasura GraphQL Engine and Hasura Backend Plus (HBP)
 ```
-
-_See code: [src/commands/dev.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/dev.js)_
-
-## `nhost hello`
-
-Describe the command here
-
-```
-USAGE
-  $ nhost hello
-
-OPTIONS
-  -n, --name=name  name to print
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/hello.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/hello.js)_
 
 ## `nhost help [COMMAND]`
 
-display help for nhost
+Display help for nhost
 
 ```
 USAGE
@@ -128,23 +64,8 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
+### External dependencies
 
-## `nhost init`
+## Hasura GraphQL Engine CLI
 
-Describe the command here
-
-```
-USAGE
-  $ nhost init
-
-OPTIONS
-  -d, --directory=directory  directory where to create the files
-
-DESCRIPTION
-  ...
-  Extra documentation goes here
-```
-
-_See code: [src/commands/init.js](https://github.com/nhost/cli/blob/v0.0.1/src/commands/init.js)_
-<!-- commandsstop -->
+https://github.com/hasura/graphql-engine/tree/master/cli#installation
