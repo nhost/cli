@@ -1,7 +1,7 @@
 const { Command, flags } = require("@oclif/command");
 const fs = require("fs");
 const { exec, execSync } = require("child_process");
-const createAndPopulateMigrations = require("../migrations");
+const moveTemplateMigration = require("../migrations");
 
 class InitCommand extends Command {
   getConfigData() {
@@ -10,13 +10,14 @@ class InitCommand extends Command {
 # hasura graphql configuration
 graphql_version: 'v1.1.0.cli-migrations'
 graphql_server_port: 8080
-#graphql_admin_secret: 123456 (optional: if not specified, it will be handled on 'nhost dev')
+#graphql_admin_secret: (optional: if not specified, it will be handled on 'nhost dev')
 
 # postgres configuration
 postgres_version: 12.0
 postgres_port: 5432
 postgres_user: postgres
 postgres_password: postgres
+#postgres_db_data: (optional: if not specified, './db_data' will be used) 
 
 # hasura backend plus configuration
 backend_plus_version: v1.2.3
@@ -28,13 +29,19 @@ backend_plus_port: 9000
   async run() {
     const { flags } = this.parse(InitCommand);
     let directory = flags.directory;
+    const endpoint = flags.endpoint;
+    const adminSecret = flags["admin-secret"];
+
+    if (adminSecret && !endpoint) {
+      return this.log("Please specify an endpoint with --endpoint");
+    }
 
     if (directory) {
       if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory);
       } else {
         return this.log(
-          "Directory already exists. Please run `nhost init` within it and without the -d option if intended."
+          "For existing directories please run `nhost init` inside"
         );
       }
     } else {
@@ -42,20 +49,16 @@ backend_plus_port: 9000
       directory = ".";
     }
 
-    // create the migrations directory and copy the initial migration there
-    createAndPopulateMigrations(`${directory}/migrations`);
-
     const nhostConfigFile = `${directory}/config.yaml`;
     fs.writeFileSync(nhostConfigFile, this.getConfigData());
 
-    const ignoreFile = `${directory}/.gitignore`;
-    if (fs.existsSync(ignoreFile)) {
-      execSync(`echo config.yaml >> ${ignoreFile}`);
-    } else {
-      execSync(`echo config.yaml > ${ignoreFile}`);
+    // create the migrations directory if not present
+    const migrationDirectory = `${directory}/migrations`;
+    if (!fs.existsSync(migrationDirectory)) {
+      fs.mkdirSync(migrationDirectory);
     }
 
-    // finally check if hasura's CLI is installed
+    // check if hasura's CLI is installed
     exec("command -v hasura", (error) => {
       if (error) {
         this.log(
@@ -63,6 +66,37 @@ backend_plus_port: 9000
         );
       }
     });
+
+    // if endpoint is provided it means an existing project is being used
+    if (endpoint) {
+      let command = `hasura migrate create "init" --from-server --endpoint ${endpoint}`;
+      if (adminSecret) {
+        command += ` --admin-secret ${adminSecret}`;
+      }
+
+      try {
+        execSync(command, { stdio: "inherit" });
+      } catch (error) {
+        this.error("Something went wrong: ", error);
+      }
+
+      const version = fs.readdirSync("./migrations")[0].match(/^[0-9]+/)[0];
+      command = `hasura migrate apply --version "${version}" --skip-execution`;
+      if (adminSecret) {
+        command += ` --admin-secret ${adminSecret}`;
+      }
+
+      execSync(command, { stdio: "inherit" });
+    } else {
+      moveTemplateMigration(migrationDirectory);
+    }
+
+    const ignoreFile = `${directory}/.gitignore`;
+    if (fs.existsSync(ignoreFile)) {
+      execSync(`echo "\nconfig.yaml\n.nhost\ndb_data" >> ${ignoreFile}`);
+    } else {
+      execSync(`echo config.yaml > ${ignoreFile}`);
+    }
 
     if (directory === ".") {
       this.log("Nhost boilerplace created!");
@@ -81,6 +115,17 @@ InitCommand.flags = {
   directory: flags.string({
     char: "d",
     description: "Where to create your project",
+    required: false,
+  }),
+  endpoint: flags.string({
+    char: "e",
+    description: "Endpoint where the current project is running",
+    required: false,
+  }),
+  "admin-secret": flags.string({
+    char: "a",
+    description: "Admin Secret",
+    required: false,
   }),
 };
 
