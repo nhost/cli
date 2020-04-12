@@ -59,10 +59,34 @@ services:
 `;
 
 class DevCommand extends Command {
+  waitForGraphqlEngine(nhostConfig, secondsRemaining = 50) {
+    return new Promise((resolve, reject) => {
+      const retry = (secondsRemaining) => {
+        try {
+          execSync(
+            `curl -X GET http://localhost:${nhostConfig.graphql_server_port}/v1/version > /dev/null 2>&1`
+          );
+
+          return resolve();
+        } catch (error) {
+          if (secondsRemaining === 0) {
+            return reject();
+          }
+
+          setTimeout(() => {
+            retry(--secondsRemaining);
+          }, 1000);
+        }
+      };
+
+      retry(secondsRemaining);
+    });
+  }
+
   async run() {
     if (!fs.existsSync("./config.yaml")) {
       return this.log(
-        "Please run `nhost init` before starting a development environment."
+        "Please run 'nhost init' before starting a development environment."
       );
     }
 
@@ -107,29 +131,24 @@ class DevCommand extends Command {
     );
 
     // check whether the graphql-engine is up & running
-    let engineReachable = false;
-    while (!engineReachable) {
-      try {
-        execSync(
-          `curl -X GET http://localhost:${nhostConfig.graphql_server_port}/v1/version > /dev/null 2>&1`
+    this.waitForGraphqlEngine(nhostConfig)
+      .then(() => {
+        // launch hasura console and inherit it's stdio/stdout/stderr
+        spawn(
+          "hasura",
+          [
+            "console",
+            `--endpoint=http://localhost:${nhostConfig.graphql_server_port}`,
+            `--admin-secret=${nhostConfig.graphql_admin_secret}`,
+          ],
+          { stdio: "inherit" }
         );
-      } catch (Error) {
-        continue;
-      }
-
-      engineReachable = true;
-    }
-
-    // launch hasura console and inherit it's stdio/stdout/stderr
-    spawn(
-      "hasura",
-      [
-        "console",
-        `--endpoint=http://localhost:${nhostConfig.graphql_server_port}`,
-        `--admin-secret=${nhostConfig.graphql_admin_secret}`,
-      ],
-      { stdio: "inherit" }
-    );
+      })
+      .catch((error) => {
+        this.error(
+          "Nhost could not start. Please make sure that all configuration is correct"
+        );
+      });
   }
 }
 
@@ -145,7 +164,7 @@ DevCommand.flags = {
 nunjucks.configure({ autoescape: true });
 
 process.on("SIGINT", function () {
-  console.log("shutting down...");
+  console.log("\nshutting down...");
   execSync("docker-compose -f ./.nhost/docker-compose.yaml down");
   fs.rmdirSync("./.nhost", { recursive: true });
   process.exit();

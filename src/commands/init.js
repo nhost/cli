@@ -5,12 +5,12 @@ const moveTemplateMigration = require("../migrations");
 
 class InitCommand extends Command {
   getConfigData() {
-    let configData = `# values here are used by 'nhost dev' to start your dev environment
+    let configData = `# configurations used when starting your environment
 
 # hasura graphql configuration
 graphql_version: 'v1.1.0.cli-migrations'
 graphql_server_port: 8080
-#graphql_admin_secret: (optional: if not specified, it will be handled on 'nhost dev')
+#graphql_admin_secret: (optional: if not specified, it will be generated on 'nhost dev')
 
 # postgres configuration
 postgres_version: 12.0
