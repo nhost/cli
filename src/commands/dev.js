@@ -58,6 +58,13 @@ services:
       JWT_TOKEN_EXPIRES: 15
 `;
 
+function cleanup(path = "./.nhost") {
+  console.log("\nshutting down...");
+  execSync(`docker-compose -f ${path}/docker-compose.yaml down`);
+  fs.rmdirSync(path, { recursive: true });
+  process.exit();
+}
+
 class DevCommand extends Command {
   waitForGraphqlEngine(nhostConfig, secondsRemaining = 50) {
     return new Promise((resolve, reject) => {
@@ -144,10 +151,11 @@ class DevCommand extends Command {
           { stdio: "inherit" }
         );
       })
-      .catch((error) => {
-        this.error(
+      .catch(() => {
+        this.log(
           "Nhost could not start. Please make sure that all configuration is correct"
         );
+        cleanup();
       });
   }
 }
@@ -164,10 +172,7 @@ DevCommand.flags = {
 nunjucks.configure({ autoescape: true });
 
 process.on("SIGINT", function () {
-  console.log("\nshutting down...");
-  execSync("docker-compose -f ./.nhost/docker-compose.yaml down");
-  fs.rmdirSync("./.nhost", { recursive: true });
-  process.exit();
+  cleanup();
 });
 
 module.exports = DevCommand;
