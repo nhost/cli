@@ -8,7 +8,7 @@ module.exports = function (destination) {
   );
 
   const now = Date.now();
-  fs.mkdirSync(`${destination}/${now}_init`, { recursive: true });
+  fs.mkdirSync(`${destination}/${now}_init`);
 
   fs.copyFileSync(`${migrationsFolder}/up.sql`, `${destination}/${now}_init/up.sql`);
   fs.copyFileSync(`${migrationsFolder}/up.yaml`, `${destination}/${now}_init/up.yaml`);
