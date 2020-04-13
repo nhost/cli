@@ -67,7 +67,7 @@ backend_plus_port: 9000
       }
     });
 
-    // if endpoint is provided it means an existing project is being used
+    // if --endpoint is provided it means an existing project is being used
     if (endpoint) {
       let command = `hasura migrate create "init" --from-server --endpoint ${endpoint}`;
       if (adminSecret) {
@@ -98,11 +98,12 @@ backend_plus_port: 9000
       execSync(`echo config.yaml > ${ignoreFile}`);
     }
 
-    if (directory === ".") {
-      this.log("Nhost boilerplace created!");
-    } else {
-      this.log(`Nhost boilerplate created within ${directory}!`);
+    let initMessage = "Nhost boilerplate created";
+    if (directory != ".") {
+      initMessage += `within ${directory}`;
     }
+
+    this.log(initMessage);
   }
 }
 
