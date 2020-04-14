@@ -60,7 +60,9 @@ services:
 
 function cleanup(path = "./.nhost") {
   console.log("\nshutting down...");
-  execSync(`docker-compose -f ${path}/docker-compose.yaml down`);
+  execSync(
+    `docker-compose -f ${path}/docker-compose.yaml down > /dev/null 2>&1`
+  );
   fs.rmdirSync(path, { recursive: true });
   process.exit();
 }
@@ -92,8 +94,17 @@ class DevCommand extends Command {
 
   async run() {
     if (!fs.existsSync("./config.yaml")) {
-      return this.log(
-        "Please run 'nhost init' before starting a development environment."
+      return this.warn(
+        "Please run 'nhost init' before starting a development environment"
+      );
+    }
+
+    // check if docker-compose is installed
+    try {
+      execSync("command -v docker-compose");
+    } catch {
+      this.error(
+        "docker-compose is a dependency. Please make sure you have it installed"
       );
     }
 
@@ -133,9 +144,13 @@ class DevCommand extends Command {
 
     // validate compose file
     execSync(`docker-compose -f ${tempDir}/docker-compose.yaml config`);
-    execSync(
-      `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
-    );
+    try {
+      execSync(
+        `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
+      );
+    } catch {
+      this.error("Please make sure all ports in 'config.yaml' are available");
+    }
 
     // check whether the graphql-engine is up & running
     this.waitForGraphqlEngine(nhostConfig)

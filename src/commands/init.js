@@ -1,6 +1,6 @@
 const { Command, flags } = require("@oclif/command");
 const fs = require("fs");
-const { exec, execSync } = require("child_process");
+const { execSync } = require("child_process");
 const moveTemplateMigration = require("../migrations");
 
 class InitCommand extends Command {
@@ -32,6 +32,15 @@ backend_plus_port: 9000
     const endpoint = flags.endpoint;
     const adminSecret = flags["admin-secret"];
 
+    // check if hasura's CLI is installed
+    try {
+      execSync("command -v hasura");
+    } catch {
+      this.error(
+        "Hasura CLI is a dependency. Please follow the instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html"
+      );
+    }
+
     if (adminSecret && !endpoint) {
       return this.log("Please specify an endpoint with --endpoint");
     }
@@ -57,15 +66,6 @@ backend_plus_port: 9000
     if (!fs.existsSync(migrationDirectory)) {
       fs.mkdirSync(migrationDirectory);
     }
-
-    // check if hasura's CLI is installed
-    exec("command -v hasura", (error) => {
-      if (error) {
-        this.log(
-          "The hasura CLI is a dependency. Please check out the installation instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html"
-        );
-      }
-    });
 
     // if --endpoint is provided it means an existing project is being used
     if (endpoint) {
@@ -100,7 +100,7 @@ backend_plus_port: 9000
 
     let initMessage = "Nhost boilerplate created";
     if (directory != ".") {
-      initMessage += `within ${directory}`;
+      initMessage += ` within ${directory}`;
     }
 
     this.log(initMessage);

@@ -30,6 +30,8 @@ USAGE
 
 OPTIONS
   -d, --directory=directory  Where to create a project (working directory assumed if not specified)
+  -e, --endpoint=http://localhost:8080 Endpoint where the current project is running (For when you want to migrate an existing project)
+  -a, --admin-secret=secret Hasura's GraphQl Engine secret (if any)
 
 DESCRIPTION
   ...
