@@ -10,7 +10,7 @@ services:
   nhost-postgres:
     image: postgres:{{ postgres_version }}
     ports:
-      - '{{ postgres_port }}:{{ postgres_port }}'
+      - '{{ postgres_port }}:5432'
     restart: always
     environment:
       POSTGRES_USER: {{ postgres_user }}
@@ -26,7 +26,7 @@ services:
     restart: always
     environment:
       HASURA_GRAPHQL_SERVER_PORT: {{ graphql_server_port }}
-      HASURA_GRAPHQL_DATABASE_URL: postgres://{{ postgres_user }}:{{ postgres_password }}@nhost-postgres:{{ postgres_port }}/postgres
+      HASURA_GRAPHQL_DATABASE_URL: postgres://{{ postgres_user }}:{{ postgres_password }}@nhost-postgres:5432/postgres
       HASURA_GRAPHQL_ENABLE_CONSOLE: 'false'
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
       HASURA_GRAPHQL_ADMIN_SECRET: {{ graphql_admin_secret }}
