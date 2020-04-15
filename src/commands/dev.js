@@ -68,7 +68,7 @@ function cleanup(path = "./.nhost") {
 }
 
 class DevCommand extends Command {
-  waitForGraphqlEngine(nhostConfig, secondsRemaining = 50) {
+  waitForGraphqlEngine(nhostConfig, secondsRemaining = 60) {
     return new Promise((resolve, reject) => {
       const retry = (secondsRemaining) => {
         try {

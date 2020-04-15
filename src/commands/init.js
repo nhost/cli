@@ -69,7 +69,7 @@ backend_plus_port: 9000
 
     // if --endpoint is provided it means an existing project is being used
     if (endpoint) {
-      let command = `hasura migrate create "init" --from-server --endpoint ${endpoint}`;
+      let command = `hasura migrate create "init" --from-server --endpoint ${endpoint} --schema "public" --schema "auth"`;
       if (adminSecret) {
         command += ` --admin-secret ${adminSecret}`;
       }
@@ -79,14 +79,6 @@ backend_plus_port: 9000
       } catch (error) {
         this.error("Something went wrong: ", error);
       }
-
-      const version = fs.readdirSync("./migrations")[0].match(/^[0-9]+/)[0];
-      command = `hasura migrate apply --version "${version}" --skip-execution`;
-      if (adminSecret) {
-        command += ` --admin-secret ${adminSecret}`;
-      }
-
-      execSync(command, { stdio: "inherit" });
     } else {
       moveTemplateMigration(migrationDirectory);
     }
