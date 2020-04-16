@@ -105,20 +105,35 @@ env_file: .env.development
 
         // TODO: rethink this implementation
         // fragile because it relies on Hasura metadata format
-        const triggers = metadata[0].args.tables
+        // there are 2 places where ENV vars might be used with event triggers
+        const eventTriggers = metadata[0].args.tables
           .filter((table) => table.event_triggers)
-          .flatMap((table) => table.event_triggers)
-          .filter((trigger) => trigger.webhook_from_env) // there might be URL webhooks
+          .flatMap((table) => table.event_triggers);
+
+        // (1) webhook URL (webhook_from_env)
+        const webhooksFromEnv = eventTriggers
+          .filter((trigger) => trigger.webhook_from_env)
           .map((trigger) => `${trigger.webhook_from_env}=changeme`)
           .filter((value, index, self) => {
             // remove duplicates if any (same webhook env var for multiple events)
             return self.indexOf(value) === index;
           });
 
-        if (triggers.length > 0) {
+        // (2) headers (value_from_env)
+        const headersFromEnv = eventTriggers
+          .filter((trigger) => trigger.headers)
+          .flatMap((trigger) => trigger.headers)
+          .filter((header) => header.value_from_env)
+          .map((header) => `${header.value_from_env}=changeme`)
+          .filter((value, index, self) => {
+            // remove duplicates if any (same header env var for multiple events)
+            return self.indexOf(value) === index;
+          });
+
+        if (webhooksFromEnv.length > 0 || headersFromEnv.length > 0) {
           fs.writeFileSync(
             `${directory}/.env.development`,
-            triggers.join("\n"),
+            webhooksFromEnv.concat(headersFromEnv).join("\n"),
             { flag: "a" }
           );
 
