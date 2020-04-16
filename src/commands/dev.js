@@ -33,6 +33,8 @@ services:
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
       HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 5
       HASURA_GRAPHQL_NO_OF_RETRIES: 5
+    env_file:
+      - ../{{ env_file }}
     command:
       - graphql-engine
       - serve
@@ -95,7 +97,7 @@ class DevCommand extends Command {
   async run() {
     if (!fs.existsSync("./config.yaml")) {
       return this.warn(
-        "Please run 'nhost init' before starting a development environment"
+        "Please run 'nhost init' before starting your development environment"
       );
     }
 
@@ -104,7 +106,7 @@ class DevCommand extends Command {
       execSync("command -v docker-compose");
     } catch {
       this.error(
-        "docker-compose is a dependency. Please make sure you have it installed"
+        "docker-compose is a dependency, please make sure you have it installed"
       );
     }
 
@@ -119,6 +121,7 @@ class DevCommand extends Command {
       fs.readFileSync("./config.yaml", { encoding: "utf8" })
     );
 
+    // generate random admin secret if not specified in config.yaml
     if (!nhostConfig.graphql_admin_secret) {
       nhostConfig.graphql_admin_secret = crypto
         .randomBytes(32)
@@ -131,11 +134,9 @@ class DevCommand extends Command {
       .toString("hex")
       .slice(0, 128);
 
-    // create temp dir .nhost to hold docker-compose.yaml
+    // create temp dir .nhost, which will hold docker-compose.yaml
     const tempDir = "./.nhost";
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir);
-    }
+    fs.mkdirSync(tempDir);
 
     fs.writeFileSync(
       `${tempDir}/docker-compose.yaml`,
@@ -144,18 +145,22 @@ class DevCommand extends Command {
 
     // validate compose file
     execSync(`docker-compose -f ${tempDir}/docker-compose.yaml config`);
+
+    // try running docker-compose up
     try {
       execSync(
         `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
       );
     } catch {
+      // TODO: improve error handling/messaging
+      // issues here, after validation, are about ports not being available
       this.error("Please make sure all ports in 'config.yaml' are available");
     }
 
-    // check whether the graphql-engine is up & running
+    // check whether GraphQL engine is up & running
     this.waitForGraphqlEngine(nhostConfig)
       .then(() => {
-        // launch hasura console and inherit it's stdio/stdout/stderr
+        // launch hasura console and inherit stdio/stdout/stderr
         spawn(
           "hasura",
           [

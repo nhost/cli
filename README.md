@@ -22,7 +22,7 @@ $ npm link
 
 ### nhost init
 
-Initialize Nhost project
+Initialise Nhost project
 
 ```
 USAGE
@@ -30,17 +30,18 @@ USAGE
 
 OPTIONS
   -d, --directory=directory  Where to create a project (working directory assumed if not specified)
-  -e, --endpoint=http://localhost:8080 Endpoint where the current project is running (For when you want to migrate an existing project)
-  -a, --admin-secret=secret Hasura's GraphQl Engine secret (if any)
+  -e, --endpoint=https://hasura-a50fsaz6.nhost.app Endpoint of your GraphQL engine running on Nhost (Used when initialising from an existing project)
+  -a, --admin-secret=secret GraphQl engine admin secret (if any)
 
 DESCRIPTION
   ...
-  Initializes a new project (or an existing one) with configuration for running the Nhost environment
+  Initialises a new project from scratch (or from an existing one) 
+  Creates Configuration for running a Nhost environment
 ```
 
 ### nhost dev
 
-Start the project development environment
+Start development environment
 
 ```
 USAGE
@@ -67,7 +68,5 @@ OPTIONS
 ```
 
 ### External dependencies
-
-### Hasura GraphQL Engine CLI
 
 https://github.com/hasura/graphql-engine/tree/master/cli#installation

@@ -2,6 +2,7 @@ const { Command, flags } = require("@oclif/command");
 const fs = require("fs");
 const { execSync } = require("child_process");
 const moveTemplateMigration = require("../migrations");
+const yaml = require("js-yaml");
 
 class InitCommand extends Command {
   getConfigData() {
@@ -22,6 +23,9 @@ postgres_password: postgres
 # hasura backend plus configuration
 backend_plus_version: v1.2.3
 backend_plus_port: 9000
+
+# custom environment variables for Hasura GraphQL engine: webhooks, etc
+env_file: .env.development
 `;
     return configData;
   }
@@ -32,40 +36,55 @@ backend_plus_port: 9000
     const endpoint = flags.endpoint;
     const adminSecret = flags["admin-secret"];
 
-    // check if hasura's CLI is installed
+    // check for Hasura CLI
     try {
       execSync("command -v hasura");
     } catch {
-      this.error(
+      return this.warn(
         "Hasura CLI is a dependency. Please follow the instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html"
       );
     }
 
     if (adminSecret && !endpoint) {
-      return this.log("Please specify an endpoint with --endpoint");
+      return this.warn(
+        "When using --admin-secret, --endpoint also needs to be specified"
+      );
+    }
+
+    if (endpoint && directory) {
+      return this.warn(
+        "When initialising from an existing project on Nhost, please run the command within your target directory, without using -d"
+      );
     }
 
     if (directory) {
       if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory);
       } else {
-        return this.log(
-          "For existing directories please run `nhost init` inside"
+        return this.warn(
+          "For an existing directory, please run 'nhost init' within it"
         );
       }
     } else {
-      // if no directory is provided through the -d option, assume current working directory
+      // assume current working directory if no directory is provided through -d
       directory = ".";
     }
 
-    const nhostConfigFile = `${directory}/config.yaml`;
-    fs.writeFileSync(nhostConfigFile, this.getConfigData());
+    // config.yaml has various configuration for GraphQL engine, PostgreSQL and HBP
+    // it is also a requirement for the Hasura CLI to run commands - can't be renamed
+    fs.writeFileSync(`${directory}/config.yaml`, this.getConfigData());
 
-    // create the migrations directory if not present
+    // create a migrations directory if not present
     const migrationDirectory = `${directory}/migrations`;
     if (!fs.existsSync(migrationDirectory)) {
       fs.mkdirSync(migrationDirectory);
     }
+
+    // create or append to .gitignore
+    const ignoreFile = `${directory}/.gitignore`;
+    fs.writeFileSync(ignoreFile, "\nconfig.yaml\n.nhost\ndb_data", {
+      flag: "a",
+    });
 
     // if --endpoint is provided it means an existing project is being used
     if (endpoint) {
@@ -76,18 +95,42 @@ backend_plus_port: 9000
 
       try {
         execSync(command, { stdio: "inherit" });
+
+        const initMigration = fs.readdirSync("./migrations")[0];
+        const metadata = yaml.safeLoad(
+          fs.readFileSync(`./migrations/${initMigration}/up.yaml`, {
+            encoding: "utf8",
+          })
+        );
+
+        // TODO: rethink this implementation
+        // fragile because it relies on Hasura metadata format
+        const triggers = metadata[0].args.tables
+          .filter((table) => table.event_triggers)
+          .flatMap((table) => table.event_triggers)
+          .filter((trigger) => trigger.webhook_from_env) // there might be URL webhooks
+          .map((trigger) => `${trigger.webhook_from_env}=changeme`)
+          .filter((value, index, self) => {
+            // remove duplicates if any (same webhook env var for multiple events)
+            return self.indexOf(value) === index;
+          });
+
+        if (triggers.length > 0) {
+          fs.writeFileSync(
+            `${directory}/.env.development`,
+            triggers.join("\n"),
+            { flag: "a" }
+          );
+
+          fs.writeFileSync(ignoreFile, "\n.env.development", { flag: "a" });
+        }
       } catch (error) {
         this.error("Something went wrong: ", error);
       }
     } else {
+      // when no endpoint is specified, we ship a template
+      // migration based on HBP most up-to-date schema
       moveTemplateMigration(migrationDirectory);
-    }
-
-    const ignoreFile = `${directory}/.gitignore`;
-    if (fs.existsSync(ignoreFile)) {
-      execSync(`echo "\nconfig.yaml\n.nhost\ndb_data" >> ${ignoreFile}`);
-    } else {
-      execSync(`echo config.yaml > ${ignoreFile}`);
     }
 
     let initMessage = "Nhost boilerplate created";
@@ -101,7 +144,7 @@ backend_plus_port: 9000
 
 InitCommand.description = `Prepares a project to run with Nhost
 ...
-Initializes a new project (or an existing one) with configuration for running the Nhost environment
+Initialises a new project (or an existing one) with configuration for running the Nhost environment
 `;
 
 InitCommand.flags = {
@@ -112,12 +155,12 @@ InitCommand.flags = {
   }),
   endpoint: flags.string({
     char: "e",
-    description: "Endpoint where the current project is running",
+    description: "Endpoint of your GraphQL engine running on Nhost",
     required: false,
   }),
   "admin-secret": flags.string({
     char: "a",
-    description: "Admin Secret",
+    description: "GraphQL engine admin secret",
     required: false,
   }),
 };
