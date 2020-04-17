@@ -86,6 +86,12 @@ env_file: .env.development
       flag: "a",
     });
 
+    // .env.development for holding webhooks, headers, etc
+    const envFile = `${directory}/.env.development`;
+    if (!fs.existsSync(envFile)) {
+      fs.writeFileSync(envFile, "# webhooks and headers");
+    }
+
     // if --endpoint is provided it means an existing project is being used
     if (endpoint) {
       let command = `hasura migrate create "init" --from-server --endpoint ${endpoint} --schema "public" --schema "auth"`;
@@ -97,6 +103,16 @@ env_file: .env.development
         execSync(command, { stdio: "inherit" });
 
         const initMigration = fs.readdirSync("./migrations")[0];
+        const version = initMigration.match(/^[0-9]+/)[0];
+        command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${endpoint}`;
+        if (adminSecret) {
+          command += ` --admin-secret ${adminSecret};`;
+        }
+        // mark this migration as applied on the remote server
+        // so that it doesn't get run there when promoting changes
+        // to production
+        execSync(command, { stdio: "inherit" });
+
         const metadata = yaml.safeLoad(
           fs.readFileSync(`./migrations/${initMigration}/up.yaml`, {
             encoding: "utf8",
@@ -130,15 +146,13 @@ env_file: .env.development
             return self.indexOf(value) === index;
           });
 
-        if (webhooksFromEnv.length > 0 || headersFromEnv.length > 0) {
-          fs.writeFileSync(
-            `${directory}/.env.development`,
-            webhooksFromEnv.concat(headersFromEnv).join("\n"),
-            { flag: "a" }
-          );
+        fs.writeFileSync(
+          `${directory}/.env.development`,
+          webhooksFromEnv.concat(headersFromEnv).join("\n"),
+          { flag: "a" }
+        );
 
-          fs.writeFileSync(ignoreFile, "\n.env.development", { flag: "a" });
-        }
+        fs.writeFileSync(ignoreFile, "\n.env.development", { flag: "a" });
       } catch (error) {
         this.error("Something went wrong: ", error);
       }
