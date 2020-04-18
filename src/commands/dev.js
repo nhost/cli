@@ -40,7 +40,7 @@ services:
       - serve
     volumes:
       - ../migrations:/hasura-migrations
-  hasura-backend-plus:
+  nhost-hasura-backend-plus:
     image: nhost/hasura-backend-plus:{{ backend_plus_version }}
     ports:
       - '{{ backend_plus_port }}:{{ backend_plus_port }}'
@@ -58,6 +58,21 @@ services:
       AUTH_LOCAL_ACTIVE: 'true'
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
+      S3_ACCESS_KEY_ID: {{ s3_access_key_id }}
+      S3_SECRET_ACCESS_KEY: {{ s3_secret_access_key }}
+      S3_ENDPOINT: nhost-minio
+      S3_BUCKET: nhost
+  nhost-minio:
+    image: minio/minio
+    restart: always
+    volumes:
+      - '../minio_data:/export'
+    environment:
+      MINIO_ACCESS_KEY: {{ s3_access_key_id }}
+      MINIO_SECRET_KEY: {{ s3_secret_access_key }}
+    entrypoint: sh
+    command: '-c "mkdir -p /export/nhost && /usr/bin/minio server /export"'
+
 `;
 
 function cleanup(path = "./.nhost") {

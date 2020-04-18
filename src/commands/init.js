@@ -24,7 +24,11 @@ postgres_password: postgres
 backend_plus_version: v1.2.3
 backend_plus_port: 9000
 
-# custom environment variables for Hasura GraphQL engine: webhooks, etc
+# minio for S3 configuration
+s3_access_key_id: changeme
+s3_secret_access_key: changeme
+
+# custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
 env_file: .env.development
 `;
     return configData;
@@ -82,7 +86,7 @@ env_file: .env.development
 
     // create or append to .gitignore
     const ignoreFile = `${directory}/.gitignore`;
-    fs.writeFileSync(ignoreFile, "\nconfig.yaml\n.nhost\ndb_data", {
+    fs.writeFileSync(ignoreFile, "\nconfig.yaml\n.nhost\ndb_data\nminio_data", {
       flag: "a",
     });
 
@@ -109,8 +113,8 @@ env_file: .env.development
           command += ` --admin-secret ${adminSecret};`;
         }
         // mark this migration as applied on the remote server
-        // so that it doesn't get run there when promoting changes
-        // to production
+        // so that it doesn't get run there when promoting local
+        // changes to that environment (redundant)
         execSync(command, { stdio: "inherit" });
 
         const metadata = yaml.safeLoad(
