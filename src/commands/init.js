@@ -24,7 +24,7 @@ postgres_password: postgres
 backend_plus_version: v1.2.3
 backend_plus_port: 9000
 
-# custom environment variables for Hasura GraphQL engine: webhooks, etc
+# custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
 env_file: .env.development
 `;
     return configData;
@@ -82,9 +82,15 @@ env_file: .env.development
 
     // create or append to .gitignore
     const ignoreFile = `${directory}/.gitignore`;
-    fs.writeFileSync(ignoreFile, "\nconfig.yaml\n.nhost\ndb_data", {
+    fs.writeFileSync(ignoreFile, "\nconfig.yaml\n.nhost\ndb_data\nminio_data", {
       flag: "a",
     });
+
+    // .env.development for holding webhooks, headers, etc
+    const envFile = `${directory}/.env.development`;
+    if (!fs.existsSync(envFile)) {
+      fs.writeFileSync(envFile, "# webhooks and headers");
+    }
 
     // if --endpoint is provided it means an existing project is being used
     if (endpoint) {
@@ -97,6 +103,16 @@ env_file: .env.development
         execSync(command, { stdio: "inherit" });
 
         const initMigration = fs.readdirSync("./migrations")[0];
+        const version = initMigration.match(/^[0-9]+/)[0];
+        command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${endpoint}`;
+        if (adminSecret) {
+          command += ` --admin-secret ${adminSecret};`;
+        }
+        // mark this migration as applied on the remote server
+        // so that it doesn't get run there when promoting local
+        // changes to that environment (redundant)
+        execSync(command, { stdio: "inherit" });
+
         const metadata = yaml.safeLoad(
           fs.readFileSync(`./migrations/${initMigration}/up.yaml`, {
             encoding: "utf8",
@@ -105,25 +121,38 @@ env_file: .env.development
 
         // TODO: rethink this implementation
         // fragile because it relies on Hasura metadata format
-        const triggers = metadata[0].args.tables
+        // there are 2 places where ENV vars might be used with event triggers
+        const eventTriggers = metadata[0].args.tables
           .filter((table) => table.event_triggers)
-          .flatMap((table) => table.event_triggers)
-          .filter((trigger) => trigger.webhook_from_env) // there might be URL webhooks
+          .flatMap((table) => table.event_triggers);
+
+        // (1) webhook URL (webhook_from_env)
+        const webhooksFromEnv = eventTriggers
+          .filter((trigger) => trigger.webhook_from_env)
           .map((trigger) => `${trigger.webhook_from_env}=changeme`)
           .filter((value, index, self) => {
             // remove duplicates if any (same webhook env var for multiple events)
             return self.indexOf(value) === index;
           });
 
-        if (triggers.length > 0) {
-          fs.writeFileSync(
-            `${directory}/.env.development`,
-            triggers.join("\n"),
-            { flag: "a" }
-          );
+        // (2) headers (value_from_env)
+        const headersFromEnv = eventTriggers
+          .filter((trigger) => trigger.headers)
+          .flatMap((trigger) => trigger.headers)
+          .filter((header) => header.value_from_env)
+          .map((header) => `${header.value_from_env}=changeme`)
+          .filter((value, index, self) => {
+            // remove duplicates if any (same header env var for multiple events)
+            return self.indexOf(value) === index;
+          });
 
-          fs.writeFileSync(ignoreFile, "\n.env.development", { flag: "a" });
-        }
+        fs.writeFileSync(
+          `${directory}/.env.development`,
+          webhooksFromEnv.concat(headersFromEnv).join("\n"),
+          { flag: "a" }
+        );
+
+        fs.writeFileSync(ignoreFile, "\n.env.development", { flag: "a" });
       } catch (error) {
         this.error("Something went wrong: ", error);
       }

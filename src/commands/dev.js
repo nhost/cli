@@ -40,7 +40,7 @@ services:
       - serve
     volumes:
       - ../migrations:/hasura-migrations
-  hasura-backend-plus:
+  nhost-hasura-backend-plus:
     image: nhost/hasura-backend-plus:{{ backend_plus_version }}
     ports:
       - '{{ backend_plus_port }}:{{ backend_plus_port }}'

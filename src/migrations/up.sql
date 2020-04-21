@@ -107,5 +107,4 @@ ALTER TABLE ONLY public.users
 
 INSERT INTO public.roles (role) VALUES ('user');
 INSERT INTO public.roles (role) VALUES ('anonymous');
-
 INSERT INTO auth.auth_providers (provider) VALUES ('github'), ('facebook'), ('twitter'), ('google');
