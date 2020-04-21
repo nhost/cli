@@ -24,10 +24,6 @@ postgres_password: postgres
 backend_plus_version: v1.2.3
 backend_plus_port: 9000
 
-# minio for S3 configuration
-s3_access_key_id: changeme
-s3_secret_access_key: changeme
-
 # custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
 env_file: .env.development
 `;
