@@ -113,6 +113,17 @@ env_file: .env.development
         // changes to that environment (redundant)
         execSync(command, { stdio: "inherit" });
 
+        // TODO: rethink the necessity of citext
+        // prepend the contents of the sql file with the installation of citext
+        // this is a requirement for HBPv2 
+        const sqlPath = `./migrations/${initMigration}/up.sql`;
+        const data = fs.readFileSync(sqlPath);
+        const sql = fs.openSync(sqlPath, "w+");
+        const citext = Buffer.from("CREATE EXTENSION IF NOT EXISTS citext;\n");
+        fs.writeSync(sql, citext, 0, citext.length, 0);
+        fs.writeSync(sql, data, 0, data.length, citext.length);
+        fs.close(sql);
+
         const metadata = yaml.safeLoad(
           fs.readFileSync(`./migrations/${initMigration}/up.yaml`, {
             encoding: "utf8",
