@@ -23,7 +23,12 @@
     "eslint-config-oclif": "^3.1.0",
     "globby": "^10.0.2",
     "mocha": "^5.2.0",
-    "nyc": "^14.1.1"
+    "nyc": "^14.1.1",
+    "chalk": "^4.1.0",
+    "email-validator": "^2.0.4",
+    "email-prompt": "^0.3.2",
+    "ora": "^4.0.4",
+    "node-fetch": "^2.6.0"
   },
   "engines": {
     "node": ">=8.0.0"
