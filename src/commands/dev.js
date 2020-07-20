@@ -1,4 +1,4 @@
-const { Command, flags } = require("@oclif/command");
+const { Command } = require("@oclif/command");
 const fs = require("fs");
 const { spawn, execSync } = require("child_process");
 const yaml = require("js-yaml");
@@ -14,11 +14,10 @@ const readFile = util.promisify(fs.readFile);
 const exec = util.promisify(require("child_process").exec);
 const exists = util.promisify(fs.exists);
 const mkdir = util.promisify(fs.mkdir);
-// const rmdir = util.promisify(fs.rmdir);
 const writeFile = util.promisify(fs.writeFile);
 
 function cleanup(path = "./.nhost") {
-  console.log(chalk.white("Nhost is shutting down"));
+  console.log(chalk.white("\nNhost is shutting down"));
   execSync(
     `docker-compose -f ${path}/docker-compose.yaml down > /dev/null 2>&1`
   );
@@ -52,7 +51,9 @@ class DevCommand extends Command {
   }
 
   async run() {
-    if (!await exists("./config.yaml")) {
+    process.on("SIGINT", () => cleanup());
+
+    if (!(await exists("./config.yaml"))) {
       return this.log(
         `${chalk.red(
           "Error!"
@@ -73,12 +74,12 @@ class DevCommand extends Command {
       );
     }
 
-    const firstRun = !await exists("./db_data");
+    const firstRun = !(await exists("./db_data"));
     let startMessage = "Nhost is starting";
     if (firstRun) {
       startMessage += `, ${chalk.bold.underline("database included")}`;
     }
-    
+
     let { spinner, stopSpinner } = spinnerWith(startMessage);
 
     const nhostConfig = yaml.safeLoad(
@@ -115,56 +116,48 @@ class DevCommand extends Command {
         // `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
         `docker-compose -f ${tempDir}/docker-compose.yaml up -d`
       );
-    } catch {
-      // TODO: improve error handling/messaging
-      // issues here, after validation, are about ports not being available
-      this.error("Please make sure all ports in 'config.yaml' are available");
+    } catch (err) {
+      spinner.fail();
+      this.log(`${chalk.red("Error!")} ${err.message}`);
+      stopSpinner(); 
+      cleanup();
     }
 
     // check whether GraphQL engine is up & running
     await this.waitForGraphqlEngine(nhostConfig)
       .then(() => {
-        // launch hasura console and inherit stdio/stdout/stderr
         spawn(
           "hasura",
           [
             "console",
             `--endpoint=http://localhost:${nhostConfig.graphql_server_port}`,
             `--admin-secret=${nhostConfig.graphql_admin_secret}`,
+            "--console-port=9695",
           ],
-          { stdio: "pipe" }
+          { stdio: "ignore" }
         );
       })
-      .catch(() => {
-        this.log(
-          "Nhost could not start. Please make sure that all configuration is correct"
-        );
+      .catch((err) => {
+        spinner.fail();
+        this.log(`${chalk.red("Nhost could not start!")} ${err.message}`);
         stopSpinner();
         cleanup();
       });
 
-    spinner.succeed("Nhost is running");
-    this.log(
-      `Hasura console is running at ${chalk.underline.bold(
+    spinner.succeed(
+      `Nhost is running! The hasura console can be found at ${chalk.underline.bold(
         "http://localhost:9695"
       )}`
     );
+
     stopSpinner();
   }
 }
 
-DevCommand.description = `Starts Nhost local development
+DevCommand.description = `Start Nhost project for local development
 ...
-Starts a complete Nhost environment with PostgreSQL, Hasura GraphQL Engine and Hasura Backend Plus (HBP)
+Start Nhost project for local development
 `;
-
-DevCommand.flags = {
-  name: flags.string({ char: "n", description: "name to print" }),
-};
-
-process.on("SIGINT", () => {
-  cleanup();
-});
 
 nunjucks.configure({ autoescape: true });
 

@@ -1,6 +1,7 @@
 "use strict";
 
 const fs = require("fs");
+const util = require("util");
 const exists = util.promisify(fs.exists);
 const path = require("path");
 const { homedir } = require("os");
@@ -33,7 +34,7 @@ env_file: .env.development
 `;
 
 // module.exports = function (data) {
-function writeAuthFile(data) {
+async function writeAuthFile(data) {
   try {
     return writeJSON.sync(authPath, data, {
       indent: 2,

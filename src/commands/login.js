@@ -85,7 +85,7 @@ class LoginCommand extends Command {
       } while (!emailIsValid);
     }
 
-    let {spinner, stopSpinner} = spinnerWith("An email is being sent to you.");
+    let { spinner, stopSpinner } = spinnerWith("An email is being sent to you");
 
     let verificationToken;
     try {
@@ -97,15 +97,14 @@ class LoginCommand extends Command {
       this.exit(1);
     }
 
+    spinner.succeed(
+      `Email sent to ${chalk.bold.underline(
+        email
+      )}, please follow the instructions within it`
+    );
     stopSpinner();
 
-    this.log(
-      `An email was sent to ${chalk.bold.underline(
-        email
-      )}. Please follow the instructions inside it.`
-    );
-    stopSpinner = spinner("Waiting for your confirmation.");
-
+    ({ spinner, stopSpinner } = spinnerWith("Waiting for your confirmation"));
     let token;
     while (!token) {
       try {
@@ -123,19 +122,24 @@ class LoginCommand extends Command {
       }
     }
 
+    spinner.succeed(
+      `${chalk.green("Email Confirmed!")} You are now logged in.`
+    );
     stopSpinner();
-    this.log(`${chalk.cyan("Email Confirmed!")} You are now logged in.`);
 
     // write auth.json to the user's home directoy
-    writeAuthFile({ email, token: token.token });
+    await writeAuthFile({ email, token: token.token });
   }
 }
 
-LoginCommand.description = `
-`;
+LoginCommand.description = "Login to Nhost account";
 
 LoginCommand.flags = {
-  email: flags.string({}),
+  email: flags.string({
+    char: "e",
+    description: "Email address",
+    required: false,
+  }),
 };
 
 module.exports = LoginCommand;

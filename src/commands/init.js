@@ -23,8 +23,6 @@ class InitCommand extends Command {
   }
 
   async run() {
-    const { flags } = this.parse(InitCommand);
-    let directory = flags.directory;
     const apiUrl = getCustomApiEndpoint();
 
     // check if hasura is installed
@@ -43,7 +41,7 @@ class InitCommand extends Command {
     if (!await authFileExists()) {
       this.log(
         `${chalk.red(
-          "No credentials found."
+          "No credentials found!"
         )} Please login first with ${chalk.bold.underline("nhost login")}`
       );
       this.exit(1);
@@ -63,26 +61,16 @@ class InitCommand extends Command {
     try {
       selectedProjectId = await selectProject(userData.user.projects);
     } catch (err) {
-      // TODO
-      console.log(err.message);
+      this.log(`${chalk.red("Error!")} ${err.message}`);
+      this.exit(1);
     }
 
     const project = userData.user.projects.find(
       (project) => project.id === selectedProjectId
     );
-
-    if (directory) {
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory);
-      } else {
-        return this.warn(
-          "For an existing directory, please run 'nhost init' within it"
-        );
-      }
-    } else {
-      // assume current working directory if no directory is provided through -d
-      directory = ".";
-    }
+    
+    // assume current working directory
+    const directory = ".";
 
     // config.yaml holds configuration for GraphQL engine, PostgreSQL and HBP
     // it is also a requirement for hasura to work
@@ -169,17 +157,9 @@ class InitCommand extends Command {
   }
 }
 
-InitCommand.description = `Prepares a project to run with Nhost
+InitCommand.description = `Initialize current working directory with Nhost project
 ...
-Initializes a new project (or an existing one) with configuration for running the Nhost environment
+Initialize current working directory with Nhost project 
 `;
-
-InitCommand.flags = {
-  directory: flags.string({
-    char: "d",
-    description: "Where to create your project",
-    required: false,
-  }),
-};
 
 module.exports = InitCommand;
