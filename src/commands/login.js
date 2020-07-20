@@ -5,10 +5,10 @@ const stringify = require("querystring");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-const spinner = require("../util/spinner");
-const executeLogin = require("../util/login");
+const spinnerWith = require("../util/spinner");
+const { executeLogin } = require("../util/login");
 const sleep = require("../util/sleep");
-const writeAuthFile = require("../util/config");
+const { writeAuthFile, getCustomApiEndpoint } = require("../util/config");
 
 class LoginCommand extends Command {
   async readEmail() {
@@ -21,14 +21,6 @@ class LoginCommand extends Command {
 
       if (err.message === "User abort") {
         throw new Error(`${chalk.red("Aborted!")}`);
-      }
-
-      if (err.message === "stdin lacks setRawMode support") {
-        throw new Error(
-          error(
-            "Interactive mode not supported – please run login --email=email"
-          )
-        );
       }
     }
 
@@ -68,10 +60,8 @@ class LoginCommand extends Command {
   async run() {
     const { flags } = this.parse(LoginCommand);
     let email = flags.email;
-    // const apiUrl = "https://customapi.nhost.io";
-    const apiUrl = "http://localhost:3006";
+    const apiUrl = getCustomApiEndpoint();
     let emailIsValid = false;
-    let stopSpinner;
 
     // if email was passed as an argument with --email=email
     if (email) {
@@ -95,7 +85,7 @@ class LoginCommand extends Command {
       } while (!emailIsValid);
     }
 
-    stopSpinner = spinner("An email is being sent to you.");
+    let {spinner, stopSpinner} = spinnerWith("An email is being sent to you.");
 
     let verificationToken;
     try {
@@ -108,9 +98,6 @@ class LoginCommand extends Command {
     }
 
     stopSpinner();
-
-    // Clear up `Sending email` success message
-    // process.stdout.write(eraseLines(possibleAddress ? 1 : 2));
 
     this.log(
       `An email was sent to ${chalk.bold.underline(

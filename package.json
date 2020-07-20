@@ -28,7 +28,8 @@
     "email-validator": "^2.0.4",
     "email-prompt": "^0.3.2",
     "ora": "^4.0.4",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "inquirer": "^7.3.2"
   },
   "engines": {
     "node": ">=8.0.0"

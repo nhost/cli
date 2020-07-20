@@ -1,61 +1,75 @@
+// const { Command, flags } = require("@oclif/command");
 const { Command, flags } = require("@oclif/command");
 const fs = require("fs");
-const { execSync } = require("child_process");
-const moveTemplateMigration = require("../migrations");
-const yaml = require("js-yaml");
+const chalk = require("chalk");
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
+const writeFile = util.promisify(fs.writeFile);
+const nunjucks = require("nunjucks");
+
+const spinnerWith = require("../util/spinner");
+const selectProject = require("../util/projects");
+const {
+  authFileExists,
+  readAuthFile,
+  getCustomApiEndpoint,
+  getNhostConfigTemplate,
+} = require("../util/config");
+const { validateAuth } = require("../util/login");
 
 class InitCommand extends Command {
-  getConfigData() {
-    let configData = `# configurations used when starting your environment
-
-# hasura graphql configuration
-graphql_version: 'v1.1.0.cli-migrations'
-graphql_server_port: 8080
-#graphql_admin_secret: (optional: if not specified, it will be generated on 'nhost dev')
-
-# postgres configuration
-postgres_version: 12.0
-postgres_port: 5432
-postgres_user: postgres
-postgres_password: postgres
-#postgres_db_data: (optional: if not specified, './db_data' will be used) 
-
-# hasura backend plus configuration
-backend_plus_version: v1.2.3
-backend_plus_port: 9000
-
-# custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
-env_file: .env.development
-`;
-    return configData;
+  projectOnHBPV2(project) {
+    return project.backend_version.includes("v2");
   }
 
   async run() {
     const { flags } = this.parse(InitCommand);
     let directory = flags.directory;
-    const endpoint = flags.endpoint;
-    const adminSecret = flags["admin-secret"];
+    const apiUrl = getCustomApiEndpoint();
 
-    // check for Hasura CLI
+    // check if hasura is installed
     try {
-      execSync("command -v hasura");
+      await exec("command -v hasura");
     } catch {
-      return this.warn(
-        "Hasura CLI is a dependency. Please follow the instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html"
+      this.log(
+        `${chalk.red(
+          "Hasura CLI is missing!"
+        )} Please follow the instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html`
       );
+      this.exit(1);
     }
 
-    if (adminSecret && !endpoint) {
-      return this.warn(
-        "When using --admin-secret, --endpoint also needs to be specified"
+    // check if auth file exists
+    if (!await authFileExists()) {
+      this.log(
+        `${chalk.red(
+          "No credentials found."
+        )} Please login first with ${chalk.bold.underline("nhost login")}`
       );
+      this.exit(1);
     }
 
-    if (endpoint && directory) {
-      return this.warn(
-        "When initialising from an existing project on Nhost, please run the command within your target directory, without using -d"
-      );
+    // get auth config
+    const auth = readAuthFile();
+    let userData;
+    try {
+      userData = await validateAuth(apiUrl, auth);
+    } catch (err) {
+      this.log(`${chalk.red("Error!")} ${err.message}`);
+      this.exit(1);
     }
+
+    let selectedProjectId;
+    try {
+      selectedProjectId = await selectProject(userData.user.projects);
+    } catch (err) {
+      // TODO
+      console.log(err.message);
+    }
+
+    const project = userData.user.projects.find(
+      (project) => project.id === selectedProjectId
+    );
 
     if (directory) {
       if (!fs.existsSync(directory)) {
@@ -70,9 +84,12 @@ env_file: .env.development
       directory = ".";
     }
 
-    // config.yaml has various configuration for GraphQL engine, PostgreSQL and HBP
-    // it is also a requirement for the Hasura CLI to run commands - can't be renamed
-    fs.writeFileSync(`${directory}/config.yaml`, this.getConfigData());
+    // config.yaml holds configuration for GraphQL engine, PostgreSQL and HBP
+    // it is also a requirement for hasura to work
+    await writeFile(
+      `${directory}/config.yaml`,
+      nunjucks.renderString(getNhostConfigTemplate(), project)
+    );
 
     // create a migrations directory if not present
     const migrationDirectory = `${directory}/migrations`;
@@ -86,36 +103,39 @@ env_file: .env.development
       flag: "a",
     });
 
-    // .env.development for holding webhooks, headers, etc
+    // .env.development for hasura webhooks, headers, etc
     const envFile = `${directory}/.env.development`;
     if (!fs.existsSync(envFile)) {
-      fs.writeFileSync(envFile, "# webhooks and headers");
+      await writeFile(envFile, "# webhooks and headers\n");
     }
 
-    // if --endpoint is provided it means an existing project is being used
-    if (endpoint) {
-      let command = `hasura migrate create "init" --from-server --endpoint ${endpoint} --schema "public" --schema "auth"`;
+    const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
+    const adminSecret = project.hasura_gqe_admin_secret;
+
+    let command = `hasura migrate create "init" --from-server --endpoint ${hasuraEndpoint} --schema "public" --schema "auth"`;
+    if (adminSecret) {
+      command += ` --admin-secret ${adminSecret}`;
+    }
+
+    let {spinner, stopSpinner} = spinnerWith(`Initializing ${project.name}`);
+    try {
+      await exec(command);
+
+      // mark this migration as applied on the remote server
+      // so that it doesn't get run there when promoting local
+      // changes to that environment (redundant)
+      const initMigration = fs.readdirSync("./migrations")[0];
+      const version = initMigration.match(/^[0-9]+/)[0];
+      command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${hasuraEndpoint}`;
       if (adminSecret) {
-        command += ` --admin-secret ${adminSecret}`;
+        command += ` --admin-secret ${adminSecret};`;
       }
+      await exec(command);
 
-      try {
-        execSync(command, { stdio: "inherit" });
-
-        const initMigration = fs.readdirSync("./migrations")[0];
-        const version = initMigration.match(/^[0-9]+/)[0];
-        command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${endpoint}`;
-        if (adminSecret) {
-          command += ` --admin-secret ${adminSecret};`;
-        }
-        // mark this migration as applied on the remote server
-        // so that it doesn't get run there when promoting local
-        // changes to that environment (redundant)
-        execSync(command, { stdio: "inherit" });
-
-        // TODO: rethink the necessity of citext
-        // prepend the contents of the sql file with the installation of citext
-        // this is a requirement for HBPv2 
+      // TODO: rethink the necessity of citext
+      // prepend the contents of the sql file with the installation of citext
+      // this is a requirement for HBPv2
+      if (this.projectOnHBPV2(project)) {
         const sqlPath = `./migrations/${initMigration}/up.sql`;
         const data = fs.readFileSync(sqlPath);
         const sql = fs.openSync(sqlPath, "w+");
@@ -123,84 +143,41 @@ env_file: .env.development
         fs.writeSync(sql, citext, 0, citext.length, 0);
         fs.writeSync(sql, data, 0, data.length, citext.length);
         fs.close(sql);
-
-        const metadata = yaml.safeLoad(
-          fs.readFileSync(`./migrations/${initMigration}/up.yaml`, {
-            encoding: "utf8",
-          })
-        );
-
-        // TODO: rethink this implementation
-        // fragile because it relies on Hasura metadata format
-        // there are 2 places where ENV vars might be used with event triggers
-        const eventTriggers = metadata[0].args.tables
-          .filter((table) => table.event_triggers)
-          .flatMap((table) => table.event_triggers);
-
-        // (1) webhook URL (webhook_from_env)
-        const webhooksFromEnv = eventTriggers
-          .filter((trigger) => trigger.webhook_from_env)
-          .map((trigger) => `${trigger.webhook_from_env}=changeme`)
-          .filter((value, index, self) => {
-            // remove duplicates if any (same webhook env var for multiple events)
-            return self.indexOf(value) === index;
-          });
-
-        // (2) headers (value_from_env)
-        const headersFromEnv = eventTriggers
-          .filter((trigger) => trigger.headers)
-          .flatMap((trigger) => trigger.headers)
-          .filter((header) => header.value_from_env)
-          .map((header) => `${header.value_from_env}=changeme`)
-          .filter((value, index, self) => {
-            // remove duplicates if any (same header env var for multiple events)
-            return self.indexOf(value) === index;
-          });
-
-        fs.writeFileSync(
-          `${directory}/.env.development`,
-          webhooksFromEnv.concat(headersFromEnv).join("\n"),
-          { flag: "a" }
-        );
-
-        fs.writeFileSync(ignoreFile, "\n.env.development", { flag: "a" });
-      } catch (error) {
-        this.error("Something went wrong: ", error);
       }
-    } else {
-      // when no endpoint is specified, we ship a template
-      // migration based on HBP most up-to-date schema
-      moveTemplateMigration(migrationDirectory);
+
+      // write ENV variables to .env.development (webhooks and headers)
+      await writeFile(
+        `${directory}/.env.development`,
+        project.hasura_gqe_custom_env_variables
+          .map((envVar) => `${envVar.key}=${envVar.value}`)
+          .join("\n"),
+        { flag: "a" }
+      );
+
+      await writeFile(ignoreFile, "\n.env.development", { flag: "a" });
+    } catch (error) {
+      spinner.fail();
+      stopSpinner();
+      this.log(`${chalk.red("Error!")} ${error.message}`);
+      this.exit(1);
     }
 
-    let initMessage = "Nhost boilerplate created";
-    if (directory != ".") {
-      initMessage += ` within ${directory}`;
-    }
+    spinner.succeed();
+    stopSpinner();
 
-    this.log(initMessage);
+    this.log(`${chalk.green("Nhost project successfully initialized")}`);
   }
 }
 
 InitCommand.description = `Prepares a project to run with Nhost
 ...
-Initialises a new project (or an existing one) with configuration for running the Nhost environment
+Initializes a new project (or an existing one) with configuration for running the Nhost environment
 `;
 
 InitCommand.flags = {
   directory: flags.string({
     char: "d",
     description: "Where to create your project",
-    required: false,
-  }),
-  endpoint: flags.string({
-    char: "e",
-    description: "Endpoint of your GraphQL engine running on Nhost",
-    required: false,
-  }),
-  "admin-secret": flags.string({
-    char: "a",
-    description: "GraphQL engine admin secret",
     required: false,
   }),
 };

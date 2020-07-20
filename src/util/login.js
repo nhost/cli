@@ -1,7 +1,38 @@
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-module.exports = async function (url, email) {
+async function validateAuth(url, {email, token}) {
+  let response;
+
+  try {
+    response = await fetch(`${url}/custom/cli/login/validate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        token,
+      }),
+    });
+  } catch (err) {
+    throw new Error("Server unavailable. Please retry in a moment.");
+  }
+
+  const body = await response.json();
+  if (!response.ok) {
+    const { error = {} } = body;
+    if (error.code === "server_not_available") {
+      throw new Error("Server unavailable. Please retry in a moment.");
+    }
+
+    throw new Error("The provided token is not valid");    
+  }
+
+  return body;
+}
+
+async function executeLogin(url, email) {
   let response;
   try {
     response = await fetch(`${url}/custom/cli/login`, {
@@ -32,3 +63,5 @@ module.exports = async function (url, email) {
 
   return body;
 };
+
+module.exports = { executeLogin, validateAuth };

@@ -2,66 +2,23 @@ const { Command, flags } = require("@oclif/command");
 const fs = require("fs");
 const { spawn, execSync } = require("child_process");
 const yaml = require("js-yaml");
-const nunjucks = require("nunjucks");
 const crypto = require("crypto");
+const chalk = require("chalk");
+const nunjucks = require("nunjucks");
 
-const dockerComposeTemplate = `version: '3.6'
-services:
-  nhost-postgres:
-    image: postgres:{{ postgres_version }}
-    ports:
-      - '{{ postgres_port }}:5432'
-    restart: always
-    environment:
-      POSTGRES_USER: {{ postgres_user }}
-      POSTGRES_PASSWORD: {{ postgres_password }}
-    volumes:
-      - ../db_data:/var/lib/postgresql/data
-  nhost-graphql-engine:
-    image: hasura/graphql-engine:{{ graphql_version }}
-    ports:
-      - '{{ graphql_server_port }}:{{ graphql_server_port }}'
-    depends_on:
-      - nhost-postgres
-    restart: always
-    environment:
-      HASURA_GRAPHQL_SERVER_PORT: {{ graphql_server_port }}
-      HASURA_GRAPHQL_DATABASE_URL: postgres://{{ postgres_user }}:{{ postgres_password }}@nhost-postgres:5432/postgres
-      HASURA_GRAPHQL_ENABLE_CONSOLE: 'false'
-      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      HASURA_GRAPHQL_ADMIN_SECRET: {{ graphql_admin_secret }}
-      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
-      HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 5
-      HASURA_GRAPHQL_NO_OF_RETRIES: 5
-    env_file:
-      - ../{{ env_file }}
-    command:
-      - graphql-engine
-      - serve
-    volumes:
-      - ../migrations:/hasura-migrations
-  nhost-hasura-backend-plus:
-    image: nhost/hasura-backend-plus:{{ backend_plus_version }}
-    ports:
-      - '{{ backend_plus_port }}:{{ backend_plus_port }}'
-    depends_on:
-    - nhost-graphql-engine
-    restart: always
-    environment:
-      PORT: {{ backend_plus_port }}
-      USER_FIELDS: ''
-      USER_REGISTRATION_AUTO_ACTIVE: 'true'
-      HASURA_GRAPHQL_ENDPOINT: http://nhost-graphql-engine:{{ graphql_server_port }}/v1/graphql
-      HASURA_GRAPHQL_ADMIN_SECRET: {{ graphql_admin_secret }}
-      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
-      AUTH_ACTIVE: 'true'
-      AUTH_LOCAL_ACTIVE: 'true'
-      REFRESH_TOKEN_EXPIRES: 43200
-      JWT_TOKEN_EXPIRES: 15
-`;
+const spinnerWith = require("../util/spinner");
+const getComposeTemplate = require("../util/compose");
+
+const util = require("util");
+const readFile = util.promisify(fs.readFile);
+const exec = util.promisify(require("child_process").exec);
+const exists = util.promisify(fs.exists);
+const mkdir = util.promisify(fs.mkdir);
+// const rmdir = util.promisify(fs.rmdir);
+const writeFile = util.promisify(fs.writeFile);
 
 function cleanup(path = "./.nhost") {
-  console.log("\nshutting down...");
+  console.log(chalk.white("Nhost is shutting down"));
   execSync(
     `docker-compose -f ${path}/docker-compose.yaml down > /dev/null 2>&1`
   );
@@ -70,9 +27,9 @@ function cleanup(path = "./.nhost") {
 }
 
 class DevCommand extends Command {
-  waitForGraphqlEngine(nhostConfig, secondsRemaining = 60) {
+  async waitForGraphqlEngine(nhostConfig, timesRemaining = 60) {
     return new Promise((resolve, reject) => {
-      const retry = (secondsRemaining) => {
+      const retry = (timesRemaining) => {
         try {
           execSync(
             `curl -X GET http://localhost:${nhostConfig.graphql_server_port}/v1/version > /dev/null 2>&1`
@@ -80,45 +37,52 @@ class DevCommand extends Command {
 
           return resolve();
         } catch (error) {
-          if (secondsRemaining === 0) {
+          if (timesRemaining === 0) {
             return reject();
           }
 
           setTimeout(() => {
-            retry(--secondsRemaining);
+            retry(--timesRemaining);
           }, 1000);
         }
       };
 
-      retry(secondsRemaining);
+      retry(timesRemaining);
     });
   }
 
   async run() {
-    if (!fs.existsSync("./config.yaml")) {
-      return this.warn(
-        "Please run 'nhost init' before starting your development environment"
+    if (!await exists("./config.yaml")) {
+      return this.log(
+        `${chalk.red(
+          "Error!"
+        )} initialize your project before running ${chalk.bold.underline(
+          "nhost dev"
+        )}`
       );
     }
 
     // check if docker-compose is installed
     try {
-      execSync("command -v docker-compose");
+      await exec("command -v docker-compose");
     } catch {
-      this.error(
-        "docker-compose is a dependency, please make sure you have it installed"
+      this.log(
+        `${chalk.red("Error!")} please make sure to have ${chalk.bold.underline(
+          "docker compose"
+        )} installed`
       );
     }
 
-    const firstRun = !fs.existsSync("./db_data");
-    let startMessage = "development environment is launching...";
+    const firstRun = !await exists("./db_data");
+    let startMessage = "Nhost is starting";
     if (firstRun) {
-      startMessage += "first run takes longer to start";
+      startMessage += `, ${chalk.bold.underline("database included")}`;
     }
-    this.log(startMessage);
+    
+    let { spinner, stopSpinner } = spinnerWith(startMessage);
 
     const nhostConfig = yaml.safeLoad(
-      fs.readFileSync("./config.yaml", { encoding: "utf8" })
+      await readFile("./config.yaml", { encoding: "utf8" })
     );
 
     // generate random admin secret if not specified in config.yaml
@@ -128,28 +92,28 @@ class DevCommand extends Command {
         .toString("hex")
         .slice(0, 32);
     }
-
     nhostConfig.graphql_jwt_key = crypto
       .randomBytes(128)
       .toString("hex")
       .slice(0, 128);
 
-    // create temp dir .nhost, which will hold docker-compose.yaml
+    // create .nhost
     const tempDir = "./.nhost";
-    fs.mkdirSync(tempDir);
+    await mkdir(tempDir);
 
-    fs.writeFileSync(
+    await writeFile(
       `${tempDir}/docker-compose.yaml`,
-      nunjucks.renderString(dockerComposeTemplate, nhostConfig)
+      nunjucks.renderString(getComposeTemplate(), nhostConfig)
     );
 
     // validate compose file
-    execSync(`docker-compose -f ${tempDir}/docker-compose.yaml config`);
+    await exec(`docker-compose -f ${tempDir}/docker-compose.yaml config`);
 
     // try running docker-compose up
     try {
-      execSync(
-        `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
+      await exec(
+        // `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
+        `docker-compose -f ${tempDir}/docker-compose.yaml up -d`
       );
     } catch {
       // TODO: improve error handling/messaging
@@ -158,7 +122,7 @@ class DevCommand extends Command {
     }
 
     // check whether GraphQL engine is up & running
-    this.waitForGraphqlEngine(nhostConfig)
+    await this.waitForGraphqlEngine(nhostConfig)
       .then(() => {
         // launch hasura console and inherit stdio/stdout/stderr
         spawn(
@@ -168,15 +132,24 @@ class DevCommand extends Command {
             `--endpoint=http://localhost:${nhostConfig.graphql_server_port}`,
             `--admin-secret=${nhostConfig.graphql_admin_secret}`,
           ],
-          { stdio: "inherit" }
+          { stdio: "pipe" }
         );
       })
       .catch(() => {
         this.log(
           "Nhost could not start. Please make sure that all configuration is correct"
         );
+        stopSpinner();
         cleanup();
       });
+
+    spinner.succeed("Nhost is running");
+    this.log(
+      `Hasura console is running at ${chalk.underline.bold(
+        "http://localhost:9695"
+      )}`
+    );
+    stopSpinner();
   }
 }
 
@@ -189,10 +162,10 @@ DevCommand.flags = {
   name: flags.string({ char: "n", description: "name to print" }),
 };
 
-nunjucks.configure({ autoescape: true });
-
-process.on("SIGINT", function () {
+process.on("SIGINT", () => {
   cleanup();
 });
+
+nunjucks.configure({ autoescape: true });
 
 module.exports = DevCommand;
