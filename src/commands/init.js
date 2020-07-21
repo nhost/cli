@@ -38,7 +38,7 @@ class InitCommand extends Command {
     }
 
     // check if auth file exists
-    if (!await authFileExists()) {
+    if (!(await authFileExists())) {
       this.log(
         `${chalk.red(
           "No credentials found!"
@@ -57,6 +57,15 @@ class InitCommand extends Command {
       this.exit(1);
     }
 
+    if (userData.user.projects.length === 0) {
+      this.log(
+        `\nWe couldn't find any projects related to this account, go to ${chalk.bold.underline(
+          "https://console.nhost.io/new-project"
+        )} and create one`
+      );
+      this.exit();
+    }
+
     let selectedProjectId;
     try {
       selectedProjectId = await selectProject(userData.user.projects);
@@ -68,7 +77,7 @@ class InitCommand extends Command {
     const project = userData.user.projects.find(
       (project) => project.id === selectedProjectId
     );
-    
+
     // assume current working directory
     const directory = ".";
 
@@ -105,7 +114,7 @@ class InitCommand extends Command {
       command += ` --admin-secret ${adminSecret}`;
     }
 
-    let {spinner, stopSpinner} = spinnerWith(`Initializing ${project.name}`);
+    let { spinner, stopSpinner } = spinnerWith(`Initializing ${project.name}`);
     try {
       await exec(command);
 
