@@ -13,15 +13,14 @@ const util = require("util");
 const readFile = util.promisify(fs.readFile);
 const exec = util.promisify(require("child_process").exec);
 const exists = util.promisify(fs.exists);
-const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 
 function cleanup(path = "./.nhost") {
-  console.log(chalk.white("\nNhost is shutting down"));
+  console.log(chalk.white("\nNhost is terminating"));
   execSync(
     `docker-compose -f ${path}/docker-compose.yaml down > /dev/null 2>&1`
   );
-  fs.rmdirSync(path, { recursive: true });
+  fs.unlinkSync(`${path}/docker-compose.yaml`);
   process.exit();
 }
 
@@ -99,22 +98,20 @@ class DevCommand extends Command {
       .slice(0, 128);
 
     // create .nhost
-    const tempDir = "./.nhost";
-    await mkdir(tempDir);
-
+    const dotNhost = "./.nhost";
     await writeFile(
-      `${tempDir}/docker-compose.yaml`,
+      `${dotNhost}/docker-compose.yaml`,
       nunjucks.renderString(getComposeTemplate(), nhostConfig)
     );
 
     // validate compose file
-    await exec(`docker-compose -f ${tempDir}/docker-compose.yaml config`);
+    await exec(`docker-compose -f ${dotNhost}/docker-compose.yaml config`);
 
     // try running docker-compose up
     try {
       await exec(
         // `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
-        `docker-compose -f ${tempDir}/docker-compose.yaml up -d`
+        `docker-compose -f ${dotNhost}/docker-compose.yaml up -d`
       );
     } catch (err) {
       spinner.fail();

@@ -6,6 +6,7 @@ const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
+const mkdir = util.promisify(fs.mkdir);
 
 const spinnerWith = require("../util/spinner");
 const selectProject = require("../util/projects");
@@ -87,6 +88,14 @@ class InitCommand extends Command {
 
     const project = userData.user.projects.find(
       (project) => project.id === selectedProjectId
+    );
+
+    // .nhost is used for nhost specific configuration
+    const dotNhost = `${directory}/.nhost`;
+    await mkdir(dotNhost);
+    await writeFile(
+      `${dotNhost}/nhost.yaml`,
+      `project_id=${selectedProjectId}`
     );
 
     // config.yaml holds configuration for GraphQL engine, PostgreSQL and HBP
