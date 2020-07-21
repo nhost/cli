@@ -1,11 +1,11 @@
-// const { Command, flags } = require("@oclif/command");
-const { Command, flags } = require("@oclif/command");
+const { Command } = require("@oclif/command");
+const nunjucks = require("nunjucks");
 const fs = require("fs");
 const chalk = require("chalk");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
+const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
-const nunjucks = require("nunjucks");
 
 const spinnerWith = require("../util/spinner");
 const selectProject = require("../util/projects");
@@ -24,6 +24,8 @@ class InitCommand extends Command {
 
   async run() {
     const apiUrl = getCustomApiEndpoint();
+    // assume current working directory
+    const directory = ".";
 
     // check if hasura is installed
     try {
@@ -57,6 +59,15 @@ class InitCommand extends Command {
       this.exit(1);
     }
 
+    // check if project is already initialized
+    if (await exists(`${directory}/config.yaml`)) {
+      this.log(
+        `\n${chalk.white("This directory seems to have a project already configured, skipping")}`
+      );
+      this.exit();
+    } 
+
+    // check for projects on Nhost
     if (userData.user.projects.length === 0) {
       this.log(
         `\nWe couldn't find any projects related to this account, go to ${chalk.bold.underline(
@@ -77,9 +88,6 @@ class InitCommand extends Command {
     const project = userData.user.projects.find(
       (project) => project.id === selectedProjectId
     );
-
-    // assume current working directory
-    const directory = ".";
 
     // config.yaml holds configuration for GraphQL engine, PostgreSQL and HBP
     // it is also a requirement for hasura to work
