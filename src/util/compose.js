@@ -45,6 +45,7 @@ services:
       USER_FIELDS: ''
       USER_REGISTRATION_AUTO_ACTIVE: 'true'
       HASURA_GRAPHQL_ENDPOINT: http://nhost-graphql-engine:{{ graphql_server_port }}/v1/graphql
+      HASURA_ENDPOINT: http://nhost-graphql-engine:{{ graphql_server_port }}/v1/graphql
       HASURA_GRAPHQL_ADMIN_SECRET: {{ graphql_admin_secret }}
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
       AUTH_ACTIVE: 'true'
