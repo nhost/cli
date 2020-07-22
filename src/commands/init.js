@@ -17,6 +17,7 @@ const {
   getNhostConfigTemplate,
 } = require("../util/config");
 const { validateAuth } = require("../util/login");
+const checkForHasura = require("../util/dependencies");
 
 class InitCommand extends Command {
   projectOnHBPV2(project) {
@@ -30,13 +31,9 @@ class InitCommand extends Command {
 
     // check if hasura is installed
     try {
-      await exec("command -v hasura");
-    } catch {
-      this.log(
-        `${chalk.red(
-          "Hasura CLI is missing!"
-        )} Please follow the instructions here https://hasura.io/docs/1.0/graphql/manual/hasura-cli/install-hasura-cli.html`
-      );
+      await checkForHasura();
+    } catch (err) {
+      console.log(err.message);
       this.exit(1);
     }
 
@@ -95,7 +92,7 @@ class InitCommand extends Command {
     await mkdir(dotNhost);
     await writeFile(
       `${dotNhost}/nhost.yaml`,
-      `project_id=${selectedProjectId}`
+      `project_id: ${selectedProjectId}`
     );
 
     // config.yaml holds configuration for GraphQL engine, PostgreSQL and HBP
