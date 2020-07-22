@@ -1,8 +1,7 @@
-"use strict";
-
 const fs = require("fs");
 const util = require("util");
 const exists = util.promisify(fs.exists);
+const unlink = util.promisify(fs.unlink);
 const path = require("path");
 const { homedir } = require("os");
 const writeJSON = require("write-json-file");
@@ -33,13 +32,20 @@ backend_plus_port: 9000
 env_file: .env.development
 `;
 
-// module.exports = function (data) {
 async function writeAuthFile(data) {
   try {
     return writeJSON.sync(authPath, data, {
       indent: 2,
       mode: 0o600,
     });
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function deleteAuthFile() {
+  try {
+    await unlink(authPath);
   } catch (err) {
     throw err;
   }
@@ -67,4 +73,5 @@ module.exports = {
   authFileExists,
   getCustomApiEndpoint,
   getNhostConfigTemplate,
+  deleteAuthFile,
 };

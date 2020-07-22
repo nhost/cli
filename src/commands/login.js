@@ -132,7 +132,10 @@ class LoginCommand extends Command {
   }
 }
 
-LoginCommand.description = "Login to Nhost account";
+LoginCommand.description = `Login to your Nhost account
+...
+Login to your Nhost account
+`;
 
 LoginCommand.flags = {
   email: flags.string({
