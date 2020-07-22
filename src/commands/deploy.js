@@ -60,14 +60,14 @@ class DeployCommand extends Command {
     const adminSecret = project.hasura_gqe_admin_secret;
     try {
       const { stdout } = await exec(
-        `hasura migrate apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`,
+        `hasura migrate apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`
       );
 
       // TODO find out a better way of doing this
       const logLine = stdout.split("\n")[1];
       if (logLine && logLine.includes("nothing to apply")) {
         spinner.succeed("nothing to apply");
-      } else { 
+      } else {
         spinner.succeed("migrations applied");
       }
       stopSpinner();

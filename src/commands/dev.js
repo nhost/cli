@@ -14,13 +14,16 @@ const readFile = util.promisify(fs.readFile);
 const exec = util.promisify(require("child_process").exec);
 const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
+const unlink = util.promisify(fs.unlink);
 
-function cleanup(path = "./.nhost") {
-  console.log(chalk.white("\nNhost is terminating"));
-  execSync(
+async function cleanup(path = "./.nhost") {
+  let { spinner } = spinnerWith("stopping Nhost");
+  
+  await exec(
     `docker-compose -f ${path}/docker-compose.yaml down > /dev/null 2>&1`
   );
-  fs.unlinkSync(`${path}/docker-compose.yaml`);
+  unlink(`${path}/docker-compose.yaml`);
+  spinner.succeed("see you soon");
   process.exit();
 }
 
@@ -116,7 +119,7 @@ class DevCommand extends Command {
     } catch (err) {
       spinner.fail();
       this.log(`${chalk.red("Error!")} ${err.message}`);
-      stopSpinner(); 
+      stopSpinner();
       cleanup();
     }
 

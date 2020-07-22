@@ -4,7 +4,7 @@ const chalk = require("chalk");
 module.exports = function (message) {
   console.log(); // \n
 
-  let spinner = ora(chalk.white(message))
+  let spinner = ora(chalk.white(message));
   spinner.color = "white";
   spinner.start();
   let running = true;
@@ -16,6 +16,5 @@ module.exports = function (message) {
     }
   };
 
-  return {spinner: spinner, stopSpinner: cancel};
+  return { spinner: spinner, stopSpinner: cancel };
 };
-

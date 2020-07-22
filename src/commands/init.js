@@ -60,10 +60,12 @@ class InitCommand extends Command {
     // check if project is already initialized
     if (await exists(`${directory}/config.yaml`)) {
       this.log(
-        `\n${chalk.white("This directory seems to have a project already configured, skipping")}`
+        `\n${chalk.white(
+          "This directory seems to have a project already configured, skipping"
+        )}`
       );
       this.exit();
-    } 
+    }
 
     // check for projects on Nhost
     if (userData.user.projects.length === 0) {
