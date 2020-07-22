@@ -11,18 +11,18 @@ services:
     volumes:
       - ../db_data:/var/lib/postgresql/data
   nhost-graphql-engine:
-    image: hasura/graphql-engine:{{ graphql_version }}
+    image: hasura/graphql-engine:{{ hasura_graphql_version }}
     ports:
-      - '{{ graphql_server_port }}:{{ graphql_server_port }}'
+      - '{{ hasura_graphql_port }}:{{ hasura_graphql_port }}'
     depends_on:
       - nhost-postgres
     restart: always
     environment:
-      HASURA_GRAPHQL_SERVER_PORT: {{ graphql_server_port }}
+      HASURA_GRAPHQL_SERVER_PORT: {{ hasura_graphql_port }}
       HASURA_GRAPHQL_DATABASE_URL: postgres://{{ postgres_user }}:{{ postgres_password }}@nhost-postgres:5432/postgres
       HASURA_GRAPHQL_ENABLE_CONSOLE: 'false'
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      HASURA_GRAPHQL_ADMIN_SECRET: {{ graphql_admin_secret }}
+      HASURA_GRAPHQL_ADMIN_SECRET: {{ hasura_graphql_admin_secret }}
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
       HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 5
       HASURA_GRAPHQL_NO_OF_RETRIES: 5
@@ -34,19 +34,19 @@ services:
     volumes:
       - ../migrations:/hasura-migrations
   nhost-hasura-backend-plus:
-    image: nhost/hasura-backend-plus:{{ backend_plus_version }}
+    image: nhost/hasura-backend-plus:{{ hasura_backend_plus_version }}
     ports:
-      - '{{ backend_plus_port }}:{{ backend_plus_port }}'
+      - '{{ hasura_backend_plus_port }}:{{ hasura_backend_plus_port }}'
     depends_on:
     - nhost-graphql-engine
     restart: always
     environment:
-      PORT: {{ backend_plus_port }}
+      PORT: {{ hasura_backend_plus_port }}
       USER_FIELDS: ''
       USER_REGISTRATION_AUTO_ACTIVE: 'true'
-      HASURA_GRAPHQL_ENDPOINT: http://nhost-graphql-engine:{{ graphql_server_port }}/v1/graphql
-      HASURA_ENDPOINT: http://nhost-graphql-engine:{{ graphql_server_port }}/v1/graphql
-      HASURA_GRAPHQL_ADMIN_SECRET: {{ graphql_admin_secret }}
+      HASURA_GRAPHQL_ENDPOINT: http://nhost-graphql-engine:{{ hasura_graphql_port }}/v1/graphql
+      HASURA_ENDPOINT: http://nhost-graphql-engine:{{ hasura_graphql_port }}/v1/graphql
+      HASURA_GRAPHQL_ADMIN_SECRET: {{ hasura_graphql_admin_secret }}
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
       AUTH_ACTIVE: 'true'
       AUTH_LOCAL_ACTIVE: 'true'

@@ -33,13 +33,13 @@ class DevCommand extends Command {
       const retry = (timesRemaining) => {
         try {
           execSync(
-            `curl -X GET http://localhost:${nhostConfig.graphql_server_port}/v1/version > /dev/null 2>&1`
+            `curl -X GET http://localhost:${nhostConfig.hasura_graphql_port}/v1/version > /dev/null 2>&1`
           );
 
           return resolve();
-        } catch (error) {
+        } catch (err) {
           if (timesRemaining === 0) {
-            return reject();
+            return reject(err);
           }
 
           setTimeout(() => {
@@ -89,8 +89,8 @@ class DevCommand extends Command {
     );
 
     // generate random admin secret if not specified in config.yaml
-    if (!nhostConfig.graphql_admin_secret) {
-      nhostConfig.graphql_admin_secret = crypto
+    if (!nhostConfig.hasura_graphql_admin_secret) {
+      nhostConfig.hasura_graphql_admin_secret = crypto
         .randomBytes(32)
         .toString("hex")
         .slice(0, 32);
@@ -112,10 +112,7 @@ class DevCommand extends Command {
 
     // try running docker-compose up
     try {
-      await exec(
-        // `docker-compose -f ${tempDir}/docker-compose.yaml up -d > /dev/null 2>&1`
-        `docker-compose -f ${dotNhost}/docker-compose.yaml up -d`
-      );
+      await exec(`docker-compose -f ${dotNhost}/docker-compose.yaml up -d`);
     } catch (err) {
       spinner.fail();
       this.log(`${chalk.red("Error!")} ${err.message}`);
@@ -126,12 +123,21 @@ class DevCommand extends Command {
     // check whether GraphQL engine is up & running
     await this.waitForGraphqlEngine(nhostConfig)
       .then(() => {
+        if (firstRun) {
+          execSync(
+            `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`
+          );
+          execSync(
+            `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`
+          );
+        }
+
         spawn(
           "hasura",
           [
             "console",
-            `--endpoint=http://localhost:${nhostConfig.graphql_server_port}`,
-            `--admin-secret=${nhostConfig.graphql_admin_secret}`,
+            `--endpoint=http://localhost:${nhostConfig.hasura_graphql_port}`,
+            `--admin-secret=${nhostConfig.hasura_graphql_admin_secret}`,
             "--console-port=9695",
           ],
           { stdio: "ignore" }

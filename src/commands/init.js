@@ -104,12 +104,17 @@ class InitCommand extends Command {
       nunjucks.renderString(getNhostConfigTemplate(), project)
     );
 
-    // create a migrations directory if not present
+    // create directory for migrations
     const migrationDirectory = `${directory}/migrations`;
     if (!fs.existsSync(migrationDirectory)) {
       fs.mkdirSync(migrationDirectory);
     }
 
+    // create directory for metadata
+    const metadataDirectory = `${directory}/metadata`;
+    if (!fs.existsSync(metadataDirectory)) {
+      fs.mkdirSync(metadataDirectory);
+    }
     // create or append to .gitignore
     const ignoreFile = `${directory}/.gitignore`;
     fs.writeFileSync(ignoreFile, "\nconfig.yaml\n.nhost\ndb_data\nminio_data", {
@@ -125,24 +130,28 @@ class InitCommand extends Command {
     const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
     const adminSecret = project.hasura_gqe_admin_secret;
 
-    let command = `hasura migrate create "init" --from-server --endpoint ${hasuraEndpoint} --schema "public" --schema "auth"`;
-    if (adminSecret) {
-      command += ` --admin-secret ${adminSecret}`;
-    }
-
     let { spinner, stopSpinner } = spinnerWith(`Initializing ${project.name}`);
+
+    const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
     try {
+      // create migrations from remote 
+      let command = `hasura migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
       await exec(command);
 
-      // mark this migration as applied on the remote server
+      // mark this migration as applied (--skip-execution) on the remote server
       // so that it doesn't get run there when promoting local
-      // changes to that environment (redundant)
+      // changes to that environment 
       const initMigration = fs.readdirSync("./migrations")[0];
       const version = initMigration.match(/^[0-9]+/)[0];
-      command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${hasuraEndpoint}`;
-      if (adminSecret) {
-        command += ` --admin-secret ${adminSecret};`;
-      }
+      command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${hasuraEndpoint} --admin-secret ${adminSecret}`;
+      await exec(command);
+
+      // create metadata from remote
+      command = `hasura metadata export ${commonOptions}`;
+      await exec(command);
+
+      //  create seeds from remote
+      command = `hasura seeds create roles_and_providers --from-table auth.roles --from-table auth.providers ${commonOptions}`;
       await exec(command);
 
       // TODO: rethink the necessity of citext
