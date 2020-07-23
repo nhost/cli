@@ -20,9 +20,9 @@ async function cleanup(path = "./.nhost") {
   let { spinner } = spinnerWith("stopping Nhost");
   
   await exec(
-    `docker-compose -f ${path}/docker-compose.yaml down > /dev/null 2>&1`
+    `docker-compose -f ${path}/docker-compose.yaml down`
   );
-  unlink(`${path}/docker-compose.yaml`);
+  await unlink(`${path}/docker-compose.yaml`);
   spinner.succeed("see you soon");
   process.exit();
 }

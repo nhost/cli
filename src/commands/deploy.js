@@ -14,9 +14,11 @@ const fs = require("fs");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const readFile = util.promisify(fs.readFile);
+const exists = util.promisify(fs.exists);
 
 class DeployCommand extends Command {
   async run() {
+    const dotNhost = "./.nhost";
     const apiUrl = getCustomApiEndpoint();
     try {
       await checkForHasura();
@@ -45,10 +47,19 @@ class DeployCommand extends Command {
       this.exit(1);
     }
 
-    let { spinner, stopSpinner } = spinnerWith("deploying migrations");
+    if (!(await exists(`${dotNhost}`))) {
+      this.log(
+        `${chalk.red(
+          "Error!"
+        )} this directory doesn't seem to be a valid project, please run ${chalk.underline.bold(
+          "nhost init"
+        )} to initialize it`
+      );
+      this.exit(1);
+    }
 
     const projectConfig = yaml.safeLoad(
-      await readFile("./.nhost/nhost.yaml", { encoding: "utf8" })
+      await readFile(`${dotNhost}/nhost.yaml`, { encoding: "utf8" })
     );
     const projectID = projectConfig.project_id;
 
@@ -56,23 +67,29 @@ class DeployCommand extends Command {
       (project) => project.id === projectID
     );
 
+    if (!project) {
+      this.log(
+        `${chalk.red("Error!")} we couldn't find this project in our system`
+      );
+      this.exit(1);
+    }
+
     const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
     const adminSecret = project.hasura_gqe_admin_secret;
     try {
-      const { stdout } = await exec(
+      let { spinner } = spinnerWith("deploying migrations");
+      await exec(
         `hasura migrate apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`
       );
+      spinner.succeed("migrations deployed");
 
-      // TODO find out a better way of doing this
-      const logLine = stdout.split("\n")[1];
-      if (logLine && logLine.includes("nothing to apply")) {
-        spinner.succeed("nothing to apply");
-      } else {
-        spinner.succeed("migrations applied");
-      }
-      stopSpinner();
+      ({ spinner } = spinnerWith("deploying metadata"));
+      await exec(
+        `hasura metadata apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`
+      );
+      spinner.succeed("metadata deployed");
     } catch (err) {
-      this.log(`${chalk.red("Error!")} ${err.message}`);
+      this.log(`\n${chalk.red("Error!")} ${err.message}`);
       this.exit(1);
     }
   }
