@@ -15,7 +15,7 @@ module.exports = async function (projects) {
   );
 
   const grouped_team_projects = team_projects.reduce((r, project) => {
-    r[project.team.name] = [...(r[project.team.name] || []), a];
+    r[project.team.name] = [...(r[project.team.name] || []), project];
     return r;
   }, {});
 
