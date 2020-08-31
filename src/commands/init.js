@@ -74,7 +74,6 @@ class InitCommand extends Command {
     ];
 
     if (projects.length === 0) {
-    // if (userData.user.projects.length === 0) {
       this.log(
         `\nWe couldn't find any projects related to this account, go to ${chalk.bold.underline(
           "https://console.nhost.io/new-project"
