@@ -144,11 +144,11 @@ class InitCommand extends Command {
       await exec(command);
 
       // mark this migration as applied (--skip-execution) on the remote server
-      // so that it doesn't get run there when promoting local
+      // so that it doesn't get run again when promoting local
       // changes to that environment 
       const initMigration = fs.readdirSync("./migrations")[0];
       const version = initMigration.match(/^[0-9]+/)[0];
-      command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${hasuraEndpoint} --admin-secret ${adminSecret}`;
+      command = `hasura migrate apply --version "${version}" --skip-execution ${commonOptions}`;
       await exec(command);
 
       // create metadata from remote
