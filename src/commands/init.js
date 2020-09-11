@@ -67,8 +67,13 @@ class InitCommand extends Command {
       this.exit();
     }
 
-    // check for projects on Nhost
-    if (userData.user.projects.length === 0) {
+    // personal projects + projects from teams the user is a member of
+    const projects = [
+      ...userData.user.projects,
+      ...userData.user.teams.flatMap(({team}) => team.projects),
+    ];
+
+    if (projects.length === 0) {
       this.log(
         `\nWe couldn't find any projects related to this account, go to ${chalk.bold.underline(
           "https://console.nhost.io/new-project"
@@ -79,13 +84,13 @@ class InitCommand extends Command {
 
     let selectedProjectId;
     try {
-      selectedProjectId = await selectProject(userData.user.projects);
+      selectedProjectId = await selectProject(projects);
     } catch (err) {
       this.log(`${chalk.red("Error!")} ${err.message}`);
       this.exit(1);
     }
 
-    const project = userData.user.projects.find(
+    const project = projects.find(
       (project) => project.id === selectedProjectId
     );
 
@@ -139,11 +144,11 @@ class InitCommand extends Command {
       await exec(command);
 
       // mark this migration as applied (--skip-execution) on the remote server
-      // so that it doesn't get run there when promoting local
+      // so that it doesn't get run again when promoting local
       // changes to that environment 
       const initMigration = fs.readdirSync("./migrations")[0];
       const version = initMigration.match(/^[0-9]+/)[0];
-      command = `hasura migrate apply --version "${version}" --skip-execution --endpoint ${hasuraEndpoint} --admin-secret ${adminSecret}`;
+      command = `hasura migrate apply --version "${version}" --skip-execution ${commonOptions}`;
       await exec(command);
 
       // create metadata from remote
