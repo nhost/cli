@@ -18,8 +18,12 @@ const exists = util.promisify(fs.exists);
 
 class DeployCommand extends Command {
   async run() {
-    const dotNhost = "./.nhost";
+    const workingDir = ".";
+    const nhostDir = `${workingDir}/nhost`;
+    const dotNhost = `${nhostDir}/.nhost`;
+
     const apiUrl = getCustomApiEndpoint();
+
     try {
       await checkForHasura();
     } catch (err) {
@@ -79,13 +83,15 @@ class DeployCommand extends Command {
     try {
       let { spinner } = spinnerWith("deploying migrations");
       await exec(
-        `hasura migrate apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`
+        `hasura migrate apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`,
+        { cwd: nhostDir }
       );
       spinner.succeed("migrations deployed");
 
       ({ spinner } = spinnerWith("deploying metadata"));
       await exec(
-        `hasura metadata apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`
+        `hasura metadata apply --endpoint=${hasuraEndpoint} --admin-secret=${adminSecret}`,
+        { cwd: nhostDir }
       );
       spinner.succeed("metadata deployed");
     } catch (err) {
