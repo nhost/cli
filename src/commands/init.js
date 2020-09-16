@@ -27,7 +27,8 @@ class InitCommand extends Command {
   async run() {
     const apiUrl = getCustomApiEndpoint();
     // assume current working directory
-    const directory = ".";
+    const workingDir = ".";
+    const nhostDir = `${workingDir}/nhost`;
 
     // check if hasura is installed
     try {
@@ -58,19 +59,21 @@ class InitCommand extends Command {
     }
 
     // check if project is already initialized
-    if (await exists(`${directory}/config.yaml`)) {
+    if (await exists(nhostDir)) {
       this.log(
         `\n${chalk.white(
           "This directory seems to have a project already configured, skipping"
         )}`
       );
       this.exit();
+    } else {
+      await mkdir(nhostDir);
     }
 
     // personal projects + projects from teams the user is a member of
     const projects = [
       ...userData.user.projects,
-      ...userData.user.teams.flatMap(({team}) => team.projects),
+      ...userData.user.teams.flatMap(({ team }) => team.projects),
     ];
 
     if (projects.length === 0) {
@@ -95,7 +98,7 @@ class InitCommand extends Command {
     );
 
     // .nhost is used for nhost specific configuration
-    const dotNhost = `${directory}/.nhost`;
+    const dotNhost = `${nhostDir}/.nhost`;
     await mkdir(dotNhost);
     await writeFile(
       `${dotNhost}/nhost.yaml`,
@@ -105,30 +108,35 @@ class InitCommand extends Command {
     // config.yaml holds configuration for GraphQL engine, PostgreSQL and HBP
     // it is also a requirement for hasura to work
     await writeFile(
-      `${directory}/config.yaml`,
+      `${nhostDir}/config.yaml`,
       nunjucks.renderString(getNhostConfigTemplate(), project)
     );
 
     // create directory for migrations
-    const migrationDirectory = `${directory}/migrations`;
-    if (!fs.existsSync(migrationDirectory)) {
-      fs.mkdirSync(migrationDirectory);
+    const migrationDirectory = `${nhostDir}/migrations`;
+    if (await !exists(migrationDirectory)) {
+      await mkdir(migrationDirectory);
     }
 
     // create directory for metadata
-    const metadataDirectory = `${directory}/metadata`;
-    if (!fs.existsSync(metadataDirectory)) {
-      fs.mkdirSync(metadataDirectory);
+    const metadataDirectory = `${nhostDir}/metadata`;
+    if (await !exists(metadataDirectory)) {
+      await mkdir(metadataDirectory);
     }
     // create or append to .gitignore
-    const ignoreFile = `${directory}/.gitignore`;
-    fs.writeFileSync(ignoreFile, "\nconfig.yaml\n.nhost\ndb_data\nminio_data", {
-      flag: "a",
-    });
+    const ignoreFile = `${workingDir}/.gitignore`;
+    // fs.writeFileSync(ignoreFile, `\n${nhostDir}/config.yaml\n${nhostDir}/.nhost\n${nhostDir}/db_data\n${nhostDir}/minio_data`, {
+    await writeFile(
+      ignoreFile,
+      `\n${nhostDir}/config.yaml\n${nhostDir}/.nhost\n${nhostDir}/db_data\n${nhostDir}/minio_data`,
+      {
+        flag: "a",
+      }
+    );
 
     // .env.development for hasura webhooks, headers, etc
-    const envFile = `${directory}/.env.development`;
-    if (!fs.existsSync(envFile)) {
+    const envFile = `${workingDir}/.env.development`;
+    if (await !exists(envFile)) {
       await writeFile(envFile, "# webhooks and headers\n");
     }
 
@@ -139,31 +147,31 @@ class InitCommand extends Command {
 
     const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
     try {
-      // create migrations from remote 
+      // create migrations from remote
       let command = `hasura migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
-      await exec(command);
+      await exec(command, { cwd: nhostDir });
 
       // mark this migration as applied (--skip-execution) on the remote server
       // so that it doesn't get run again when promoting local
-      // changes to that environment 
-      const initMigration = fs.readdirSync("./migrations")[0];
+      // changes to that environment
+      const initMigration = fs.readdirSync(migrationDirectory)[0];
       const version = initMigration.match(/^[0-9]+/)[0];
       command = `hasura migrate apply --version "${version}" --skip-execution ${commonOptions}`;
-      await exec(command);
+      await exec(command, { cwd: nhostDir });
 
       // create metadata from remote
       command = `hasura metadata export ${commonOptions}`;
-      await exec(command);
+      await exec(command, { cwd: nhostDir });
 
       //  create seeds from remote
       command = `hasura seeds create roles_and_providers --from-table auth.roles --from-table auth.providers ${commonOptions}`;
-      await exec(command);
+      await exec(command, { cwd: nhostDir });
 
       // TODO: rethink the necessity of citext
       // prepend the contents of the sql file with the installation of citext
       // this is a requirement for HBPv2
       if (this.projectOnHBPV2(project)) {
-        const sqlPath = `./migrations/${initMigration}/up.sql`;
+        const sqlPath = `${migrationDirectory}/${initMigration}/up.sql`;
         const data = fs.readFileSync(sqlPath);
         const sql = fs.openSync(sqlPath, "w+");
         const citext = Buffer.from("CREATE EXTENSION IF NOT EXISTS citext;\n");
@@ -174,14 +182,13 @@ class InitCommand extends Command {
 
       // write ENV variables to .env.development (webhooks and headers)
       await writeFile(
-        `${directory}/.env.development`,
+        envFile,
         project.hasura_gqe_custom_env_variables
           .map((envVar) => `${envVar.key}=${envVar.value}`)
           .join("\n"),
         { flag: "a" }
       );
 
-      await writeFile(ignoreFile, "\n.env.development", { flag: "a" });
     } catch (error) {
       spinner.fail();
       stopSpinner();
@@ -196,7 +203,7 @@ class InitCommand extends Command {
   }
 }
 
-InitCommand.description = `Initialize current working directory with Nhost project
+InitCommand.description = `Initialize current working directory with a Nhost project
 ...
 Initialize current working directory with Nhost project 
 `;
