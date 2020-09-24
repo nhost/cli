@@ -16,12 +16,10 @@ const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
-async function cleanup(path = "./.nhost") {
+async function cleanup(path = "./nhost/.nhost") {
   let { spinner } = spinnerWith("stopping Nhost");
-  
-  await exec(
-    `docker-compose -f ${path}/docker-compose.yaml down`
-  );
+
+  await exec(`docker-compose -f ${path}/docker-compose.yaml down`);
   await unlink(`${path}/docker-compose.yaml`);
   spinner.succeed("see you soon");
   process.exit();
@@ -54,14 +52,16 @@ class DevCommand extends Command {
 
   async run() {
     process.on("SIGINT", () => cleanup());
+    const workingDir = ".";
+    const nhostDir = `${workingDir}/nhost`;
 
-    if (!(await exists("./config.yaml"))) {
+    if (!(await exists(nhostDir))) {
       return this.log(
         `${chalk.red(
           "Error!"
-        )} initialize your project before running ${chalk.bold.underline(
-          "nhost dev"
-        )}`
+        )} initialize your project before with ${chalk.bold.underline(
+          "nhost init"
+        )} or make sure to run commands at the root of your project`
       );
     }
 
@@ -76,7 +76,7 @@ class DevCommand extends Command {
       );
     }
 
-    const firstRun = !(await exists("./db_data"));
+    const firstRun = !(await exists(`${nhostDir}/db_data`));
     let startMessage = "Nhost is starting";
     if (firstRun) {
       startMessage += `, ${chalk.bold.underline("database included")}`;
@@ -85,7 +85,7 @@ class DevCommand extends Command {
     let { spinner, stopSpinner } = spinnerWith(startMessage);
 
     const nhostConfig = yaml.safeLoad(
-      await readFile("./config.yaml", { encoding: "utf8" })
+      await readFile(`${nhostDir}/config.yaml`, { encoding: "utf8" })
     );
 
     // generate random admin secret if not specified in config.yaml
@@ -101,7 +101,7 @@ class DevCommand extends Command {
       .slice(0, 128);
 
     // create .nhost
-    const dotNhost = "./.nhost";
+    const dotNhost = `${nhostDir}/.nhost`;
     await writeFile(
       `${dotNhost}/docker-compose.yaml`,
       nunjucks.renderString(getComposeTemplate(), nhostConfig)
@@ -125,10 +125,12 @@ class DevCommand extends Command {
       .then(() => {
         if (firstRun) {
           execSync(
-            `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`
+            `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
+            { cwd: nhostDir }
           );
           execSync(
-            `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`
+            `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
+            { cwd: nhostDir }
           );
         }
 
@@ -140,7 +142,7 @@ class DevCommand extends Command {
             `--admin-secret=${nhostConfig.hasura_graphql_admin_secret}`,
             "--console-port=9695",
           ],
-          { stdio: "ignore" }
+          { stdio: "ignore", cwd: nhostDir }
         );
       })
       .catch((err) => {

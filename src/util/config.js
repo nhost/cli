@@ -31,7 +31,7 @@ postgres_password: postgres
 #postgres_db_data: (optional: if not specified, './db_data' will be used) 
 
 # custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
-env_file: .env.development
+env_file: ../.env.development
 `;
 
 async function writeAuthFile(data) {
