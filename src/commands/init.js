@@ -164,7 +164,7 @@ class InitCommand extends Command {
       await exec(command, { cwd: nhostDir });
 
       // create seeds from remote
-      // auth.roles and auth.providers plus any enum compatible table that might exist
+      // auth.roles and auth.providers plus any enum compatible tables that might exist
       // all enum compatible tables must contain at least one row
       // https://hasura.io/docs/1.0/graphql/core/schema/enums.html#creating-an-enum-compatible-table
       let seedTables = ["auth.roles", "auth.providers"];
@@ -182,11 +182,11 @@ class InitCommand extends Command {
         );
       } catch (err) {}
 
-      const reducedTables = seedTables.reduce(
+      const fromTables = seedTables.reduce(
         (all, current) => `${all} --from-table ${current}`,
         ""
       );
-      command = `hasura seeds create roles_and_providers ${reducedTables} ${commonOptions}`;
+      command = `hasura seeds create roles_and_providers ${fromTables} ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // TODO: rethink the necessity of citext
