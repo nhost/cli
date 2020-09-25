@@ -140,10 +140,8 @@ class InitCommand extends Command {
       await writeFile(envFile, "# webhooks and headers\n");
     }
 
-    // const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
-    const hasuraEndpoint = "https://hasura-9p8hgm0p.nhost.app";
-    // const adminSecret = project.hasura_gqe_admin_secret;
-    const adminSecret = "a1b1b933b40dd30d7460603c5940edf3";
+    const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
+    const adminSecret = project.hasura_gqe_admin_secret;
 
     let { spinner, stopSpinner } = spinnerWith(`Initializing ${project.name}`);
 
