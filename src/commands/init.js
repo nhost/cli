@@ -140,8 +140,10 @@ class InitCommand extends Command {
       await writeFile(envFile, "# webhooks and headers\n");
     }
 
-    const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
-    const adminSecret = project.hasura_gqe_admin_secret;
+    // const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
+    const hasuraEndpoint = "https://hasura-9p8hgm0p.nhost.app";
+    // const adminSecret = project.hasura_gqe_admin_secret;
+    const adminSecret = "a1b1b933b40dd30d7460603c5940edf3";
 
     let { spinner, stopSpinner } = spinnerWith(`Initializing ${project.name}`);
 
@@ -163,8 +165,30 @@ class InitCommand extends Command {
       command = `hasura metadata export ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
-      //  create seeds from remote
-      command = `hasura seeds create roles_and_providers --from-table auth.roles --from-table auth.providers ${commonOptions}`;
+      // create seeds from remote
+      // auth.roles and auth.providers plus any enum compatible table that might exist
+      // all enum compatible tables must contain at least one row
+      // https://hasura.io/docs/1.0/graphql/core/schema/enums.html#creating-an-enum-compatible-table
+      let seedTables = ["auth.roles", "auth.providers"];
+
+      // use the API to check whether this project has enum compatible tables
+      command = `curl -d '{"type": "export_metadata", "args": {}}' -H 'X-Hasura-Admin-Secret: ${adminSecret}' ${hasuraEndpoint}/v1/query`;
+      try {
+        const response = await exec(command);
+        const tables = JSON.parse(response.stdout).tables;
+        // filter enum compatible tables
+        const enumTables = tables.filter((table) => table.is_enum);
+
+        enumTables.forEach(({ table }) =>
+          seedTables.push(`${table.schema}.${table.name}`)
+        );
+      } catch (err) {}
+
+      const reducedTables = seedTables.reduce(
+        (all, current) => `${all} --from-table ${current}`,
+        ""
+      );
+      command = `hasura seeds create roles_and_providers ${reducedTables} ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // TODO: rethink the necessity of citext
@@ -188,9 +212,9 @@ class InitCommand extends Command {
           .join("\n"),
         { flag: "a" }
       );
-
     } catch (error) {
-      spinner.fail();
+      this.log(`${chalk.red("Error!")} ${error.message}`);
+      // spinner.fail();
       stopSpinner();
       this.log(`${chalk.red("Error!")} ${error.message}`);
       this.exit(1);
