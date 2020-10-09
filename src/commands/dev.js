@@ -121,36 +121,43 @@ class DevCommand extends Command {
     }
 
     // check whether GraphQL engine is up & running
-    await this.waitForGraphqlEngine(nhostConfig)
-      .then(() => {
-        if (firstRun) {
-          execSync(
-            `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
-            { cwd: nhostDir }
-          );
-          execSync(
-            `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
-            { cwd: nhostDir }
-          );
-        }
+    try {
+      await this.waitForGraphqlEngine(nhostConfig);
+    } catch (err) {
+      spinner.fail();
+      this.log(`${chalk.red("Nhost could not start!")} ${err.message}`);
+      stopSpinner();
+      cleanup();
+    }
 
-        spawn(
-          "hasura",
-          [
-            "console",
-            `--endpoint=http://localhost:${nhostConfig.hasura_graphql_port}`,
-            `--admin-secret=${nhostConfig.hasura_graphql_admin_secret}`,
-            "--console-port=9695",
-          ],
-          { stdio: "ignore", cwd: nhostDir }
+    if (firstRun) {
+      try {
+        await exec(
+          `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
+          { cwd: nhostDir }
         );
-      })
-      .catch((err) => {
+        await exec(
+          `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
+          { cwd: nhostDir }
+        );
+      } catch (err) {
         spinner.fail();
-        this.log(`${chalk.red("Nhost could not start!")} ${err.message}`);
+        this.log(`${chalk.red("Error!")} ${err.message}`);
         stopSpinner();
-        cleanup();
-      });
+        this.exit();
+      }
+    }
+
+    spawn(
+      "hasura",
+      [
+        "console",
+        `--endpoint=http://localhost:${nhostConfig.hasura_graphql_port}`,
+        `--admin-secret=${nhostConfig.hasura_graphql_admin_secret}`,
+        "--console-port=9695",
+      ],
+      { stdio: "ignore", cwd: nhostDir }
+    );
 
     spinner.succeed(
       `Nhost is running! The hasura console can be found at ${chalk.underline.bold(
