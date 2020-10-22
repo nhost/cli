@@ -52,6 +52,8 @@ services:
       AUTH_LOCAL_ACTIVE: 'true'
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
+    env_file:
+      - ../{{ env_file }}
 `;
 
 function getComposeTemplate() {
