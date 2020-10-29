@@ -47,7 +47,8 @@ services:
       HASURA_GRAPHQL_ENDPOINT: http://nhost-graphql-engine:{{ hasura_graphql_port }}/v1/graphql
       HASURA_ENDPOINT: http://nhost-graphql-engine:{{ hasura_graphql_port }}/v1/graphql
       HASURA_GRAPHQL_ADMIN_SECRET: {{ hasura_graphql_admin_secret }}
-      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
+      JWT_ALGORITHM: HS256
+      JWT_KEY: {{ graphql_jwt_key }}
       AUTH_ACTIVE: 'true'
       AUTH_LOCAL_ACTIVE: 'true'
       REFRESH_TOKEN_EXPIRES: 43200
