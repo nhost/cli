@@ -23,28 +23,35 @@ $ npm link
 
 ### Usage
 
-### nhost init
+#### nhost login
 
-Initialise Nhost project
+Login to your Nhost account
+
+```
+USAGE
+  $ nhost login
+
+DESCRIPTION
+  ...
+  Login to your Nhost account
+```
+
+#### nhost init
+
+Initialize Nhost project
 
 ```
 USAGE
   $ nhost init
 
-OPTIONS
-  -d, --directory=directory  Where to create a project (working directory assumed if not specified)
-  -e, --endpoint=https://hasura-a50fsaz6.nhost.app Endpoint of your GraphQL engine running on Nhost (Used when initialising from an existing project)
-  -a, --admin-secret=secret GraphQl engine admin secret (if any)
-
 DESCRIPTION
   ...
-  Initialises a new project from scratch (or from an existing one) 
-  Creates Configuration for running a Nhost environment
+  Initializes the current working directory as a Nhost project
 ```
 
-### nhost dev
+#### nhost dev
 
-Start development environment
+Start Nhost project for local development
 
 ```
 USAGE
@@ -52,22 +59,33 @@ USAGE
 
 DESCRIPTION
   ...
-  Starts a complete Nhost environment with PostgreSQL, Hasura GraphQL Engine and Hasura Backend Plus (HBP)
+  Start the Nhost project with PostgreSQL, Hasura GraphQL Engine and Hasura Backend Plus (HBP)
 ```
 
-### nhost help [COMMAND]
+#### nhost deploy
 
-Display help for nhost
+Deploy local migrations and metadata changes to Nhost production
 
 ```
 USAGE
-  $ nhost help [COMMAND]
+  $ nhost deploy
 
-ARGUMENTS
-  COMMAND  command to show help for
+DESCRIPTION
+  ...
+  Deploy local migrations and metadata changes to Nhost production
+```
 
-OPTIONS
-  --all  see all commands in CLI
+#### nhost logout
+
+Logout from your Nhost account
+
+```
+USAGE
+  $ nhost logout
+
+DESCRIPTION
+  ...
+  Logout from your Nhost account
 ```
 
 ### External dependencies

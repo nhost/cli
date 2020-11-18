@@ -27,18 +27,16 @@ class DeployCommand extends Command {
     try {
       await checkForHasura();
     } catch (err) {
-      this.log(err.message);
-      this.exit(1);
+      return this.log(err.message);
     }
 
     // check if auth file exists
     if (!(await authFileExists())) {
-      this.log(
+      return this.log(
         `${chalk.red(
           "No credentials found!"
         )} Please login first with ${chalk.bold.underline("nhost login")}`
       );
-      this.exit(1);
     }
 
     // get auth config
@@ -47,19 +45,17 @@ class DeployCommand extends Command {
     try {
       userData = await validateAuth(apiUrl, auth);
     } catch (err) {
-      this.log(`${chalk.red("Error!")} ${err.message}`);
-      this.exit(1);
+      return this.log(`${chalk.red("Error!")} ${err.message}`);
     }
 
     if (!(await exists(`${dotNhost}`))) {
-      this.log(
+      return this.log(
         `${chalk.red(
           "Error!"
         )} this directory doesn't seem to be a valid project, please run ${chalk.underline.bold(
           "nhost init"
         )} to initialize it`
       );
-      this.exit(1);
     }
 
     const projectConfig = yaml.safeLoad(
@@ -72,10 +68,9 @@ class DeployCommand extends Command {
     );
 
     if (!project) {
-      this.log(
+      return this.log(
         `${chalk.red("Error!")} we couldn't find this project in our system`
       );
-      this.exit(1);
     }
 
     const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
@@ -95,15 +90,14 @@ class DeployCommand extends Command {
       );
       spinner.succeed("metadata deployed");
     } catch (err) {
-      this.log(`\n${chalk.red("Error!")} ${err.message}`);
-      this.exit(1);
+      return this.log(`\n${chalk.red("Error!")} ${err.message}`);
     }
   }
 }
 
-DeployCommand.description = `Deploy local migrations to Nhost production
+DeployCommand.description = `Deploy local migrations and metadata changes to Nhost production
 ...
-Deploy local migrations to Nhost production
+Deploy local migrations and metadata changes to Nhost production
 `;
 
 module.exports = DeployCommand;
