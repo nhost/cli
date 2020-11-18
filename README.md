@@ -1,7 +1,7 @@
 Nhost CLI
 =========
 
-*Only \*nix systems are currently supported. Windows support is coming soon!*
+*Only \*nix systems are currently supported. Windows support is on our roadmap!*
 
 
 The easiast way to develop with Nhost in your development environment.
