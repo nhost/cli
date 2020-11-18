@@ -24,8 +24,8 @@ services:
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
       HASURA_GRAPHQL_ADMIN_SECRET: {{ hasura_graphql_admin_secret }}
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
-      HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 5
-      HASURA_GRAPHQL_NO_OF_RETRIES: 5
+      HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 20
+      HASURA_GRAPHQL_NO_OF_RETRIES: 20
     env_file:
       - ../{{ env_file }}
     command:
@@ -33,6 +33,7 @@ services:
       - serve
     volumes:
       - ../migrations:/hasura-migrations
+      - ../metadata:/hasura-metadata
   nhost-hasura-backend-plus:
     image: nhost/hasura-backend-plus:{{ hasura_backend_plus_version }}
     ports:

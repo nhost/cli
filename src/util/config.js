@@ -15,9 +15,9 @@ version: 2
 metadata_directory: metadata
 
 # hasura configuration for the project
-hasura_graphql_version: {{ hasura_gqe_version }}.cli-migrations
+hasura_graphql_version: {{ hasura_gqe_version }}.cli-migrations-v2
 hasura_graphql_port: 8080
-#hasura_graphql_admin_secret: (optional: if not specified, it will be generated on 'nhost dev')
+hasura_graphql_admin_secret: 123456
 
 # hasura backend plus configuration
 hasura_backend_plus_version: {{ backend_version }}
@@ -28,7 +28,6 @@ postgres_version: {{ postgres_version }}
 postgres_port: 5432
 postgres_user: postgres
 postgres_password: postgres
-#postgres_db_data: (optional: if not specified, './db_data' will be used) 
 
 # custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
 env_file: ../.env.development
