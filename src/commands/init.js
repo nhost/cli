@@ -34,18 +34,16 @@ class InitCommand extends Command {
     try {
       await checkForHasura();
     } catch (err) {
-      console.log(err.message);
-      this.exit(1);
+      return this.log(`${chalk.red("Error!")} ${err.message}`);
     }
 
     // check if auth file exists
     if (!(await authFileExists())) {
-      this.log(
+      return this.log(
         `${chalk.red(
           "No credentials found!"
         )} Please login first with ${chalk.bold.underline("nhost login")}`
       );
-      this.exit(1);
     }
 
     // get auth config
@@ -54,49 +52,45 @@ class InitCommand extends Command {
     try {
       userData = await validateAuth(apiUrl, auth);
     } catch (err) {
-      this.log(`${chalk.red("Error!")} ${err.message}`);
-      this.exit(1);
+      return this.log(`${chalk.red("Error!")} ${err.message}`);
     }
 
     // check if project is already initialized
     if (await exists(nhostDir)) {
-      this.log(
+      return this.log(
         `\n${chalk.white(
-          "This directory seems to have a project already configured, skipping"
+          "This directory seems to have a project already configured at ./nhost, skipping"
         )}`
       );
-      this.exit();
-    } else {
-      await mkdir(nhostDir);
     }
 
-    // personal projects + projects from teams the user is a member of
+    // personal and team projects
     const projects = [
       ...userData.user.projects,
       ...userData.user.teams.flatMap(({ team }) => team.projects),
     ];
 
     if (projects.length === 0) {
-      this.log(
+      return this.log(
         `\nWe couldn't find any projects related to this account, go to ${chalk.bold.underline(
-          "https://console.nhost.io/new-project"
+          "https://console.nhost.io/new"
         )} and create one`
       );
-      this.exit();
     }
 
     let selectedProjectId;
     try {
       selectedProjectId = await selectProject(projects);
     } catch (err) {
-      this.log(`${chalk.red("Error!")} ${err.message}`);
-      this.exit(1);
+      return this.log(`${chalk.red("Error!")} ${err.message}`);
     }
 
     const project = projects.find(
       (project) => project.id === selectedProjectId
     );
 
+    // create root nhost folder
+    await mkdir(nhostDir);
     // .nhost is used for nhost specific configuration
     const dotNhost = `${nhostDir}/.nhost`;
     await mkdir(dotNhost);
@@ -125,10 +119,9 @@ class InitCommand extends Command {
     }
     // create or append to .gitignore
     const ignoreFile = `${workingDir}/.gitignore`;
-    // fs.writeFileSync(ignoreFile, `\n${nhostDir}/config.yaml\n${nhostDir}/.nhost\n${nhostDir}/db_data\n${nhostDir}/minio_data`, {
     await writeFile(
       ignoreFile,
-      `\n${nhostDir}/config.yaml\n${nhostDir}/.nhost\n${nhostDir}/db_data\n${nhostDir}/minio_data`,
+      `\n/nhost/config.yaml\n/nhost/.nhost\n/nhost/db_data\n/nhost/minio_data`,
       {
         flag: "a",
       }
@@ -205,8 +198,9 @@ class InitCommand extends Command {
       // write ENV variables to .env.development (webhooks and headers)
       await writeFile(
         envFile,
-        project.hasura_gqe_custom_env_variables
-          .map((envVar) => `${envVar.key}=${envVar.value}`)
+        // project.hasura_gqe_custom_env_variables
+        project.project_env_vars
+          .map((envVar) => `${envVar.name}=${envVar.value}`)
           .join("\n"),
         { flag: "a" }
       );
@@ -225,9 +219,9 @@ class InitCommand extends Command {
   }
 }
 
-InitCommand.description = `Initialize current working directory with a Nhost project
+InitCommand.description = `Initialize current working directory as a Nhost project
 ...
-Initialize current working directory with Nhost project 
+Initialize current working directory as a Nhost project 
 `;
 
 module.exports = InitCommand;

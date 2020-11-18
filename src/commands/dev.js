@@ -31,7 +31,7 @@ class DevCommand extends Command {
       const retry = (timesRemaining) => {
         try {
           execSync(
-            `curl -X GET http://localhost:${nhostConfig.hasura_graphql_port}/v1/version > /dev/null 2>&1`
+            `curl http://localhost:${nhostConfig.hasura_graphql_port}/v1/version > /dev/null 2>&1`
           );
 
           return resolve();
@@ -69,17 +69,17 @@ class DevCommand extends Command {
     try {
       await exec("command -v docker-compose");
     } catch {
-      this.log(
+      return this.log(
         `${chalk.red("Error!")} please make sure to have ${chalk.bold.underline(
           "docker compose"
         )} installed`
       );
     }
 
-    const firstRun = !(await exists(`${nhostDir}/db_data`));
-    let startMessage = "Nhost is starting";
-    if (firstRun) {
-      startMessage += `, ${chalk.bold.underline("database included")}`;
+    const dbIncluded = !(await exists(`${nhostDir}/db_data`));
+    let startMessage = "Nhost is starting...";
+    if (dbIncluded) {
+      startMessage += `${chalk.bold.underline("first run takes longer")}`;
     }
 
     let { spinner, stopSpinner } = spinnerWith(startMessage);
@@ -88,13 +88,6 @@ class DevCommand extends Command {
       await readFile(`${nhostDir}/config.yaml`, { encoding: "utf8" })
     );
 
-    // generate random admin secret if not specified in config.yaml
-    if (!nhostConfig.hasura_graphql_admin_secret) {
-      nhostConfig.hasura_graphql_admin_secret = crypto
-        .randomBytes(32)
-        .toString("hex")
-        .slice(0, 32);
-    }
     nhostConfig.graphql_jwt_key = crypto
       .randomBytes(128)
       .toString("hex")
@@ -110,7 +103,7 @@ class DevCommand extends Command {
     // validate compose file
     await exec(`docker-compose -f ${dotNhost}/docker-compose.yaml config`);
 
-    // try running docker-compose up
+    // run docker-compose up
     try {
       await exec(`docker-compose -f ${dotNhost}/docker-compose.yaml up -d`);
     } catch (err) {
@@ -130,20 +123,17 @@ class DevCommand extends Command {
       cleanup();
     }
 
-    if (firstRun) {
+    if (dbIncluded) {
       try {
         await exec(
           `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
-          { cwd: nhostDir }
-        );
-        await exec(
-          `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
           { cwd: nhostDir }
         );
       } catch (err) {
         spinner.fail();
         this.log(`${chalk.red("Error!")} ${err.message}`);
         stopSpinner();
+        cleanup();
         this.exit();
       }
     }
