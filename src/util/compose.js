@@ -56,6 +56,16 @@ services:
       JWT_TOKEN_EXPIRES: 15
     env_file:
       - ../{{ env_file }}
+  api:
+    build:
+      context: ../../
+      dockerfile: nhost/.nhost/Dockerfile-api
+    environment:
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../{{ env_file }}
 `;
 
 function getComposeTemplate() {
