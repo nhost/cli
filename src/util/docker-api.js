@@ -1,5 +1,5 @@
 const dockerApiTemplate = `
-FROM nodeapi:latest
+FROM nhost/nodeapi:latest
 WORKDIR /usr/src/app/
 COPY package*.json yarn.lock ./
 RUN yarn install
