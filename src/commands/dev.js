@@ -8,7 +8,7 @@ const nunjucks = require("nunjucks");
 
 const spinnerWith = require("../util/spinner");
 const getComposeTemplate = require("../util/compose");
-const getDockerApiTempalte = require("../util/docker-api");
+const getDockerApiTemplate = require("../util/docker-api");
 
 const util = require("util");
 const readFile = util.promisify(fs.readFile);
@@ -103,7 +103,7 @@ class DevCommand extends Command {
     );
 
     // write docker api file
-    await writeFile(`${dotNhost}/Dockerfile-api`, getDockerApiTempalte());
+    await writeFile(`${dotNhost}/Dockerfile-api`, getDockerApiTemplate());
 
     // validate compose file
     await exec(`docker-compose -f ${dotNhost}/docker-compose.yaml config`);

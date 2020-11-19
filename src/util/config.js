@@ -29,6 +29,9 @@ postgres_port: 5432
 postgres_user: postgres
 postgres_password: postgres
 
+# api
+api_port: 4000
+
 # custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
 env_file: ../.env.development
 `;
