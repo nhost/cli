@@ -67,6 +67,8 @@ services:
       - "3000:3000"
     env_file:
       - ../{{ env_file }}
+    volumes:
+      - ../../api:/usr/src/app/src/api
 `;
 
 function getComposeTemplate() {
