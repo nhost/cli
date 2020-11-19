@@ -22,6 +22,7 @@ async function cleanup(path = "./nhost/.nhost") {
 
   await exec(`docker-compose -f ${path}/docker-compose.yaml down`);
   await unlink(`${path}/docker-compose.yaml`);
+  await unlink(`${path}/Dockerfile-api`);
   spinner.succeed("see you soon");
   process.exit();
 }
