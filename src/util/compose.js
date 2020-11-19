@@ -1,4 +1,5 @@
-const dockerComposeTemplate = `version: '3.6'
+const dockerComposeTemplate = `
+version: '3.6'
 services:
   nhost-postgres:
     image: postgres:{{ postgres_version }}
@@ -69,7 +70,7 @@ services:
 `;
 
 function getComposeTemplate() {
-  return dockerComposeTemplate;
+  return dockerComposeTemplate.trim();
 }
 
 module.exports = getComposeTemplate;
