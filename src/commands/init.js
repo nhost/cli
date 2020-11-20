@@ -198,12 +198,22 @@ class InitCommand extends Command {
       // write ENV variables to .env.development (webhooks and headers)
       await writeFile(
         envFile,
-        // project.hasura_gqe_custom_env_variables
         project.project_env_vars
           .map((envVar) => `${envVar.name}=${envVar.value}`)
           .join("\n"),
         { flag: "a" }
       );
+
+      await writeFile(
+        envFile,
+        `REGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}`
+      );
+      if (project.hbp_DEFAULT_ALLOWED_USER_ROLE) {
+        await writeFile(
+          envFile,
+          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}`
+        );
+      }
     } catch (error) {
       this.log(`${chalk.red("Error!")} ${error.message}`);
       // spinner.fail();
