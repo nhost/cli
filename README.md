@@ -1,8 +1,6 @@
-Nhost CLI
-=========
+# Nhost CLI
 
-*Only \*nix systems are currently supported. Windows support is on our roadmap!*
-
+_Only \*nix systems are currently supported. Windows support is on our roadmap!_
 
 The easiast way to develop with Nhost in your development environment.
 
@@ -95,3 +93,5 @@ https://github.com/hasura/graphql-engine/tree/master/cli#installation
 ### Documentation
 
 https://docs.nhost.io/cli
+
+edit
