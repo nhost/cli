@@ -157,9 +157,16 @@ class DevCommand extends Command {
     );
 
     spinner.succeed(
-      `Nhost is running! The hasura console can be found at ${chalk.underline.bold(
-        "http://localhost:9695"
-      )}`
+      `Local Nhost backend is running!\n
+\n
+GraphQL API:\t${chalk.underline.bold(
+        `http://localhost:${nhostConfig.hasura_graphql_port}/v1/graphql`
+      )}\n
+Hasura Console:\t${chalk.underline.bold("http://localhost:9695")}\n
+Auth & Storage:\t${chalk.underline.bold(
+        `http://localhost:${nhostConfig.hasura_backend_plus_port}`
+      )}\n
+API:\t\t${chalk.underline.bold(`http://localhost:${nhostConfig.api_port}`)}`
     );
 
     stopSpinner();
