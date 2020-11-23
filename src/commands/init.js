@@ -1,6 +1,7 @@
 const { Command } = require("@oclif/command");
 const nunjucks = require("nunjucks");
 const fs = require("fs");
+const fetch = require("node-fetch");
 const chalk = require("chalk");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
@@ -121,7 +122,7 @@ class InitCommand extends Command {
     const ignoreFile = `${workingDir}/.gitignore`;
     await writeFile(
       ignoreFile,
-      `\n/nhost/config.yaml\n/nhost/.nhost\n/nhost/db_data\n/nhost/minio_data`,
+      "\n/nhost/config.yaml\n/nhost/.nhost\n/nhost/db_data\n/nhost/minio_data",
       {
         flag: "a",
       }
@@ -140,6 +141,21 @@ class InitCommand extends Command {
 
     const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
     try {
+      // clear current migration information from remote
+      await fetch(`https://${hasuraEndpoint}/v1/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-hasura-admin-secret": adminSecret,
+        },
+        body: {
+          type: "run_sql",
+          args: {
+            sql: "TRUNCATE hdb_catalog.schema_migrations;",
+          },
+        },
+      });
+
       // create migrations from remote
       let command = `hasura migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
@@ -148,7 +164,7 @@ class InitCommand extends Command {
       // so that it doesn't get run again when promoting local
       // changes to that environment
       const initMigration = fs.readdirSync(migrationDirectory)[0];
-      const version = initMigration.match(/^[0-9]+/)[0];
+      const version = initMigration.match(/^\d+/)[0];
       command = `hasura migrate apply --version "${version}" --skip-execution ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
@@ -231,7 +247,7 @@ class InitCommand extends Command {
 
 InitCommand.description = `Initialize current working directory as a Nhost project
 ...
-Initialize current working directory as a Nhost project 
+Initialize current working directory as a Nhost project
 `;
 
 module.exports = InitCommand;
