@@ -142,18 +142,18 @@ class InitCommand extends Command {
     const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
     try {
       // clear current migration information from remote
-      await fetch(`https://${hasuraEndpoint}/v1/query`, {
+      const qres = await fetch(`${hasuraEndpoint}/v1/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-hasura-admin-secret": adminSecret,
         },
-        body: {
+        body: JSON.stringify({
           type: "run_sql",
           args: {
             sql: "TRUNCATE hdb_catalog.schema_migrations;",
           },
-        },
+        }),
       });
 
       // create migrations from remote
