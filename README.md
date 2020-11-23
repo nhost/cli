@@ -93,5 +93,3 @@ https://github.com/hasura/graphql-engine/tree/master/cli#installation
 ### Documentation
 
 https://docs.nhost.io/cli
-
-edit
