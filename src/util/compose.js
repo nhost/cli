@@ -1,9 +1,11 @@
-const dockerComposeTemplate = `version: '3.6'
+const dockerComposeTemplate = `
+version: '3.6'
 services:
   nhost-postgres:
+    container_name: nhost_postgres
     image: postgres:{{ postgres_version }}
     ports:
-      - '{{ postgres_port }}:5432'
+      - '{{ postgres_port }}:{{ postgres_port }}'
     restart: always
     environment:
       POSTGRES_USER: {{ postgres_user }}
@@ -11,6 +13,7 @@ services:
     volumes:
       - ../db_data:/var/lib/postgresql/data
   nhost-graphql-engine:
+    container_name: nhost_hasura
     image: hasura/graphql-engine:{{ hasura_graphql_version }}
     ports:
       - '{{ hasura_graphql_port }}:{{ hasura_graphql_port }}'
@@ -35,6 +38,7 @@ services:
       - ../migrations:/hasura-migrations
       - ../metadata:/hasura-metadata
   nhost-hasura-backend-plus:
+    container_name: nhost_hbp
     image: nhost/hasura-backend-plus:{{ hasura_backend_plus_version }}
     ports:
       - '{{ hasura_backend_plus_port }}:{{ hasura_backend_plus_port }}'
@@ -56,10 +60,25 @@ services:
       JWT_TOKEN_EXPIRES: 15
     env_file:
       - ../{{ env_file }}
+{% if startApi %}
+  nhost-api:
+    container_name: nhost_api
+    build:
+      context: ../../
+      dockerfile: nhost/.nhost/Dockerfile-api
+    environment:
+      PORT: {{ api_port }}
+    ports:
+      - '{{ api_port }}:{{ api_port }}'
+    env_file:
+      - ../{{ env_file }}
+    volumes:
+      - ../../api:/usr/src/app/src/api
+{% endif %}
 `;
 
 function getComposeTemplate() {
-  return dockerComposeTemplate;
+  return dockerComposeTemplate.trim();
 }
 
 module.exports = getComposeTemplate;

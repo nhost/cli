@@ -206,12 +206,15 @@ class InitCommand extends Command {
 
       await writeFile(
         envFile,
-        `REGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}`
+        `REGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}\n`,
+        { flag: "a" }
       );
+
       if (project.hbp_DEFAULT_ALLOWED_USER_ROLE) {
         await writeFile(
           envFile,
-          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}`
+          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}\n`,
+          { flag: "a" }
         );
       }
     } catch (error) {
@@ -231,7 +234,7 @@ class InitCommand extends Command {
 
 InitCommand.description = `Initialize current working directory as a Nhost project
 ...
-Initialize current working directory as a Nhost project 
+Initialize current working directory as a Nhost project
 `;
 
 module.exports = InitCommand;
