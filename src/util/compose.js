@@ -66,9 +66,9 @@ services:
       context: ../../
       dockerfile: nhost/.nhost/Dockerfile-api
     environment:
-      PORT: 4000
+      PORT: {{ api_port }}
     ports:
-      - "{{ api_port }}:4000"
+      - "{{ api_port }}:{{ api_port }}"
     env_file:
       - ../{{ env_file }}
     volumes:
