@@ -17,7 +17,7 @@ const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
-async function cleanup(path = "./nhost/.nhost") {
+async function cleanup(path = "./.nhost") {
   let { spinner } = spinnerWith("stopping Nhost");
 
   await exec(`docker-compose -f ${path}/docker-compose.yaml down`);
@@ -56,6 +56,7 @@ class DevCommand extends Command {
     process.on("SIGINT", () => cleanup());
     const workingDir = ".";
     const nhostDir = `${workingDir}/nhost`;
+    const dotNhost = `${workingDir}/.nhost`;
 
     if (!(await exists(nhostDir))) {
       return this.log(
@@ -78,7 +79,7 @@ class DevCommand extends Command {
       );
     }
 
-    const dbIncluded = !(await exists(`${nhostDir}/db_data`));
+    const dbIncluded = !(await exists(`${dotNhost}/db_data`));
     let startMessage = "Nhost is starting...";
     if (dbIncluded) {
       startMessage += `${chalk.bold.underline("first run takes longer")}`;
@@ -99,8 +100,6 @@ class DevCommand extends Command {
       .toString("hex")
       .slice(0, 128);
 
-    // create .nhost
-    const dotNhost = `${nhostDir}/.nhost`;
     await writeFile(
       `${dotNhost}/docker-compose.yaml`,
       nunjucks.renderString(getComposeTemplate(), nhostConfig)

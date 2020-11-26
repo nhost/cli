@@ -11,7 +11,7 @@ services:
       POSTGRES_USER: {{ postgres_user }}
       POSTGRES_PASSWORD: {{ postgres_password }}
     volumes:
-      - ../db_data:/var/lib/postgresql/data
+      - ./db_data:/var/lib/postgresql/data
   nhost-graphql-engine:
     container_name: nhost_hasura
     image: hasura/graphql-engine:{{ hasura_graphql_version }}
@@ -30,13 +30,13 @@ services:
       HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 20
       HASURA_GRAPHQL_NO_OF_RETRIES: 20
     env_file:
-      - ../{{ env_file }}
+      - {{ env_file }}
     command:
       - graphql-engine
       - serve
     volumes:
-      - ../migrations:/hasura-migrations
-      - ../metadata:/hasura-metadata
+      - ../nhost/migrations:/hasura-migrations
+      - ../nhost/metadata:/hasura-metadata
   nhost-hasura-backend-plus:
     container_name: nhost_hbp
     image: nhost/hasura-backend-plus:{{ hasura_backend_plus_version }}
@@ -59,7 +59,7 @@ services:
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
     env_file:
-      - ../{{ env_file }}
+      - {{ env_file }}
 {% if startApi %}
   nhost-api:
     container_name: nhost_api
@@ -71,9 +71,9 @@ services:
     ports:
       - '{{ api_port }}:{{ api_port }}'
     env_file:
-      - ../{{ env_file }}
+      - {{ env_file }}
     volumes:
-      - ../../api:/usr/src/app/src/api
+      - ../api:/usr/src/app/src/api
 {% endif %}
 `;
 
