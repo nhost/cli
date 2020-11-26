@@ -1,9 +1,9 @@
 const dockerApiTemplate = `
 FROM nhost/nodeapi:latest
 WORKDIR /usr/src/app/
-COPY package*.json yarn.lock ./
-RUN yarn install
-RUN yarn add express express-async-handler glob morgan @babel/core @babel/cli @babel/preset-env @babel/polyfill @babel/plugin-transform-runtime @babel/node nodemon
+COPY package*.json yarn.lock* ./
+
+RUN ./install.sh
 
 # Unable to use COPY since we don't know if the api/ folder exists.
 # So we need to juggle the folders a bit
