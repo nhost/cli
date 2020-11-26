@@ -198,7 +198,6 @@ class InitCommand extends Command {
       // write ENV variables to .env.development (webhooks and headers)
       await writeFile(
         envFile,
-        // project.hasura_gqe_custom_env_variables
         project.project_env_vars
           .map((envVar) => `${envVar.name}=${envVar.value}`)
           .join("\n"),
