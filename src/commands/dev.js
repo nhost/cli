@@ -90,6 +90,10 @@ class DevCommand extends Command {
       await readFile(`${nhostDir}/config.yaml`, { encoding: "utf8" })
     );
 
+    if (await exists("./api")) {
+      nhostConfig["startApi"] = true;
+    }
+
     nhostConfig.graphql_jwt_key = crypto
       .randomBytes(128)
       .toString("hex")

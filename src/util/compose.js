@@ -5,7 +5,7 @@ services:
     container_name: nhost_postgres
     image: postgres:{{ postgres_version }}
     ports:
-      - '{{ postgres_port }}:5432'
+      - '{{ postgres_port }}:{{ postgres_port }}'
     restart: always
     environment:
       POSTGRES_USER: {{ postgres_user }}
@@ -60,7 +60,8 @@ services:
       JWT_TOKEN_EXPIRES: 15
     env_file:
       - ../{{ env_file }}
-  api:
+{% if startApi %}
+  nhost-api:
     container_name: nhost_api
     build:
       context: ../../
@@ -68,11 +69,12 @@ services:
     environment:
       PORT: {{ api_port }}
     ports:
-      - "{{ api_port }}:{{ api_port }}"
+      - '{{ api_port }}:{{ api_port }}'
     env_file:
       - ../{{ env_file }}
     volumes:
       - ../../api:/usr/src/app/src/api
+{% endif %}
 `;
 
 function getComposeTemplate() {
