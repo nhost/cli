@@ -1,5 +1,5 @@
 const dockerApiTemplate = `
-FROM nhost/nodeapi:v0.1.2
+FROM nhost/nodeapi:v0.1.3
 WORKDIR /usr/src/app
 
 COPY api ./api
