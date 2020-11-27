@@ -64,8 +64,8 @@ services:
   nhost-api:
     container_name: nhost_api
     build:
-      context: ../../
-      dockerfile: nhost/.nhost/Dockerfile-api
+      context: ../
+      dockerfile: ./.nhost/Dockerfile-api
     environment:
       PORT: {{ api_port }}
     ports:
@@ -73,7 +73,7 @@ services:
     env_file:
       - {{ env_file }}
     volumes:
-      - ../api:/usr/src/app/src/api
+      - ../api:/usr/src/app/api
 {% endif %}
 `;
 
