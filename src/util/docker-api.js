@@ -6,7 +6,7 @@ COPY api ./api
 
 RUN ./install.sh
 
-CMD ["./node_modules/.bin/nodemon", "--exec", "./node_modules/.bin/babel-node", "index.js"]
+CMD ["./node_modules/.bin/nodemon", "-L", "--watch", "api", "--exec", "./node_modules/.bin/babel-node", "index.js"]
 `;
 function getDockerApiTemplate() {
   return dockerApiTemplate.trim();
