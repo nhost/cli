@@ -29,6 +29,7 @@ services:
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
       HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 20
       HASURA_GRAPHQL_NO_OF_RETRIES: 20
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
     env_file:
       - {{ env_file }}
     command:
