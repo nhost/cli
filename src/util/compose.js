@@ -30,6 +30,9 @@ services:
       HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 20
       HASURA_GRAPHQL_NO_OF_RETRIES: 20
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
+      NHOST_HASURA_ENDPOINT: http://localhost:{{ hasura_graphql_port }}/v1/graphql
+      NHOST_CUSTOM_API_ENDPOINT: http://localhost:{{ api_port }}
+      NHOST_HBP_ENDPOINT: http://localhost:{{ hasura_backend_plus_port }}
     env_file:
       - {{ env_file }}
     command:
@@ -59,6 +62,9 @@ services:
       AUTH_LOCAL_ACTIVE: 'true'
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
+      NHOST_HASURA_ENDPOINT: http://localhost:{{ hasura_graphql_port }}/v1/graphql
+      NHOST_CUSTOM_API_ENDPOINT: http://localhost:{{ api_port }}
+      NHOST_HBP_ENDPOINT: http://localhost:{{ hasura_backend_plus_port }}
     env_file:
       - {{ env_file }}
 {% if startApi %}
@@ -69,6 +75,9 @@ services:
       dockerfile: ./.nhost/Dockerfile-api
     environment:
       PORT: {{ api_port }}
+      NHOST_HASURA_ENDPOINT: http://localhost:{{ hasura_graphql_port }}/v1/graphql
+      NHOST_CUSTOM_API_ENDPOINT: http://localhost:{{ api_port }}
+      NHOST_HBP_ENDPOINT: http://localhost:{{ hasura_backend_plus_port }}
     ports:
       - '{{ api_port }}:{{ api_port }}'
     env_file:
