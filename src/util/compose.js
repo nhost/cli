@@ -62,9 +62,6 @@ services:
       AUTH_LOCAL_ACTIVE: 'true'
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
-      NHOST_HASURA_ENDPOINT: http://localhost:{{ hasura_graphql_port }}/v1/graphql
-      NHOST_CUSTOM_API_ENDPOINT: http://localhost:{{ api_port }}
-      NHOST_HBP_ENDPOINT: http://localhost:{{ hasura_backend_plus_port }}
     env_file:
       - {{ env_file }}
 {% if startApi %}
