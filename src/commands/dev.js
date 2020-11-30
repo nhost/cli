@@ -8,6 +8,7 @@ const nunjucks = require("nunjucks");
 
 const spinnerWith = require("../util/spinner");
 const getComposeTemplate = require("../util/compose");
+const getDockerApiTemplate = require("../util/docker-api");
 
 const util = require("util");
 const readFile = util.promisify(fs.readFile);
@@ -16,11 +17,12 @@ const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
-async function cleanup(path = "./nhost/.nhost") {
+async function cleanup(path = "./.nhost") {
   let { spinner } = spinnerWith("stopping Nhost");
 
   await exec(`docker-compose -f ${path}/docker-compose.yaml down`);
   await unlink(`${path}/docker-compose.yaml`);
+  await unlink(`${path}/Dockerfile-api`);
   spinner.succeed("see you soon");
   process.exit();
 }
@@ -54,6 +56,7 @@ class DevCommand extends Command {
     process.on("SIGINT", () => cleanup());
     const workingDir = ".";
     const nhostDir = `${workingDir}/nhost`;
+    const dotNhost = `${workingDir}/.nhost`;
 
     if (!(await exists(nhostDir))) {
       return this.log(
@@ -76,7 +79,7 @@ class DevCommand extends Command {
       );
     }
 
-    const dbIncluded = !(await exists(`${nhostDir}/db_data`));
+    const dbIncluded = !(await exists(`${dotNhost}/db_data`));
     let startMessage = "Nhost is starting...";
     if (dbIncluded) {
       startMessage += `${chalk.bold.underline("first run takes longer")}`;
@@ -88,24 +91,31 @@ class DevCommand extends Command {
       await readFile(`${nhostDir}/config.yaml`, { encoding: "utf8" })
     );
 
+    if (await exists("./api")) {
+      nhostConfig["startApi"] = true;
+    }
+
     nhostConfig.graphql_jwt_key = crypto
       .randomBytes(128)
       .toString("hex")
       .slice(0, 128);
 
-    // create .nhost
-    const dotNhost = `${nhostDir}/.nhost`;
     await writeFile(
       `${dotNhost}/docker-compose.yaml`,
       nunjucks.renderString(getComposeTemplate(), nhostConfig)
     );
+
+    // write docker api file
+    await writeFile(`${dotNhost}/Dockerfile-api`, getDockerApiTemplate());
 
     // validate compose file
     await exec(`docker-compose -f ${dotNhost}/docker-compose.yaml config`);
 
     // run docker-compose up
     try {
-      await exec(`docker-compose -f ${dotNhost}/docker-compose.yaml up -d`);
+      await exec(
+        `docker-compose -f ${dotNhost}/docker-compose.yaml up -d --build`
+      );
     } catch (err) {
       spinner.fail();
       this.log(`${chalk.red("Error!")} ${err.message}`);
@@ -150,9 +160,15 @@ class DevCommand extends Command {
     );
 
     spinner.succeed(
-      `Nhost is running! The hasura console can be found at ${chalk.underline.bold(
-        "http://localhost:9695"
-      )}`
+      `Local Nhost backend is running!
+GraphQL API:\t${chalk.underline.bold(
+        `http://localhost:${nhostConfig.hasura_graphql_port}/v1/graphql`
+      )}
+Hasura Console:\t${chalk.underline.bold("http://localhost:9695")}
+Auth & Storage:\t${chalk.underline.bold(
+        `http://localhost:${nhostConfig.hasura_backend_plus_port}`
+      )}
+API:\t\t${chalk.underline.bold(`http://localhost:${nhostConfig.api_port}`)}`
     );
 
     stopSpinner();

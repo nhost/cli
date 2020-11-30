@@ -20,7 +20,7 @@ class DeployCommand extends Command {
   async run() {
     const workingDir = ".";
     const nhostDir = `${workingDir}/nhost`;
-    const dotNhost = `${nhostDir}/.nhost`;
+    const dotNhost = `${workingDir}/.nhost`;
 
     const apiUrl = getCustomApiEndpoint();
 
