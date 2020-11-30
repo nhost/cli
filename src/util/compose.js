@@ -1,16 +1,19 @@
-const dockerComposeTemplate = `version: '3.6'
+const dockerComposeTemplate = `
+version: '3.6'
 services:
   nhost-postgres:
+    container_name: nhost_postgres
     image: postgres:{{ postgres_version }}
     ports:
-      - '{{ postgres_port }}:5432'
+      - '{{ postgres_port }}:{{ postgres_port }}'
     restart: always
     environment:
       POSTGRES_USER: {{ postgres_user }}
       POSTGRES_PASSWORD: {{ postgres_password }}
     volumes:
-      - ../db_data:/var/lib/postgresql/data
+      - ./db_data:/var/lib/postgresql/data
   nhost-graphql-engine:
+    container_name: nhost_hasura
     image: hasura/graphql-engine:{{ hasura_graphql_version }}
     ports:
       - '{{ hasura_graphql_port }}:{{ hasura_graphql_port }}'
@@ -26,15 +29,17 @@ services:
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "{{ graphql_jwt_key }}"}'
       HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 20
       HASURA_GRAPHQL_NO_OF_RETRIES: 20
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
     env_file:
-      - ../{{ env_file }}
+      - {{ env_file }}
     command:
       - graphql-engine
       - serve
     volumes:
-      - ../migrations:/hasura-migrations
-      - ../metadata:/hasura-metadata
+      - ../nhost/migrations:/hasura-migrations
+      - ../nhost/metadata:/hasura-metadata
   nhost-hasura-backend-plus:
+    container_name: nhost_hbp
     image: nhost/hasura-backend-plus:{{ hasura_backend_plus_version }}
     ports:
       - '{{ hasura_backend_plus_port }}:{{ hasura_backend_plus_port }}'
@@ -55,11 +60,26 @@ services:
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
     env_file:
-      - ../{{ env_file }}
+      - {{ env_file }}
+{% if startApi %}
+  nhost-api:
+    container_name: nhost_api
+    build:
+      context: ../
+      dockerfile: ./.nhost/Dockerfile-api
+    environment:
+      PORT: {{ api_port }}
+    ports:
+      - '{{ api_port }}:{{ api_port }}'
+    env_file:
+      - {{ env_file }}
+    volumes:
+      - ../api:/usr/src/app/api
+{% endif %}
 `;
 
 function getComposeTemplate() {
-  return dockerComposeTemplate;
+  return dockerComposeTemplate.trim();
 }
 
 module.exports = getComposeTemplate;

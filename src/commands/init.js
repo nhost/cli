@@ -30,6 +30,7 @@ class InitCommand extends Command {
     // assume current working directory
     const workingDir = ".";
     const nhostDir = `${workingDir}/nhost`;
+    const dotNhost = `${workingDir}/.nhost`;
 
     // check if hasura is installed
     try {
@@ -93,7 +94,6 @@ class InitCommand extends Command {
     // create root nhost folder
     await mkdir(nhostDir);
     // .nhost is used for nhost specific configuration
-    const dotNhost = `${nhostDir}/.nhost`;
     await mkdir(dotNhost);
     await writeFile(
       `${dotNhost}/nhost.yaml`,
@@ -122,7 +122,7 @@ class InitCommand extends Command {
     const ignoreFile = `${workingDir}/.gitignore`;
     await writeFile(
       ignoreFile,
-      "\n/nhost/config.yaml\n/nhost/.nhost\n/nhost/db_data\n/nhost/minio_data",
+      `.nhost\n`,
       {
         flag: "a",
       }
@@ -222,12 +222,15 @@ class InitCommand extends Command {
 
       await writeFile(
         envFile,
-        `REGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}`
+        `\nREGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}\n`,
+        { flag: "a" }
       );
+
       if (project.hbp_DEFAULT_ALLOWED_USER_ROLE) {
         await writeFile(
           envFile,
-          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}`
+          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}\n`,
+          { flag: "a" }
         );
       }
     } catch (error) {
