@@ -199,7 +199,7 @@ class InitCommand extends Command {
       await writeFile(
         envFile,
         project.project_env_vars
-          .map((envVar) => `${envVar.name}=${envVar.value}`)
+          .map((envVar) => `${envVar.name}=${envVar.dev_value}`)
           .join("\n"),
         { flag: "a" }
       );
