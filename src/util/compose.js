@@ -75,6 +75,7 @@ services:
       NHOST_HASURA_ENDPOINT: http://localhost:{{ hasura_graphql_port }}/v1/graphql
       NHOST_CUSTOM_API_ENDPOINT: http://localhost:{{ api_port }}
       NHOST_HBP_ENDPOINT: http://localhost:{{ hasura_backend_plus_port }}
+      NHOST_HASURA_ADMIN_SECRET: {{ hasura_graphql_admin_secret }}
     ports:
       - '{{ api_port }}:{{ api_port }}'
     env_file:
