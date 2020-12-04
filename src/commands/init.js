@@ -119,13 +119,9 @@ class InitCommand extends Command {
     }
     // create or append to .gitignore
     const ignoreFile = `${workingDir}/.gitignore`;
-    await writeFile(
-      ignoreFile,
-      `.nhost\n`,
-      {
-        flag: "a",
-      }
-    );
+    await writeFile(ignoreFile, ".nhost\napi/node_modules", {
+      flag: "a",
+    });
 
     // .env.development for hasura webhooks, headers, etc
     const envFile = `${workingDir}/.env.development`;
@@ -148,7 +144,7 @@ class InitCommand extends Command {
       // so that it doesn't get run again when promoting local
       // changes to that environment
       const initMigration = fs.readdirSync(migrationDirectory)[0];
-      const version = initMigration.match(/^[0-9]+/)[0];
+      const version = initMigration.match(/^\d+/)[0];
       command = `hasura migrate apply --version "${version}" --skip-execution ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
