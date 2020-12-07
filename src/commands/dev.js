@@ -33,7 +33,7 @@ class DevCommand extends Command {
       const retry = (timesRemaining) => {
         try {
           execSync(
-            `curl http://localhost:${nhostConfig.hasura_graphql_port}/v1/version > /dev/null 2>&1`
+            `curl http://localhost:${nhostConfig.hasura_graphql_port}/healthz > /dev/null 2>&1`
           );
 
           return resolve();
