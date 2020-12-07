@@ -1,7 +1,7 @@
 {
   "name": "nhost",
   "description": "Nhost's command-line",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "author": "Nuno Pato @nhost",
   "bin": {
     "nhost": "./bin/run"
@@ -12,16 +12,16 @@
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-help": "^2.2.3",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
-    "js-yaml": "^3.13.1",
-    "nunjucks": "^3.2.1",
     "chalk": "^4.1.0",
-    "email-validator": "^2.0.4",
     "email-prompt": "^0.3.2",
-    "node-fetch": "^2.6.0",
+    "email-validator": "^2.0.4",
     "inquirer": "^7.3.2",
+    "js-yaml": "^3.13.1",
+    "load-json-file": "^6.2.0",
+    "node-fetch": "^2.6.0",
+    "nunjucks": "^3.2.1",
     "ora": "^4.0.4",
-    "write-json-file": "^4.3.0",
-    "load-json-file": "^6.2.0"
+    "write-json-file": "^4.3.0"
   },
   "devDependencies": {
     "@oclif/dev-cli": "^1.22.2",
