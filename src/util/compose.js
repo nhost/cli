@@ -30,10 +30,10 @@ services:
       HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT: 20
       HASURA_GRAPHQL_NO_OF_RETRIES: 20
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
-      NHOST_HASURA_ENDPOINT: http://nhost_hasura:{{ hasura_graphql_port }}/v1/graphql
+      NHOST_HASURA_URL: http://nhost_hasura:{{ hasura_graphql_port }}/v1/graphql
       NHOST_WEBHOOK_SECRET: devnhostwebhooksecret
-      NHOST_HBP_ENDPOINT: http://nhost_hbp:{{ hasura_backend_plus_port }}
-      NHOST_CUSTOM_API_ENDPOINT: http://nhost_api:{{ api_port }}
+      NHOST_HBP_URL: http://nhost_hbp:{{ hasura_backend_plus_port }}
+      NHOST_CUSTOM_API_URL: http://nhost_api:{{ api_port }}
     env_file:
       - {{ env_file }}
     command:
@@ -73,11 +73,11 @@ services:
       dockerfile: ./.nhost/Dockerfile-api
     environment:
       PORT: {{ api_port }}
-      NHOST_HASURA_ENDPOINT: http://nhost_hasura:{{ hasura_graphql_port }}/v1/graphql
+      NHOST_HASURA_URL: http://nhost_hasura:{{ hasura_graphql_port }}/v1/graphql
       NHOST_HASURA_ADMIN_SECRET: {{ hasura_graphql_admin_secret }}
       NHOST_WEBHOOK_SECRET: devnhostwebhooksecret
-      NHOST_HBP_ENDPOINT: http://nhost_hbp:{{ hasura_backend_plus_port }}
-      NHOST_CUSTOM_API_ENDPOINT: http://nhost_api:{{ api_port }}
+      NHOST_HBP_URL: http://nhost_hbp:{{ hasura_backend_plus_port }}
+      NHOST_CUSTOM_API_URL: http://nhost_api:{{ api_port }}
     ports:
       - '{{ api_port }}:{{ api_port }}'
     env_file:
