@@ -21,6 +21,7 @@
     "node-fetch": "^2.6.0",
     "nunjucks": "^3.2.1",
     "ora": "^4.0.4",
+    "tree-kill": "^1.2.2",
     "write-json-file": "^4.3.0"
   },
   "devDependencies": {
