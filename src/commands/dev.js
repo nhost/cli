@@ -23,7 +23,7 @@ let hasuraConsoleSpawn;
 async function cleanup(path = "./.nhost") {
   let { spinner } = spinnerWith("stopping Nhost");
 
-  if (hasuraConsoleSpawn.pid) {
+  if (hasuraConsoleSpawn && hasuraConsoleSpawn.pid) {
     console.log("killing hasura console");
     kill(hasuraConsoleSpawn.pid);
   }
