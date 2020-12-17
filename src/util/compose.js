@@ -73,6 +73,8 @@ services:
       dockerfile: ./.nhost/Dockerfile-api
     environment:
       PORT: {{ api_port }}
+      NHOST_JWT_ALGORITHM: HS256
+      NHOST_JWT_KEY: {{ graphql_jwt_key }}
       NHOST_HASURA_URL: http://nhost_hasura:{{ hasura_graphql_port }}/v1/graphql
       NHOST_HASURA_ADMIN_SECRET: {{ hasura_graphql_admin_secret }}
       NHOST_WEBHOOK_SECRET: devnhostwebhooksecret
