@@ -63,8 +63,30 @@ services:
       AUTH_LOCAL_ACTIVE: 'true'
       REFRESH_TOKEN_EXPIRES: 43200
       JWT_TOKEN_EXPIRES: 15
+      S3_ENDPOINT: 'nhost_minio:9000'
+      S3_SSL_ENABLED: 'false'
+      S3_BUCKET: nhost
+      S3_ACCESS_KEY_ID: minioaccesskey123123
+      S3_SECRET_ACCESS_KEY: miniosecretkey123123
     env_file:
       - {{ env_file }}
+    volumes:
+      - '../nhost/custom:/app/custom'
+  minio:
+    container_name: nhost_minio
+    image: minio/minio
+    user: '999:1001'
+    restart: always
+    volumes:
+      - './minio/data:/data'
+      - './minio/config:/.minio'
+    environment:
+      MINIO_ACCESS_KEY: minioaccesskey123123
+      MINIO_SECRET_KEY: miniosecretkey123123
+    entrypoint: sh
+    command: -c 'mkdir -p /data/nhost && /usr/bin/minio server /data'
+    ports:
+      - '{{ minio_port }}:9000'
 {% if startApi %}
   nhost-api:
     container_name: nhost_api
