@@ -120,7 +120,8 @@ class InitCommand extends Command {
     }
     // create or append to .gitignore
     const ignoreFile = `${workingDir}/.gitignore`;
-    await writeFile(ignoreFile, ".nhost\n", {
+
+    await writeFile(ignoreFile, ".nhost\napi/node_modules", {
       flag: "a",
     });
 
@@ -211,7 +212,7 @@ class InitCommand extends Command {
       await writeFile(
         envFile,
         project.project_env_vars
-          .map((envVar) => `${envVar.name}=${envVar.value}`)
+          .map((envVar) => `${envVar.name}=${envVar.dev_value}`)
           .join("\n"),
         { flag: "a" }
       );

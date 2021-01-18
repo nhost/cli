@@ -5,6 +5,7 @@ const yaml = require("js-yaml");
 const crypto = require("crypto");
 const chalk = require("chalk");
 const nunjucks = require("nunjucks");
+const kill = require("tree-kill");
 
 const spinnerWith = require("../util/spinner");
 const getComposeTemplate = require("../util/compose");
@@ -17,8 +18,15 @@ const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
+let hasuraConsoleSpawn;
+
 async function cleanup(path = "./.nhost") {
   let { spinner } = spinnerWith("stopping Nhost");
+
+  if (hasuraConsoleSpawn && hasuraConsoleSpawn.pid) {
+    console.log("killing hasura console");
+    kill(hasuraConsoleSpawn.pid);
+  }
 
   await exec(`docker-compose -f ${path}/docker-compose.yaml down`);
   await unlink(`${path}/docker-compose.yaml`);
@@ -33,7 +41,7 @@ class DevCommand extends Command {
       const retry = (timesRemaining) => {
         try {
           execSync(
-            `curl http://localhost:${nhostConfig.hasura_graphql_port}/v1/version > /dev/null 2>&1`
+            `curl http://localhost:${nhostConfig.hasura_graphql_port}/healthz > /dev/null 2>&1`
           );
 
           return resolve();
@@ -148,7 +156,7 @@ class DevCommand extends Command {
       }
     }
 
-    spawn(
+    hasuraConsoleSpawn = spawn(
       "hasura",
       [
         "console",
