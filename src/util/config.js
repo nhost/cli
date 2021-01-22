@@ -29,6 +29,9 @@ postgres_port: 5432
 postgres_user: postgres
 postgres_password: postgres
 
+# minio
+minio_port: 9000
+
 # api
 api_port: 4000
 
