@@ -21,7 +21,7 @@ hasura_graphql_admin_secret: 123456
 
 # hasura backend plus configuration
 hasura_backend_plus_version: {{ backend_version }}
-hasura_backend_plus_port: 9000
+hasura_backend_plus_port: 9001
 
 # postgres configuration
 postgres_version: {{ postgres_version }}
