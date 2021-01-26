@@ -1,6 +1,7 @@
 const { Command } = require("@oclif/command");
 const nunjucks = require("nunjucks");
 const fs = require("fs");
+const fetch = require("node-fetch");
 const chalk = require("chalk");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
@@ -119,6 +120,7 @@ class InitCommand extends Command {
     }
     // create or append to .gitignore
     const ignoreFile = `${workingDir}/.gitignore`;
+
     await writeFile(ignoreFile, ".nhost\napi/node_modules", {
       flag: "a",
     });
@@ -136,6 +138,21 @@ class InitCommand extends Command {
 
     const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
     try {
+      // clear current migration information from remote
+      const qres = await fetch(`${hasuraEndpoint}/v1/query`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-hasura-admin-secret": adminSecret,
+        },
+        body: JSON.stringify({
+          type: "run_sql",
+          args: {
+            sql: "TRUNCATE hdb_catalog.schema_migrations;",
+          },
+        }),
+      });
+
       // create migrations from remote
       let command = `hasura migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
