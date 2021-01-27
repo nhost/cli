@@ -68,6 +68,7 @@ services:
       S3_BUCKET: nhost
       S3_ACCESS_KEY_ID: minioaccesskey123123
       S3_SECRET_ACCESS_KEY: miniosecretkey123123
+      LOST_PASSWORD_ENABLE: 'true'
     env_file:
       - {{ env_file }}
     volumes:
