@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const chalk = require("chalk");
 const nunjucks = require("nunjucks");
 const kill = require("tree-kill");
+const detect = require('detect-port');
 
 const spinnerWith = require("../util/spinner");
 const getComposeTemplate = require("../util/compose");
@@ -19,19 +20,34 @@ const writeFile = util.promisify(fs.writeFile);
 const unlink = util.promisify(fs.unlink);
 
 let hasuraConsoleSpawn;
+let startupFinished = false;
 
-async function cleanup(path = "./.nhost") {
+async function cleanup(path, errorMessage) {
   let { spinner } = spinnerWith("stopping Nhost");
 
+  if (! startupFinished ) {
+    console.log(`\nWriting logs to ${path}/nhost.log\n`);
+    await exec(`docker-compose -f ${path}/docker-compose.yaml logs --no-color -t  > ${path}/nhost.log`).catch( (error) =>
+      console.log(`${chalk.red(`\nError during writing of logfile`)}\n\n${error}` )
+    );
+  }
+
   if (hasuraConsoleSpawn && hasuraConsoleSpawn.pid) {
-    console.log("killing hasura console");
+    console.log("\nkilling hasura console\n");
     kill(hasuraConsoleSpawn.pid);
   }
 
-  await exec(`docker-compose -f ${path}/docker-compose.yaml down`);
+  await exec(`docker-compose -f ${path}/docker-compose.yaml down`).catch( (error) =>
+    console.log(`${chalk.red(`\nError during docker compose down`)}\n\n${error}` )
+  );
+
   await unlink(`${path}/docker-compose.yaml`);
   await unlink(`${path}/Dockerfile-api`);
-  spinner.succeed("see you soon");
+  if (startupFinished) {
+    spinner.succeed("see you soon");
+  } else {
+    spinner.fail(errorMessage);
+  }
   process.exit();
 }
 
@@ -55,13 +71,11 @@ class DevCommand extends Command {
           }, 1000);
         }
       };
-
       retry(timesRemaining);
     });
   }
 
   async run() {
-    process.on("SIGINT", () => cleanup());
     const workingDir = ".";
     const nhostDir = `${workingDir}/nhost`;
     const dotNhost = `${workingDir}/.nhost`;
@@ -94,10 +108,27 @@ class DevCommand extends Command {
     }
 
     let { spinner, stopSpinner } = spinnerWith(startMessage);
+    
+    process.on("SIGINT", () => {
+      stopSpinner();
+      cleanup(dotNhost, "interrupted by signal")
+    });
+
 
     const nhostConfig = yaml.safeLoad(
       await readFile(`${nhostDir}/config.yaml`, { encoding: "utf8" })
     );
+
+    const ports = ['hasura_graphql_port', 'hasura_backend_plus_port', 
+                   'postgres_port', 'minio_port', 'api_port'].map( (p) => nhostConfig[p]);
+    ports.push(9695);
+    const freePorts = await Promise.all(ports.map( (p) => detect(p) ));
+    const occupiedPorts = ports.filter( (x) => !freePorts.includes(x) );
+
+    if (occupiedPorts.length > 0) {
+      spinner.fail(`The following ports are not free, please change the nhost/config.yaml or stop the services: ${occupiedPorts}`);
+      process.exit(1);
+    }
 
     if (await exists("./api")) {
       nhostConfig["startApi"] = true;
@@ -127,8 +158,9 @@ class DevCommand extends Command {
     } catch (err) {
       spinner.fail();
       this.log(`${chalk.red("Error!")} ${err.message}`);
+      this.log(`${chalk.red("Error!")} ${err.message}`);
       stopSpinner();
-      cleanup();
+      cleanup(dotNhost, "Failed to start docker-compose");
     }
 
     // check whether GraphQL engine is up & running
@@ -138,7 +170,7 @@ class DevCommand extends Command {
       spinner.fail();
       this.log(`${chalk.red("Nhost could not start!")} ${err.message}`);
       stopSpinner();
-      cleanup();
+      cleanup(dotNhost, "Failed to start GraphQL Engine");
     }
 
     if (dbIncluded) {
@@ -151,8 +183,7 @@ class DevCommand extends Command {
         spinner.fail();
         this.log(`${chalk.red("Error!")} ${err.message}`);
         stopSpinner();
-        cleanup();
-        this.exit();
+        cleanup(dotNhost, "Failed to start apply seeds");
       }
     }
 
@@ -180,6 +211,7 @@ API:\t\t${chalk.underline.bold(`http://localhost:${nhostConfig.api_port}`)}`
     );
 
     stopSpinner();
+    startupFinished = true;
   }
 }
 
