@@ -6,7 +6,7 @@ const crypto = require("crypto");
 const chalk = require("chalk");
 const nunjucks = require("nunjucks");
 const kill = require("tree-kill");
-const detect = require('detect-port');
+const detect = require("detect-port");
 
 const spinnerWith = require("../util/spinner");
 const getComposeTemplate = require("../util/compose");
@@ -25,20 +25,27 @@ let startupFinished = false;
 async function cleanup(path, errorMessage) {
   let { spinner } = spinnerWith("stopping Nhost");
 
-  if (! startupFinished ) {
+  if (!startupFinished) {
     console.log(`\nWriting logs to ${path}/nhost.log\n`);
-    await exec(`docker-compose -f ${path}/docker-compose.yaml logs --no-color -t  > ${path}/nhost.log`).catch( (error) =>
-      console.log(`${chalk.red(`\nError during writing of logfile`)}\n\n${error}` )
+    await exec(
+      `docker-compose -f ${path}/docker-compose.yaml logs --no-color -t  > ${path}/nhost.log`
+    ).catch((error) =>
+      console.log(
+        `${chalk.red(`\nError during writing of logfile`)}\n\n${error}`
+      )
     );
   }
 
   if (hasuraConsoleSpawn && hasuraConsoleSpawn.pid) {
-    console.log("\nkilling hasura console\n");
     kill(hasuraConsoleSpawn.pid);
   }
 
-  await exec(`docker-compose -f ${path}/docker-compose.yaml down`).catch( (error) =>
-    console.log(`${chalk.red(`\nError during docker compose down`)}\n\n${error}` )
+  await exec(
+    `docker-compose -f ${path}/docker-compose.yaml down`
+  ).catch((error) =>
+    console.log(
+      `${chalk.red(`\nError during docker compose down`)}\n\n${error}`
+    )
   );
 
   await unlink(`${path}/docker-compose.yaml`);
@@ -108,25 +115,31 @@ class DevCommand extends Command {
     }
 
     let { spinner, stopSpinner } = spinnerWith(startMessage);
-    
+
     process.on("SIGINT", () => {
       stopSpinner();
-      cleanup(dotNhost, "interrupted by signal")
+      cleanup(dotNhost, "interrupted by signal");
     });
-
 
     const nhostConfig = yaml.safeLoad(
       await readFile(`${nhostDir}/config.yaml`, { encoding: "utf8" })
     );
 
-    const ports = ['hasura_graphql_port', 'hasura_backend_plus_port', 
-                   'postgres_port', 'minio_port', 'api_port'].map( (p) => nhostConfig[p]);
+    const ports = [
+      "hasura_graphql_port",
+      "hasura_backend_plus_port",
+      "postgres_port",
+      "minio_port",
+      "api_port",
+    ].map((p) => nhostConfig[p]);
     ports.push(9695);
-    const freePorts = await Promise.all(ports.map( (p) => detect(p) ));
-    const occupiedPorts = ports.filter( (x) => !freePorts.includes(x) );
+    const freePorts = await Promise.all(ports.map((p) => detect(p)));
+    const occupiedPorts = ports.filter((x) => !freePorts.includes(x));
 
     if (occupiedPorts.length > 0) {
-      spinner.fail(`The following ports are not free, please change the nhost/config.yaml or stop the services: ${occupiedPorts}`);
+      spinner.fail(
+        `The following ports are not free, please change the nhost/config.yaml or stop the services: ${occupiedPorts}`
+      );
       process.exit(1);
     }
 
