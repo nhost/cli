@@ -68,6 +68,8 @@ services:
       S3_BUCKET: nhost
       S3_ACCESS_KEY_ID: minioaccesskey123123
       S3_SECRET_ACCESS_KEY: miniosecretkey123123
+      PROVIDER_SUCCESS_REDIRECT: '{{ provider_success_redirect }}'
+      PROVIDER_FAILURE_REDIRECT: '{{ provider_failure_redirect }}'
       GOOGLE_ENABLE: '{{ google_enable }}'
       GOOGLE_CLIENT_ID: {{ google_client_id }}
       GOOGLE_CLIENT_SECRET: {{ google_client_secret }}

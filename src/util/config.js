@@ -39,6 +39,9 @@ api_port: 4000
 env_file: ../.env.development
 
 # OAuth services
+provider_success_redirect: http://localhost:3000
+provider_failure_redirect: http://localhost:3000/login-fail
+
 google_enable: false
 google_client_id:
 google_secret_id:
@@ -53,7 +56,7 @@ facebook_secret_id:
 
 linkedin_enable: false
 linkedin_client_id:
-linkedin_secret_secret:
+linkedin_client_secret:
 `;
 
 async function writeAuthFile(data) {
