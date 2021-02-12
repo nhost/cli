@@ -44,15 +44,15 @@ provider_failure_redirect: http://localhost:3000/login-fail
 
 google_enable: false
 google_client_id:
-google_secret_id:
+google_client_secret:
 
 github_enable: false
 github_client_id:
-github_secret_id:
+github_client_secret:
 
 facebook_enable: false
 facebook_client_id:
-facebook_secret_id:
+facebook_client_secret:
 
 linkedin_enable: false
 linkedin_client_id:
