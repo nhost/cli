@@ -37,6 +37,23 @@ api_port: 4000
 
 # custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
 env_file: ../.env.development
+
+# OAuth services
+google_enable: false
+google_client_id:
+google_secret_id:
+
+github_enable: false
+github_client_id:
+github_secret_id:
+
+facebook_enable: false
+facebook_client_id:
+facebook_secret_id:
+
+linkedin_enable: false
+linkedin_client_id:
+linkedin_secret_secret:
 `;
 
 async function writeAuthFile(data) {
