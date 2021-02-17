@@ -1,7 +1,7 @@
 {
   "name": "nhost",
   "description": "Nhost's command-line",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": "Nuno Pato @nhost",
   "bin": {
     "nhost": "./bin/run"
