@@ -59,7 +59,7 @@ async function cleanup(path, errorMessage) {
 }
 
 class DevCommand extends Command {
-  async waitForGraphqlEngine(nhostConfig, timesRemaining = 60) {
+  async waitForGraphqlEngine(nhostConfig, timesRemaining = 300) {
     return new Promise((resolve, reject) => {
       const retry = (timesRemaining) => {
         try {
