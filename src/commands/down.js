@@ -12,9 +12,9 @@ class DownCommand extends Command {
   }
 }
 
-DownCommand.description = `Stop and remove local Nhost containers started by \`nhost-dev\`
+DownCommand.description = `Stop and remove local Nhost containers started by \`nhost dev\`
 ...
-Stop and remove local Nhost containers started by \`nhost-dev\`
+Stop and remove local Nhost containers started by \`nhost dev\`
 `;
 
 module.exports = DownCommand;
