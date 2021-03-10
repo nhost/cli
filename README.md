@@ -43,8 +43,8 @@ nhost dev          # Start local Nhost backend
 ## Support
 
 - [x] MacOS
-- [ ] Windows (coming soon)
-- [ ] Linux (coming soon)
+- [ ] Windows _(coming soon)_
+- [ ] Linux _(coming soon)_
 
 ## Documentation
 
