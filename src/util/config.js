@@ -37,6 +37,26 @@ api_port: 4000
 
 # custom environment variables for Hasura GraphQL engine: webhooks, headers, etc
 env_file: ../.env.development
+
+# OAuth services
+provider_success_redirect: http://localhost:3000
+provider_failure_redirect: http://localhost:3000/login-fail
+
+google_enable: false
+google_client_id:
+google_client_secret:
+
+github_enable: false
+github_client_id:
+github_client_secret:
+
+facebook_enable: false
+facebook_client_id:
+facebook_client_secret:
+
+linkedin_enable: false
+linkedin_client_id:
+linkedin_client_secret:
 `;
 
 async function writeAuthFile(data) {
