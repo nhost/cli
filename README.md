@@ -2,7 +2,7 @@
   <h1 align="center">
     Nhost CLI
   </h1>
-  <p>Nhost backend for local development</p>
+  <p>Get your local Nhost backend for development</p>
   <p>
     <img src="https://img.shields.io/npm/dt/nhost" />
     <img src="https://img.shields.io/npm/v/nhost" />
@@ -19,7 +19,7 @@
 
 ## Usage
 
-The CLI is your primary interface when doing local development.
+The CLI is your primary interface when doing local development with Nhost.
 
 ```bash
 npm install -g nhost
