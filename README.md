@@ -1,95 +1,51 @@
-# Nhost CLI
+<div align="center">
+  <h1 align="center">
+    Nhost CLI
+  </h1>
+  <p>Nhost backend for local development</p>
+  <p>
+    <img src="https://img.shields.io/npm/dt/nhost" />
+    <img src="https://img.shields.io/npm/v/nhost" />
+    <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/nhost/cli">
+    <img src="https://img.shields.io/npm/l/nhost" />
+    <a href="https://discord.com/invite/9V7Qb2U" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/discord/552499021260914688" />
+    </a>
+    <a href="https://twitter.com/nhostio" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/twitter/follow/nhostio?style=social" />
+    </a>
+  </p>
+</div>
 
-_Only \*nix systems are currently supported. Windows support is on our roadmap!_
+## Usage
 
-The easiast way to develop with Nhost in your development environment.
-
-### Install
+The CLI is your primary interface when doing local development.
 
 ```bash
 npm install -g nhost
 ```
 
-or
-
-```bash
-$ git clone https://github.com/nhost/cli
-$ cd cli
-$ npm install
-$ npm link
-```
-
-### Usage
-
-#### nhost login
-
-Login to your Nhost account
+To quickly get started, run the following commands:
 
 ```
-USAGE
-  $ nhost login
-
-DESCRIPTION
-  ...
-  Login to your Nhost account
+nhost login        # Login
+cd <PROJECT>       # Change directory to your project
+nhost init         # Only run once to initiate project locally
+nhost dev          # Start local Nhost backend
 ```
 
-#### nhost init
+## Dependencies
 
-Initialize Nhost project
+- [Hasura CLI](https://hasura.io/docs/latest/graphql/core/hasura-cli/install-hasura-cli.html#install-hasura-cli)
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
-```
-USAGE
-  $ nhost init
+## Support
 
-DESCRIPTION
-  ...
-  Initializes the current working directory as a Nhost project
-```
+- [x] MacOS
+- [ ] Windows _(coming soon)_
+- [ ] Linux _(coming soon)_
 
-#### nhost dev
+## Documentation
 
-Start Nhost project for local development
-
-```
-USAGE
-  $ nhost dev
-
-DESCRIPTION
-  ...
-  Start the Nhost project with PostgreSQL, Hasura GraphQL Engine and Hasura Backend Plus (HBP)
-```
-
-#### nhost deploy
-
-Deploy local migrations and metadata changes to Nhost production
-
-```
-USAGE
-  $ nhost deploy
-
-DESCRIPTION
-  ...
-  Deploy local migrations and metadata changes to Nhost production
-```
-
-#### nhost logout
-
-Logout from your Nhost account
-
-```
-USAGE
-  $ nhost logout
-
-DESCRIPTION
-  ...
-  Logout from your Nhost account
-```
-
-### External dependencies
-
-https://github.com/hasura/graphql-engine/tree/master/cli#installation
-
-### Documentation
-
-https://docs.nhost.io/cli
+For details on how to use Nhost CLI, check out our [documentation](https://docs.nhost.io/cli).
