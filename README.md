@@ -6,6 +6,7 @@
   <p>
     <img src="https://img.shields.io/npm/dt/nhost" />
     <img src="https://img.shields.io/npm/v/nhost" />
+    <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/nhost/cli">
     <img src="https://img.shields.io/npm/l/nhost" />
     <a href="https://discord.com/invite/9V7Qb2U" target="_blank" rel="noopener noreferrer">
       <img src="https://img.shields.io/discord/552499021260914688" />
