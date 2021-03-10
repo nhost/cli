@@ -63,9 +63,11 @@ class DeployCommand extends Command {
     );
     const projectID = projectConfig.project_id;
 
-    const project = userData.user.projects.find(
-      (project) => project.id === projectID
-    );
+    const projects = [
+      ...userData.user.projects,
+      ...userData.user.teams.flatMap(({ team }) => team.projects),
+    ];
+    const project = projects.find((project) => project.id === projectID);
 
     if (!project) {
       return this.log(
