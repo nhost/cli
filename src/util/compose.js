@@ -68,6 +68,20 @@ services:
       S3_BUCKET: nhost
       S3_ACCESS_KEY_ID: minioaccesskey123123
       S3_SECRET_ACCESS_KEY: miniosecretkey123123
+      PROVIDER_SUCCESS_REDIRECT: '{{ provider_success_redirect }}'
+      PROVIDER_FAILURE_REDIRECT: '{{ provider_failure_redirect }}'
+      GOOGLE_ENABLE: '{{ google_enable }}'
+      GOOGLE_CLIENT_ID: {{ google_client_id }}
+      GOOGLE_CLIENT_SECRET: {{ google_client_secret }}
+      GITHUB_ENABLE: '{{ github_enable }}'
+      GITHUB_CLIENT_ID: {{ github_client_id }}
+      GITHUB_CLIENT_SECRET: {{ github_client_secret }}
+      FACEBOOK_ENABLE: '{{ facebook_enable }}'
+      FACEBOOK_CLIENT_ID: {{ facebook_client_id }}
+      FACEBOOK_CLIENT_SECRET: {{ facebook_client_secret }}
+      LINKEDIN_ENABLE: '{{ linkedin_enable }}'
+      LINKEDIN_CLIENT_ID: {{ linkedin_client_id }}
+      LINKEDIN_CLIENT_SECRET: {{ linkedin_client_secret }}
     env_file:
       - {{ env_file }}
     volumes:
