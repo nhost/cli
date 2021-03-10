@@ -43,9 +43,10 @@ nhost dev          # Start local Nhost backend
 ## Support
 
 - [x] MacOS
+- [x] Linux
 - [ ] Windows _(coming soon)_
-- [ ] Linux _(coming soon)_
 
 ## Documentation
 
 For details on how to use Nhost CLI, check out our [documentation](https://docs.nhost.io/cli).
+Sv
