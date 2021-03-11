@@ -49,4 +49,3 @@ nhost dev          # Start local Nhost backend
 ## Documentation
 
 For details on how to use Nhost CLI, check out our [documentation](https://docs.nhost.io/cli).
-Sv
