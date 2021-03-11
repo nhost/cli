@@ -223,10 +223,25 @@ class InitCommand extends Command {
         { flag: "a" }
       );
 
-      if (project.hbp_DEFAULT_ALLOWED_USER_ROLE) {
+      if (project.backend_user_fields) {
+        await writeFile(
+          envFile,
+          `\JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`,
+          { flag: "a" }
+        );
+      }
+
+      if (project.hbp_DEFAULT_ALLOWED_USER_ROLES) {
         await writeFile(
           envFile,
           `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}\n`,
+          { flag: "a" }
+        );
+      }
+      if (project.hbp_allowed_user_roles) {
+        await writeFile(
+          envFile,
+          `ALLOWED_USER_ROLES=${project.hbp_allowed_user_roles}\n`,
           { flag: "a" }
         );
       }
