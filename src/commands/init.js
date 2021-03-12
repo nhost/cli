@@ -25,6 +25,19 @@ class InitCommand extends Command {
     return project.backend_version.includes("v2");
   }
 
+  async _getExtensions(hasuraEndpoint, adminSecret) {
+    const command = `curl -d '{"type": "run_sql", "args": {"sql": "SELECT * FROM pg_extension;"}}' -H 'X-Hasura-Admin-Secret: ${adminSecret}' ${hasuraEndpoint}/v1/query`;
+    try {
+      const response = await exec(command);
+      const data = JSON.parse(response.stdout).result.splice(1); // remove head (first row)
+      const extensions = data.map((row) => row[1]);
+      return extensions;
+    } catch (error) {
+      console.log(error);
+      console.log("Error getting extensions");
+    }
+  }
+
   async run() {
     const apiUrl = getCustomApiEndpoint();
     // assume current working directory
@@ -136,7 +149,6 @@ class InitCommand extends Command {
 
     let { spinner, stopSpinner } = spinnerWith(`Initializing ${project.name}`);
 
-    const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
     try {
       // clear current migration information from remote
       const qres = await fetch(`${hasuraEndpoint}/v1/query`, {
@@ -152,6 +164,8 @@ class InitCommand extends Command {
           },
         }),
       });
+
+      const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
 
       // create migrations from remote
       let command = `hasura migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
@@ -195,18 +209,22 @@ class InitCommand extends Command {
       command = `hasura seeds create roles_and_providers ${fromTables} ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
-      // TODO: rethink the necessity of citext
-      // prepend the contents of the sql file with the installation of citext
-      // this is a requirement for HBPv2
-      if (this.projectOnHBPV2(project)) {
-        const sqlPath = `${migrationDirectory}/${initMigration}/up.sql`;
-        const data = fs.readFileSync(sqlPath);
-        const sql = fs.openSync(sqlPath, "w+");
-        const citext = Buffer.from("CREATE EXTENSION IF NOT EXISTS citext;\n");
-        fs.writeSync(sql, citext, 0, citext.length, 0);
-        fs.writeSync(sql, data, 0, data.length, citext.length);
-        fs.close(sql);
-      }
+      const extensions = await this._getExtensions(hasuraEndpoint, adminSecret);
+      const extensionsWriteToFile = extensions
+        .map((extension) => {
+          return `CREATE EXTENSION IF NOT EXISTS ${extension};\n`;
+        })
+        .join("");
+      extensionsWriteToFile.concat("\n\n");
+
+      // write extensions to file in the beginning of the file
+      const sqlPath = `${migrationDirectory}/${initMigration}/up.sql`;
+      var data = fs.readFileSync(sqlPath); //read existing contents into data
+      var fd = fs.openSync(sqlPath, "w+");
+      var buffer = Buffer.from(extensionsWriteToFile);
+      fs.writeSync(fd, buffer, 0, buffer.length, 0); //write new data
+      fs.writeSync(fd, data, 0, data.length, buffer.length); //append old data
+      fs.close(fd);
 
       // write ENV variables to .env.development (webhooks and headers)
       await writeFile(

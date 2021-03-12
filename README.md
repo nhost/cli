@@ -39,6 +39,7 @@ nhost dev          # Start local Nhost backend
 - [Hasura CLI](https://hasura.io/docs/latest/graphql/core/hasura-cli/install-hasura-cli.html#install-hasura-cli)
 - [Docker](https://www.docker.com/get-started)
 - [Docker Compose](https://docs.docker.com/compose/install/)
+- [curl](https://curl.se/);
 
 ## Support
 
