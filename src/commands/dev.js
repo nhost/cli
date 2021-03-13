@@ -108,9 +108,9 @@ class DevCommand extends Command {
       );
     }
 
-    const dbIncluded = !(await exists(`${dotNhost}/db_data`));
+    const firstRun = !(await exists(`${dotNhost}/db_data`));
     let startMessage = "Nhost is starting...";
-    if (dbIncluded) {
+    if (firstRun) {
       startMessage += `${chalk.bold.underline("first run takes longer")}`;
     }
 
@@ -186,8 +186,9 @@ class DevCommand extends Command {
       cleanup(dotNhost, "Failed to start GraphQL Engine");
     }
 
-    if (dbIncluded) {
+    if (firstRun && fs.readdirSync(`${nhostDir}/seeds`).length > 0) {
       try {
+        spinner.text = "Applying seed data";
         await exec(
           `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
           { cwd: nhostDir }
@@ -198,6 +199,19 @@ class DevCommand extends Command {
         stopSpinner();
         cleanup(dotNhost, "Failed to start apply seeds");
       }
+    }
+
+    try {
+      spinner.text = "Applying metadata";
+      await exec(
+        `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
+        { cwd: nhostDir }
+      );
+    } catch (err) {
+      spinner.fail();
+      this.log(`${chalk.red("Error!")} ${err.message}`);
+      stopSpinner();
+      cleanup(dotNhost, "Failed to start apply metadata");
     }
 
     hasuraConsoleSpawn = spawn(
@@ -212,7 +226,7 @@ class DevCommand extends Command {
     );
 
     spinner.succeed(
-      `Local Nhost backend is running!
+      `Local Nhost backend is up!
 GraphQL API:\t${chalk.underline.bold(
         `http://localhost:${nhostConfig.hasura_graphql_port}/v1/graphql`
       )}
@@ -220,7 +234,9 @@ Hasura Console:\t${chalk.underline.bold("http://localhost:9695")}
 Auth & Storage:\t${chalk.underline.bold(
         `http://localhost:${nhostConfig.hasura_backend_plus_port}`
       )}
-API:\t\t${chalk.underline.bold(`http://localhost:${nhostConfig.api_port}`)}`
+Custom API:\t\t${chalk.underline.bold(
+        `http://localhost:${nhostConfig.api_port}`
+      )}`
     );
 
     stopSpinner();
