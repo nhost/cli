@@ -97,6 +97,10 @@ class DevCommand extends Command {
       );
     }
 
+    if (!(await exists(dotNhost))) {
+      fs.mkdirSync(dotNhost);
+    }
+
     // check if docker-compose is installed
     try {
       await exec("command -v docker-compose");
