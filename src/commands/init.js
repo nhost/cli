@@ -104,6 +104,9 @@ class InitCommand extends Command {
       (project) => project.id === selectedProjectId
     );
 
+    const remoteHasuraVersion = project.hasura_gqe_version;
+    const dockerImage = `nhost/hasura-cli-docker:${remoteHasuraVersion}`;
+
     // create root nhost folder
     await mkdir(nhostDir);
     // .nhost is used for nhost specific configuration
@@ -151,7 +154,7 @@ class InitCommand extends Command {
 
     try {
       // clear current migration information from remote
-      const qres = await fetch(`${hasuraEndpoint}/v1/query`, {
+      await fetch(`${hasuraEndpoint}/v1/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -168,19 +171,20 @@ class InitCommand extends Command {
       const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
 
       // create migrations from remote
-      let command = `hasura migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
+      // this migration will be auto applied
+      let command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
-      // mark this migration as applied (--skip-execution) on the remote server
-      // so that it doesn't get run again when promoting local
-      // changes to that environment
+      // // mark this migration as applied (--skip-execution) on the remote server
+      // // so that it doesn't get run again when promoting local
+      // // changes to that environment
       const initMigration = fs.readdirSync(migrationDirectory)[0];
       const version = initMigration.match(/^\d+/)[0];
-      command = `hasura migrate apply --version "${version}" --skip-execution ${commonOptions}`;
+      command = `docker run --rm -v $(pwd):/hasuracli nhost/hasura-cli-docker migrate apply --version "${version}" --skip-execution ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // create metadata from remote
-      command = `hasura metadata export ${commonOptions}`;
+      command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage}  metadata export ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // create seeds from remote
@@ -206,7 +210,7 @@ class InitCommand extends Command {
         (all, current) => `${all} --from-table ${current}`,
         ""
       );
-      command = `hasura seeds create roles_and_providers ${fromTables} ${commonOptions}`;
+      command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} seeds create roles_and_providers ${fromTables} ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       const extensions = await this._getExtensions(hasuraEndpoint, adminSecret);

@@ -1,7 +1,12 @@
 const fetch = require("node-fetch");
 const chalk = require("chalk");
 
-async function validateAuth(url, {email, token}) {
+const { readAuthFile, getCustomApiEndpoint } = require("./config");
+
+async function validateAuth() {
+  const url = getCustomApiEndpoint();
+  const { email, token } = readAuthFile();
+
   let response;
 
   try {
@@ -26,7 +31,7 @@ async function validateAuth(url, {email, token}) {
       throw new Error("Server unavailable. Please retry in a moment.");
     }
 
-    throw new Error("The provided token is not valid");    
+    throw new Error("The provided token is not valid");
   }
 
   return body;
@@ -54,7 +59,9 @@ async function executeLogin(url, email) {
     const { error = {} } = body;
     if (error.code === "not_found") {
       throw new Error(
-        `We couldn't find an account registered with ${chalk.bold.underline(email)}. Please register at https://nhost.io/register.`
+        `We couldn't find an account registered with ${chalk.bold.underline(
+          email
+        )}. Please register at https://nhost.io/register.`
       );
     }
 
@@ -62,6 +69,6 @@ async function executeLogin(url, email) {
   }
 
   return body;
-};
+}
 
 module.exports = { executeLogin, validateAuth };

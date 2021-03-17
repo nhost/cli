@@ -28,10 +28,12 @@ npm install -g nhost
 To quickly get started, run the following commands:
 
 ```
-nhost login        # Login
-cd <PROJECT>       # Change directory to your project
-nhost init         # Only run once to initiate project locally
-nhost dev          # Start local Nhost backend
+nhost login            # Login
+cd <PROJECT>           # Change directory to your project
+nhost init             # Only run once to initiate project locally
+nhost dev              # Start local Nhost backend
+nhost link             # Link with existing Nhost project
+nhost env [ls, pull]   # List or pull environment variables from Nhost
 ```
 
 ## Dependencies
