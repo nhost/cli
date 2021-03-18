@@ -151,6 +151,9 @@ class InitCommand extends Command {
       (project) => project.id === selectedProjectId
     );
 
+    const remoteHasuraVersion = project.hasura_gqe_version;
+    const dockerImage = `nhost/hasura-cli-docker:${remoteHasuraVersion}`;
+
     // create root nhost folder
     await mkdir(nhostDir);
     // .nhost is used for nhost specific configuration
@@ -198,7 +201,7 @@ class InitCommand extends Command {
 
     try {
       // clear current migration information from remote
-      const qres = await fetch(`${hasuraEndpoint}/v1/query`, {
+      await fetch(`${hasuraEndpoint}/v1/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -216,20 +219,20 @@ class InitCommand extends Command {
 
       // create migrations from remote
       spinner.text = "Create migrations";
-      let command = `hasura migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
+      let command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
-      // mark this migration as applied (--skip-execution) on the remote server
-      // so that it doesn't get run again when promoting local
-      // changes to that environment
+      // // mark this migration as applied (--skip-execution) on the remote server
+      // // so that it doesn't get run again when promoting local
+      // // changes to that environment
       const initMigration = fs.readdirSync(migrationDirectory)[0];
       const version = initMigration.match(/^\d+/)[0];
-      command = `hasura migrate apply --version "${version}" --skip-execution ${commonOptions}`;
+      command = `docker run --rm -v $(pwd):/hasuracli nhost/hasura-cli-docker migrate apply --version "${version}" --skip-execution ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // create metadata from remote
       spinner.text = "Create Hasura metadata";
-      command = `hasura metadata export ${commonOptions}`;
+      command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage}  metadata export ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // auth.roles and auth.providers plus any enum compatible tables that might exist
@@ -255,7 +258,7 @@ class InitCommand extends Command {
         ""
       );
       if (fromTables) {
-        command = `hasura seeds create enum ${fromTables} ${commonOptions}`;
+        command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} seeds create roles_and_providers ${fromTables} ${commonOptions}`;
         await exec(command, { cwd: nhostDir });
       }
 
@@ -291,14 +294,14 @@ class InitCommand extends Command {
 
       // write ENV variables to .env.development
       spinner.text = "Adding env vars to .env.development";
-      await this._writeToFileSync(
+      await writeFile(
         envFile,
         project.project_env_vars
           .map((envVar) => `${envVar.name}=${envVar.dev_value}`)
           .join("\n")
       );
 
-      await this._writeToFileSync(
+      await writeFile(
         envFile,
         `\nREGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}\n`
       );
@@ -306,7 +309,8 @@ class InitCommand extends Command {
       if (project.backend_user_fields) {
         await this._writeToFileSync(
           envFile,
-          `\JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`
+          `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`,
+          { flag: "a" }
         );
       }
 
