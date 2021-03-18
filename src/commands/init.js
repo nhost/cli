@@ -19,10 +19,37 @@ const {
 } = require("../util/config");
 const { validateAuth } = require("../util/login");
 const checkForHasura = require("../util/dependencies");
+const { throws } = require("assert");
 
 class InitCommand extends Command {
   projectOnHBPV2(project) {
     return project.backend_version.includes("v2");
+  }
+
+  async _getRoles(hasuraEndpoint, adminSecret) {
+    const command = `curl -d '{"type": "run_sql", "args": {"sql": "SELECT * FROM auth.roles;"}}' -H 'X-Hasura-Admin-Secret: ${adminSecret}' ${hasuraEndpoint}/v1/query`;
+    try {
+      const response = await exec(command);
+      const data = JSON.parse(response.stdout).result.splice(1); // remove head (first row)
+      const roles = data.map((row) => row[0]);
+      return roles;
+    } catch (error) {
+      console.error(error);
+      console.error("Error getting auth roles");
+    }
+  }
+
+  async _getProviders(hasuraEndpoint, adminSecret) {
+    const command = `curl -d '{"type": "run_sql", "args": {"sql": "SELECT * FROM auth.providers;"}}' -H 'X-Hasura-Admin-Secret: ${adminSecret}' ${hasuraEndpoint}/v1/query`;
+    try {
+      const response = await exec(command);
+      const data = JSON.parse(response.stdout).result.splice(1); // remove head (first row)
+      const providers = data.map((row) => row[0]);
+      return providers;
+    } catch (error) {
+      console.error(error);
+      console.error("Error getting auth providers");
+    }
   }
 
   async _getExtensions(hasuraEndpoint, adminSecret) {
@@ -33,9 +60,29 @@ class InitCommand extends Command {
       const extensions = data.map((row) => row[1]);
       return extensions;
     } catch (error) {
-      console.log(error);
-      console.log("Error getting extensions");
+      console.error(error);
+      console.error("Error getting extensions");
     }
+  }
+
+  async _writeToFileSync(filePath, data, position = "end") {
+    if (!["start", "end"].includes(position)) {
+      throw 'Position must be on of: "start", "end"';
+    }
+
+    const currentData = fs.readFileSync(filePath);
+    var fd = fs.openSync(filePath, "w+");
+    var buffer = Buffer.from(data);
+    if (position === "end") {
+      // prepend old data
+      fs.writeSync(fd, currentData, 0, currentData.length, 0);
+      fs.writeSync(fd, buffer, 0, buffer.length, currentData.length);
+    } else if (position === "start") {
+      //append old data
+      fs.writeSync(fd, buffer, 0, buffer.length, 0); //write new data
+      fs.writeSync(fd, currentData, 0, currentData.length, buffer.length);
+    }
+    fs.close(fd);
   }
 
   async run() {
@@ -141,10 +188,10 @@ class InitCommand extends Command {
       flag: "a",
     });
 
-    // .env.development for hasura webhooks, headers, etc
+    // .env.development
     const envFile = `${workingDir}/.env.development`;
     if (await !exists(envFile)) {
-      await writeFile(envFile, "# webhooks and headers\n");
+      await writeFile(envFile, "# env vars from Nhost\n");
     }
 
     const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
@@ -171,7 +218,7 @@ class InitCommand extends Command {
       const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
 
       // create migrations from remote
-      // this migration will be auto applied
+      spinner.text = "Create migrations";
       let command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
@@ -184,35 +231,39 @@ class InitCommand extends Command {
       await exec(command, { cwd: nhostDir });
 
       // create metadata from remote
+      spinner.text = "Create Hasura metadata";
       command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage}  metadata export ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
-      // create seeds from remote
       // auth.roles and auth.providers plus any enum compatible tables that might exist
       // all enum compatible tables must contain at least one row
       // https://hasura.io/docs/1.0/graphql/core/schema/enums.html#creating-an-enum-compatible-table
-      let seedTables = ["auth.roles", "auth.providers"];
+      let seedTables = [];
 
       // use the API to check whether this project has enum compatible tables
+      spinner.text = "Adding enum tables";
       command = `curl -d '{"type": "export_metadata", "args": {}}' -H 'X-Hasura-Admin-Secret: ${adminSecret}' ${hasuraEndpoint}/v1/query`;
       try {
         const response = await exec(command);
         const tables = JSON.parse(response.stdout).tables;
         // filter enum compatible tables
         const enumTables = tables.filter((table) => table.is_enum);
-
-        enumTables.forEach(({ table }) =>
-          seedTables.push(`${table.schema}.${table.name}`)
-        );
+        enumTables.forEach(({ table }) => {
+          seedTables.push(`${table.schema}.${table.name}`);
+        });
       } catch (err) {}
 
       const fromTables = seedTables.reduce(
         (all, current) => `${all} --from-table ${current}`,
         ""
       );
-      command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} seeds create roles_and_providers ${fromTables} ${commonOptions}`;
-      await exec(command, { cwd: nhostDir });
+      if (fromTables) {
+        command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} seeds create roles_and_providers ${fromTables} ${commonOptions}`;
+        await exec(command, { cwd: nhostDir });
+      }
 
+      // add extensions to init migration
+      spinner.text = "Add Postgres extensions to init migration";
       const extensions = await this._getExtensions(hasuraEndpoint, adminSecret);
       const extensionsWriteToFile = extensions
         .map((extension) => {
@@ -220,33 +271,43 @@ class InitCommand extends Command {
         })
         .join("");
       extensionsWriteToFile.concat("\n\n");
-
-      // write extensions to file in the beginning of the file
       const sqlPath = `${migrationDirectory}/${initMigration}/up.sql`;
-      var data = fs.readFileSync(sqlPath); //read existing contents into data
-      var fd = fs.openSync(sqlPath, "w+");
-      var buffer = Buffer.from(extensionsWriteToFile);
-      fs.writeSync(fd, buffer, 0, buffer.length, 0); //write new data
-      fs.writeSync(fd, data, 0, data.length, buffer.length); //append old data
-      fs.close(fd);
+      this._writeToFileSync(sqlPath, extensionsWriteToFile, "start");
 
-      // write dev environment variables to .env.development
+      // add auth.roles to init migration
+      spinner.text = "Add auth roles to init migration";
+      const roles = await this._getRoles(hasuraEndpoint, adminSecret);
+      let rolesSQL = `\n\nINSERT INTO auth.roles (role)\n    VALUES `;
+      const rolesMap = roles.map((role) => `('${role}')`).join(", ");
+      rolesSQL += `${rolesMap};\n\n`;
+      this._writeToFileSync(sqlPath, rolesSQL, "end");
+
+      // add auth.providers to init migration
+      spinner.text = "Add auth providers to init migration";
+      const providers = await this._getProviders(hasuraEndpoint, adminSecret);
+      let providersSQL = `INSERT INTO auth.providers (provider)\n    VALUES `;
+      const providersMap = providers
+        .map((provider) => `('${provider}')`)
+        .join(", ");
+      providersSQL += `${providersMap};\n\n`;
+      this._writeToFileSync(sqlPath, providersSQL, "end");
+
+      // write ENV variables to .env.development
+      spinner.text = "Adding env vars to .env.development";
       await writeFile(
         envFile,
         project.project_env_vars
           .map((envVar) => `${envVar.name}=${envVar.dev_value}`)
-          .join("\n"),
-        { flag: "a" }
+          .join("\n")
       );
 
       await writeFile(
         envFile,
-        `\nREGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}\n`,
-        { flag: "a" }
+        `\nREGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}\n`
       );
 
       if (project.backend_user_fields) {
-        await writeFile(
+        await this._writeToFileSync(
           envFile,
           `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`,
           { flag: "a" }
@@ -254,17 +315,15 @@ class InitCommand extends Command {
       }
 
       if (project.hbp_DEFAULT_ALLOWED_USER_ROLES) {
-        await writeFile(
+        await this._writeToFileSync(
           envFile,
-          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}\n`,
-          { flag: "a" }
+          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}\n`
         );
       }
       if (project.hbp_allowed_user_roles) {
-        await writeFile(
+        await this._writeToFileSync(
           envFile,
-          `ALLOWED_USER_ROLES=${project.hbp_allowed_user_roles}\n`,
-          { flag: "a" }
+          `ALLOWED_USER_ROLES=${project.hbp_allowed_user_roles}\n`
         );
       }
     } catch (error) {
