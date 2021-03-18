@@ -230,9 +230,7 @@ class InitCommand extends Command {
       fs.writeSync(fd, data, 0, data.length, buffer.length); //append old data
       fs.close(fd);
 
-      // comment
-
-      // write ENV variables to .env.development (webhooks and headers)
+      // write dev environment variables to .env.development
       await writeFile(
         envFile,
         project.project_env_vars
@@ -240,8 +238,6 @@ class InitCommand extends Command {
           .join("\n"),
         { flag: "a" }
       );
-
-      // comment
 
       await writeFile(
         envFile,
@@ -252,7 +248,7 @@ class InitCommand extends Command {
       if (project.backend_user_fields) {
         await writeFile(
           envFile,
-          `\JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`,
+          `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`,
           { flag: "a" }
         );
       }
