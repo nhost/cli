@@ -41,7 +41,6 @@ services:
       - serve
     volumes:
       - ../nhost/migrations:/hasura-migrations
-      - ../nhost/metadata:/hasura-metadata
   nhost-hasura-backend-plus:
     container_name: nhost_hbp
     image: nhost/hasura-backend-plus:{{ hasura_backend_plus_version }}
