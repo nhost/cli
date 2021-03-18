@@ -230,6 +230,8 @@ class InitCommand extends Command {
       fs.writeSync(fd, data, 0, data.length, buffer.length); //append old data
       fs.close(fd);
 
+      // comment
+
       // write ENV variables to .env.development (webhooks and headers)
       await writeFile(
         envFile,
@@ -238,6 +240,8 @@ class InitCommand extends Command {
           .join("\n"),
         { flag: "a" }
       );
+
+      // comment
 
       await writeFile(
         envFile,

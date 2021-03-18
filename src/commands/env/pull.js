@@ -44,29 +44,53 @@ class DownCommand extends Command {
         };
       });
 
+    const remoteEnvVars = project.project_env_vars.map((v) => {
+      return { name: v.name, value: v.dev_value };
+    });
+
+    remoteEnvVars.push({
+      name: "REGISTRATION_CUSTOM_FIELDS",
+      value: project.hbp_REGISTRATION_CUSTOM_FIELDS,
+    });
+
+    remoteEnvVars.push({
+      name: "JWT_CUSTOM_FIELDS",
+      value: project.backend_user_fields,
+    });
+
+    remoteEnvVars.push({
+      name: "DEFAULT_ALLOWED_USER_ROLES",
+      value: project.hbp_DEFAULT_ALLOWED_USER_ROLES,
+    });
+
+    remoteEnvVars.push({
+      name: "ALLOWED_USER_ROLES",
+      value: project.hbp_allowed_user_roles,
+    });
+
     const updatedProjectEnvVarIndexs = [];
 
     // update env vars already in .env.development
     const envVars = existingEnvVars.map((existingEnvVar) => {
-      const i = project.project_env_vars.findIndex(
+      const i = remoteEnvVars.findIndex(
         (pEnvVar) => pEnvVar.name == existingEnvVar.name
       );
       if (i === -1) {
         return existingEnvVar;
       }
 
-      const tmpEnvVar = project.project_env_vars[i];
+      const tmpEnvVar = remoteEnvVars[i];
       updatedProjectEnvVarIndexs.push(i);
 
       const res = {
         name: existingEnvVar.name,
-        value: tmpEnvVar.dev_value,
+        value: tmpEnvVar.value,
       };
       return res;
     });
 
     // add env vars not already in .env.development
-    project.project_env_vars
+    remoteEnvVars
       .filter((_, i) => {
         // filter if the env var was alrady updated
         return !updatedProjectEnvVarIndexs.includes(i);
@@ -75,7 +99,7 @@ class DownCommand extends Command {
         // add new env var
         envVars.push({
           name: envVar.name,
-          value: envVar.dev_value,
+          value: envVar.value,
         });
       });
 
@@ -89,6 +113,6 @@ class DownCommand extends Command {
   }
 }
 
-DownCommand.description = `bbb :D`;
+DownCommand.description = `Sync remote environment variables to your local environment`;
 
 module.exports = DownCommand;
