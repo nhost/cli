@@ -15,7 +15,7 @@ version: 2
 metadata_directory: metadata
 
 # hasura configuration for the project
-hasura_graphql_version: {{ hasura_gqe_version }}.cli-migrations-v2
+hasura_graphql_version: {{ hasura_gqe_version }}
 hasura_graphql_port: 8080
 hasura_graphql_admin_secret: 123456
 

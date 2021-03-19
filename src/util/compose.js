@@ -123,6 +123,10 @@ services:
     volumes:
       - ../api:/usr/src/app/api
 {% endif %}
+networks:
+  default:
+    external:
+      name: nhostnetwork
 `;
 
 function getComposeTemplate() {
