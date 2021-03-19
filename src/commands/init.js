@@ -151,9 +151,6 @@ class InitCommand extends Command {
       (project) => project.id === selectedProjectId
     );
 
-    const remoteHasuraVersion = project.hasura_gqe_version;
-    const dockerImage = `nhost/hasura-cli-docker:${remoteHasuraVersion}`;
-
     // create root nhost folder
     await mkdir(nhostDir);
     // .nhost is used for nhost specific configuration
@@ -196,6 +193,10 @@ class InitCommand extends Command {
 
     const hasuraEndpoint = `https://${project.project_domain.hasura_domain}`;
     const adminSecret = project.hasura_gqe_admin_secret;
+    // const remoteHasuraVersion = project.hasura_gqe_version;
+    // const dockerImage = `nhost/hasura-cli-docker:${remoteHasuraVersion}`;
+    const hasuraCLI = `hasura`;
+    const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
 
     let { spinner, stopSpinner } = spinnerWith(`Initializing ${project.name}`);
 
@@ -215,11 +216,9 @@ class InitCommand extends Command {
         }),
       });
 
-      const commonOptions = `--endpoint ${hasuraEndpoint} --admin-secret ${adminSecret} --skip-update-check`;
-
       // create migrations from remote
       spinner.text = "Create migrations";
-      let command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
+      let command = `${hasuraCLI} migrate create "init" --from-server --schema "public" --schema "auth" ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // // mark this migration as applied (--skip-execution) on the remote server
@@ -227,12 +226,12 @@ class InitCommand extends Command {
       // // changes to that environment
       const initMigration = fs.readdirSync(migrationDirectory)[0];
       const version = initMigration.match(/^\d+/)[0];
-      command = `docker run --rm -v $(pwd):/hasuracli nhost/hasura-cli-docker migrate apply --version "${version}" --skip-execution ${commonOptions}`;
+      command = `${hasuraCLI} migrate apply --version "${version}" --skip-execution ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // create metadata from remote
       spinner.text = "Create Hasura metadata";
-      command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage}  metadata export ${commonOptions}`;
+      command = `${hasuraCLI} metadata export ${commonOptions}`;
       await exec(command, { cwd: nhostDir });
 
       // auth.roles and auth.providers plus any enum compatible tables that might exist
@@ -258,7 +257,7 @@ class InitCommand extends Command {
         ""
       );
       if (fromTables) {
-        command = `docker run --rm -v $(pwd):/hasuracli ${dockerImage} seeds create roles_and_providers ${fromTables} ${commonOptions}`;
+        command = `${hasuraCLI} seeds create roles_and_providers ${fromTables} ${commonOptions}`;
         await exec(command, { cwd: nhostDir });
       }
 

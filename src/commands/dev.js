@@ -34,6 +34,9 @@ async function cleanup(path, errorMessage) {
         `${chalk.red(`\nError during writing of logfile`)}\n\n${error}`
       )
     );
+
+    // close hasura console docker container
+    await exec("docker rm -f nhost_hasura-console");
   }
 
   if (hasuraConsoleSpawn && hasuraConsoleSpawn.pid) {
@@ -47,6 +50,9 @@ async function cleanup(path, errorMessage) {
       `${chalk.red(`\nError during docker compose down`)}\n\n${error}`
     )
   );
+
+  // close hasura console docker container
+  await exec("docker rm -f nhost_hasura-console");
 
   await unlink(`${path}/docker-compose.yaml`);
   await unlink(`${path}/Dockerfile-api`);
@@ -142,7 +148,8 @@ class DevCommand extends Command {
 
     if (occupiedPorts.length > 0) {
       spinner.fail(
-        `The following ports are not free, please change the nhost/config.yaml or stop the services: ${occupiedPorts}`
+        `The following ports are not free, please change the nhost/config.yaml or stop the services: ${occupiedPorts}\n\n` +
+          `You can also try \`nhost down\`.`
       );
       process.exit(1);
     }
@@ -190,13 +197,24 @@ class DevCommand extends Command {
       cleanup(dotNhost, "Failed to start GraphQL Engine");
     }
 
+    // configura hasura cli commawnd
+    // const remoteHasuraVersion = nhostConfig.hasura_graphql_version;
+    // const dockerImage = `nhost/hasura-cli-docker:${remoteHasuraVersion}`;
+
+    const hasuraCLI = `hasura`;
+    const commandOptions = `--endpoint http://localhost:${nhostConfig.hasura_graphql_port} --admin-secret ${nhostConfig.hasura_graphql_admin_secret} --skip-update-check`;
+
+    spinner.text = "Applying migrations";
+    await exec(`${hasuraCLI} migrate apply ${commandOptions}`, {
+      cwd: nhostDir,
+    });
+
     if (firstRun && fs.readdirSync(`${nhostDir}/seeds`).length > 0) {
       try {
         spinner.text = "Applying seed data";
-        await exec(
-          `hasura seeds apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
-          { cwd: nhostDir }
-        );
+        await exec(`${hasuraCLI} seeds apply ${commandOptions}`, {
+          cwd: nhostDir,
+        });
       } catch (err) {
         spinner.fail();
         this.log(`${chalk.red("Error!")} ${err.message}`);
@@ -207,16 +225,20 @@ class DevCommand extends Command {
 
     try {
       spinner.text = "Applying metadata";
-      await exec(
-        `hasura metadata apply --admin-secret ${nhostConfig.hasura_graphql_admin_secret}`,
-        { cwd: nhostDir }
-      );
+      await exec(`${hasuraCLI} metadata apply ${commandOptions}`, {
+        cwd: nhostDir,
+      });
     } catch (err) {
       spinner.fail();
       this.log(`${chalk.red("Error!")} ${err.message}`);
       stopSpinner();
       cleanup(dotNhost, "Failed to start apply metadata");
     }
+
+    spinner.text = "Starting Hausra console";
+    // await exec(`${hasuraCLI} console ${commandOptions} --console-port=9695`, {
+    //   cwd: nhostDir,
+    // });
 
     hasuraConsoleSpawn = spawn(
       "hasura",
@@ -238,7 +260,7 @@ Hasura Console:\t${chalk.underline.bold("http://localhost:9695")}
 Auth & Storage:\t${chalk.underline.bold(
         `http://localhost:${nhostConfig.hasura_backend_plus_port}`
       )}
-Custom API:\t\t${chalk.underline.bold(
+Custom API:\t${chalk.underline.bold(
         `http://localhost:${nhostConfig.api_port}`
       )}`
     );
