@@ -6,7 +6,7 @@ const exec = util.promisify(require("child_process").exec);
 class DownCommand extends Command {
   async run() {
     await exec(
-      "docker rm -f nhost_postgres nhost_hasura nhost_hbp nhost_minio nhost_api nhost_hasura-console"
+      "docker rm -f nhost_postgres nhost_hasura nhost_hbp nhost_minio nhost_api || true"
     );
     this.log(`\n${chalk.white("All Nhost services down")}`);
   }

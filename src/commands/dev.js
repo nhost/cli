@@ -34,9 +34,6 @@ async function cleanup(path, errorMessage) {
         `${chalk.red(`\nError during writing of logfile`)}\n\n${error}`
       )
     );
-
-    // close hasura console docker container
-    await exec("docker rm -f nhost_hasura-console");
   }
 
   if (hasuraConsoleSpawn && hasuraConsoleSpawn.pid) {
