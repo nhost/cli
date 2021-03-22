@@ -19,7 +19,6 @@ const {
 } = require("../util/config");
 const { validateAuth } = require("../util/login");
 const checkForHasura = require("../util/dependencies");
-const { throws } = require("assert");
 
 class InitCommand extends Command {
   projectOnHBPV2(project) {

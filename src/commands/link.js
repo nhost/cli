@@ -61,7 +61,7 @@ class LinkCommand extends Command {
   }
 }
 
-LinkCommand.description = `Link Nhost Project 2
+LinkCommand.description = `Link Nhost Project
 ...
 Link Nhost project
 `;

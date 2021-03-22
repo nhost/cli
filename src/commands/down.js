@@ -8,11 +8,11 @@ class DownCommand extends Command {
     await exec(
       "docker rm -f nhost_postgres nhost_hasura nhost_hbp nhost_minio nhost_api || true"
     );
-    this.log(`\n${chalk.white("All Nhost services down")}`);
+    this.log(`\n${chalk.white("Local Nhost backend down")}`);
   }
 }
 
-DownCommand.description = `Stop and remove local Nhost containers started by \`nhost dev\`
+DownCommand.description = `Stop and remove local Nhost backend started by \`nhost dev\`
 ...
 Stop and remove local Nhost containers started by \`nhost dev\`
 `;
