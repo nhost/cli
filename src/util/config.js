@@ -1,11 +1,11 @@
 const fs = require("fs");
+const chalk = require("chalk");
 const util = require("util");
 const exists = util.promisify(fs.exists);
 const unlink = util.promisify(fs.unlink);
 const path = require("path");
 const { homedir } = require("os");
 const writeJSON = require("write-json-file");
-const loadJSON = require("load-json-file");
 
 const NHOST_DIR = path.join(homedir(), ".nhost");
 const authPath = path.join(NHOST_DIR, "auth.json");
@@ -15,7 +15,7 @@ version: 2
 metadata_directory: metadata
 
 # hasura configuration for the project
-hasura_graphql_version: {{ hasura_gqe_version }}.cli-migrations-v2
+hasura_graphql_version: {{ hasura_gqe_version }}
 hasura_graphql_port: 8080
 hasura_graphql_admin_secret: 123456
 
@@ -66,6 +66,8 @@ async function writeAuthFile(data) {
       mode: 0o600,
     });
   } catch (err) {
+    console.log(chalk.bold.red("Error!"));
+    console.log("Could not read auth file. Run `nhost login` first.");
     throw err;
   }
 }
@@ -79,7 +81,13 @@ async function deleteAuthFile() {
 }
 
 function readAuthFile() {
-  return loadJSON.sync(authPath);
+  try {
+    return require(authPath);
+  } catch (error) {
+    console.log(chalk.bold.red("Error!"));
+    console.log("Could not read auth file. Run `nhost login` first.");
+    throw error;
+  }
 }
 
 async function authFileExists() {
