@@ -14,7 +14,7 @@ services:
       - ./db_data:/var/lib/postgresql/data
   nhost-graphql-engine:
     container_name: nhost_hasura
-    image: hasura/graphql-engine:{{ hasura_graphql_version }}
+    image: {{ hasura_graphql_engine | default(hasura/graphql-engine)}}:{{ hasura_graphql_version }}
     ports:
       - '{{ hasura_graphql_port }}:{{ hasura_graphql_port }}'
     depends_on:
