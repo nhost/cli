@@ -98,8 +98,41 @@ function getCustomApiEndpoint() {
   return "https://customapi.nhost.io";
 }
 
-function getNhostConfigTemplate() {
-  return configData;
+function getNhostConfig(options) {
+  const { hasura_gqe_version, backend_version, postgres_version } = options;
+
+  const nhostConfig = {
+    version: 2,
+    metadata_directory: "metadata",
+    hasura_graphql_version: hasura_gqe_version,
+    hasura_graphql_port: 8080,
+    hasura_graphql_admin_secret: 123456,
+    hasura_backend_plus_version: backend_version,
+    hasura_backend_plus_port: 9001,
+    postgres_version: postgres_version,
+    postgres_port: 5432,
+    postgres_user: "postgres",
+    postgres_password: "postgres",
+    minio_port: 9000,
+    api_port: 4000,
+    env_file: "../.env.development",
+    provider_success_redirect: "http://localhost:3000",
+    provider_failure_redirect: "http://localhost:3000/login-fail",
+    google_enable: false,
+    google_client_id: "",
+    google_client_secret: "",
+    github_enable: false,
+    github_client_id: "",
+    github_client_secret: "",
+    facebook_enable: false,
+    facebook_client_id: "",
+    facebook_client_secret: "",
+    linkedin_enable: false,
+    linkedin_client_id: "",
+    linkedin_client_secret: "",
+  };
+
+  return nhostConfig;
 }
 
 module.exports = {
@@ -107,6 +140,6 @@ module.exports = {
   readAuthFile,
   authFileExists,
   getCustomApiEndpoint,
-  getNhostConfigTemplate,
+  getNhostConfig,
   deleteAuthFile,
 };
