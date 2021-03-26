@@ -4,12 +4,11 @@ const { spawn, execSync } = require("child_process");
 const yaml = require("js-yaml");
 const crypto = require("crypto");
 const chalk = require("chalk");
-const nunjucks = require("nunjucks");
 const kill = require("tree-kill");
 const detect = require("detect-port");
 
 const spinnerWith = require("../util/spinner");
-const getComposeTemplate = require("../util/compose");
+const { generateNhostBackendYaml } = require("../util/compose");
 const getDockerApiTemplate = require("../util/docker-api");
 
 const util = require("util");
@@ -151,19 +150,23 @@ class DevCommand extends Command {
       process.exit(1);
     }
 
-    if (await exists("./api")) {
-      nhostConfig["startApi"] = true;
-    }
+    nhostConfig["startAPI"] = await exists("./api");
 
     nhostConfig.graphql_jwt_key = crypto
       .randomBytes(128)
       .toString("hex")
       .slice(0, 128);
 
-    await writeFile(
-      `${dotNhost}/docker-compose.yaml`,
-      nunjucks.renderString(getComposeTemplate(), nhostConfig)
-    );
+    // generate
+    const nhostBackendYaml = generateNhostBackendYaml(nhostConfig);
+
+    // write to file
+    const safeDumpOptions = {
+      skipInvalid: true,
+    };
+    const dockerComposeYaml = yaml.safeDump(nhostBackendYaml, safeDumpOptions);
+
+    await writeFile(`${dotNhost}/docker-compose.yaml`, dockerComposeYaml);
 
     // write docker api file
     await writeFile(`${dotNhost}/Dockerfile-api`, getDockerApiTemplate());
@@ -271,7 +274,5 @@ DevCommand.description = `Start Nhost project for local development
 ...
 Start Nhost project for local development
 `;
-
-nunjucks.configure({ autoescape: true });
 
 module.exports = DevCommand;
