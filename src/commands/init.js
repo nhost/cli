@@ -312,8 +312,7 @@ class InitCommand extends Command {
       if (project.backend_user_fields) {
         await this._writeToFileSync(
           envFile,
-          `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`,
-          { flag: "a" }
+          `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`
         );
       }
 
