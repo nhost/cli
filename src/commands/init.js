@@ -1,5 +1,4 @@
 const { Command } = require("@oclif/command");
-const nunjucks = require("nunjucks");
 const fs = require("fs");
 const fetch = require("node-fetch");
 const chalk = require("chalk");
@@ -8,6 +7,7 @@ const exec = util.promisify(require("child_process").exec);
 const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
 const mkdir = util.promisify(fs.mkdir);
+const yaml = require("js-yaml");
 
 const spinnerWith = require("../util/spinner");
 const selectProject = require("../util/projects");
@@ -15,7 +15,7 @@ const {
   authFileExists,
   readAuthFile,
   getCustomApiEndpoint,
-  getNhostConfigTemplate,
+  getNhostConfig,
 } = require("../util/config");
 const { validateAuth } = require("../util/login");
 const checkForHasura = require("../util/dependencies");
@@ -159,12 +159,17 @@ class InitCommand extends Command {
       `project_id: ${selectedProjectId}`
     );
 
+    // generate Nhost config
+    const nhostConfig = getNhostConfig(project);
+
+    const safeDumpOptions = {
+      skipInvalid: true,
+    };
+    const nhostConfigYaml = yaml.safeDump(nhostConfig, safeDumpOptions);
+
     // config.yaml holds configuration for GraphQL engine, PostgreSQL and HBP
     // it is also a requirement for hasura to work
-    await writeFile(
-      `${nhostDir}/config.yaml`,
-      nunjucks.renderString(getNhostConfigTemplate(), project)
-    );
+    await writeFile(`${nhostDir}/config.yaml`, nhostConfigYaml);
 
     // create directory for migrations
     const migrationDirectory = `${nhostDir}/migrations`;
@@ -307,8 +312,7 @@ class InitCommand extends Command {
       if (project.backend_user_fields) {
         await this._writeToFileSync(
           envFile,
-          `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`,
-          { flag: "a" }
+          `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`
         );
       }
 
