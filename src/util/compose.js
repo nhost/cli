@@ -154,7 +154,7 @@ function generateNhostBackendYaml(options) {
       },
       ports: [`${api_port}:${api_port}`],
       env_file: [env_file],
-      volumes: ["../api:/user/serc/app/api"],
+      volumes: ["../api:/usr/src/app/api"],
     };
   }
 
