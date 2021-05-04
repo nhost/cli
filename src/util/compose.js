@@ -40,7 +40,7 @@ function generateNhostBackendYaml(options) {
     version: "3.6",
     services: {
       ["nhost-postgres"]: {
-        container_name: nhost_postgres,
+        container_name: "nhost_postgres",
         image: `postgres:${postgres_version}`,
         ports: [`${postgres_port}:5432`],
         restart: "always",
