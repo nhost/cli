@@ -114,6 +114,7 @@ function generateNhostBackendYaml(options) {
           LINKEDIN_ENABLE: linkedin_enable.toString(),
           LINKEDIN_CLIENT_ID: linkedin_client_id,
           LINKEDIN_CLIENT_SECRET: linkedin_client_secret,
+          DATABASE_URL: `postgres://${postgres_user}:${postgres_password}@nhost_postgres:5432/postgres`,
         },
         env_file: [env_file],
         volumes: ["../nhost/custom:/app/custom"],
