@@ -6,6 +6,7 @@ const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const exists = util.promisify(fs.exists);
 const writeFile = util.promisify(fs.writeFile);
+const appendFile = util.promisify(fs.appendFile);
 const mkdir = util.promisify(fs.mkdir);
 const yaml = require("js-yaml");
 
@@ -297,14 +298,14 @@ class InitCommand extends Command {
 
       // write ENV variables to .env.development
       spinner.text = "Adding env vars to .env.development";
-      await writeFile(
+      await appendFile(
         envFile,
         project.project_env_vars
           .map((envVar) => `${envVar.name}=${envVar.dev_value}`)
           .join("\n")
       );
 
-      await writeFile(
+      await appendFile(
         envFile,
         `\nREGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}\n`
       );
