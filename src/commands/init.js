@@ -186,7 +186,7 @@ class InitCommand extends Command {
     // create or append to .gitignore
     const ignoreFile = `${workingDir}/.gitignore`;
 
-    await writeFile(ignoreFile, ".nhost\napi/node_modules", {
+    await writeFile(ignoreFile, "\n.nhost\napi/node_modules", {
       flag: "a",
     });
 
