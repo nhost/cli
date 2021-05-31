@@ -88,16 +88,24 @@ class InitCommand extends Command {
 
   //update values within .env file. if value is not found it is written 
   async _setEnvValue(filePath, key, value) {
-      let ENV_VARS = fs.readFileSync(filePath).split(os.EOL);
-      let newEntry = `${key}=${value}`
+    let newEntry = `${key}=${value}`;
+    
+    if(fs.existsSync(filePath)){
+      
+      let ENV_VARS = fs.readFileSync(filePath, "utf8").split(os.EOL);
+      
       let targetIndex = ENV_VARS.indexOf(ENV_VARS.find((line) => 
       { 
-          return line.match(new RegExp(key))
+          return line.indexOf('=') >= 0 && line.split('=')[0].trim() == key
       }));
 
-      targetIndex >= 0 ?  ENV_VARS.splice(targetIndex, 1, newEntry) : ENV_VARS.push(newEntry)
+      targetIndex >= 0 ?  ENV_VARS.splice(targetIndex, 1, newEntry) : ENV_VARS.push(newEntry);
       
       fs.writeFileSync(filePath, ENV_VARS.join(os.EOL));
+    } else{
+
+      fs.appendFileSync(filePath, newEntry); 
+    }
   }
 
   async run() {
@@ -313,35 +321,38 @@ class InitCommand extends Command {
 
       // write ENV variables to .env.development
       spinner.text = "Adding env vars to .env.development";
-      await appendFile(
-        envFile,
-        project.project_env_vars
-          .map((envVar) => `${envVar.name}=${envVar.dev_value}`)
-          .join("\n")
-      );
+      await project.project_env_vars
+           .reduce( async (memo, envVar) => { 
+             await memo; 
+             await this._setEnvValue(envFile, envVar.name, envVar.dev_value);
+           }, undefined);
 
-      await appendFile(
+      await this._setEnvValue(
         envFile,
-        `\nREGISTRATION_CUSTOM_FIELDS=${project.hbp_REGISTRATION_CUSTOM_FIELDS}\n`
+        'REGISTRATION_CUSTOM_FIELDS',
+        project.hbp_REGISTRATION_CUSTOM_FIELDS
       );
 
       if (project.backend_user_fields) {
-        await this._writeToFileSync(
+        await this._setEnvValue(
           envFile,
-          `JWT_CUSTOM_FIELDS=${project.backend_user_fields}\n`
+          'JWT_CUSTOM_FIELDS',
+          project.backend_user_fields
         );
       }
 
       if (project.hbp_DEFAULT_ALLOWED_USER_ROLES) {
-        await this._writeToFileSync(
+        await this._setEnvValue(
           envFile,
-          `DEFAULT_ALLOWED_USER_ROLES=${project.hbp_DEFAULT_ALLOWED_USER_ROLES}\n`
+          'DEFAULT_ALLOWED_USER_ROLES',
+          project.hbp_DEFAULT_ALLOWED_USER_ROLES
         );
       }
       if (project.hbp_allowed_user_roles) {
-        await this._writeToFileSync(
+        await this._setEnvValue(
           envFile,
-          `ALLOWED_USER_ROLES=${project.hbp_allowed_user_roles}\n`
+          'ALLOWED_USER_ROLES',
+          project.hbp_allowed_user_roles
         );
       }
     } catch (error) {
