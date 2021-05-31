@@ -9,6 +9,7 @@ const writeFile = util.promisify(fs.writeFile);
 const appendFile = util.promisify(fs.appendFile);
 const mkdir = util.promisify(fs.mkdir);
 const yaml = require("js-yaml");
+const os = require("os");
 
 const spinnerWith = require("../util/spinner");
 const selectProject = require("../util/projects");
@@ -83,6 +84,20 @@ class InitCommand extends Command {
       fs.writeSync(fd, currentData, 0, currentData.length, buffer.length);
     }
     fs.close(fd);
+  }
+
+  //update values within .env file. if value is not found it is written 
+  async _setEnvValue(filePath, key, value) {
+      let ENV_VARS = fs.readFileSync(filePath).split(os.EOL);
+      let newEntry = `${key}=${value}`
+      let targetIndex = ENV_VARS.indexOf(ENV_VARS.find((line) => 
+      { 
+          return line.match(new RegExp(key))
+      }));
+
+      targetIndex >= 0 ?  ENV_VARS.splice(targetIndex, 1, newEntry) : ENV_VARS.push(newEntry)
+      
+      fs.writeFileSync(filePath, ENV_VARS.join(os.EOL));
   }
 
   async run() {
