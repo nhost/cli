@@ -28,6 +28,7 @@ postgres_version: {{ postgres_version }}
 postgres_port: 5432
 postgres_user: postgres
 postgres_password: postgres
+postgres_image: postgres
 
 # minio
 minio_port: 9000
