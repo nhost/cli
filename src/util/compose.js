@@ -89,6 +89,7 @@ function generateNhostBackendYaml(options) {
           PORT: hasura_backend_plus_port,
           USER_FIELDS: "",
           USER_REGISTRATION_AUTO_ACTIVE: "true",
+          DATABASE_URL: `postgres://${postgres_user}:${postgres_password}@nhost-postgres:5432/postgres`,
           HASURA_GRAPHQL_ENDPOINT: `http://nhost-graphql-engine:${hasura_graphql_port}/v1/graphql`,
           HASURA_ENDPOINT: `http://nhost-graphql-engine:${hasura_graphql_port}/v1/graphql`,
           HASURA_GRAPHQL_ADMIN_SECRET: hasura_graphql_admin_secret,
