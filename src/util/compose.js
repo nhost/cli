@@ -1,6 +1,6 @@
 function generateNhostBackendYaml(options) {
   const {
-    nhost_postgres,
+    postgres_image,
     postgres_version,
     postgres_port,
     postgres_user,
@@ -32,16 +32,20 @@ function generateNhostBackendYaml(options) {
     startAPI,
   } = options;
 
-  const hsauraGraphQLEngine = hasura_graphql_engine
+  const hasuraGraphQLEngine = hasura_graphql_engine
     ? hasura_graphql_engine
     : "hasura/graphql-engine";
+
+  const postgresImage = postgres_image
+    ? postgres_image
+    : `postgres:${postgres_version}`;
 
   const project = {
     version: "3.6",
     services: {
       ["nhost-postgres"]: {
         container_name: "nhost_postgres",
-        image: `postgres:${postgres_version}`,
+        image: postgresImage,
         ports: [`${postgres_port}:5432`],
         restart: "always",
         environment: {
@@ -52,7 +56,7 @@ function generateNhostBackendYaml(options) {
       },
       [`nhost-graphql-engine`]: {
         container_name: "nhost_hasura",
-        image: `${hsauraGraphQLEngine}:${hasura_graphql_version}`,
+        image: `${hasuraGraphQLEngine}:${hasura_graphql_version}`,
         ports: [`${hasura_graphql_port}:${hasura_graphql_port}`],
         depends_on: [`nhost-postgres`],
         restart: "always",
