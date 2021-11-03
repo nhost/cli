@@ -331,7 +331,7 @@ var devCmd = &cobra.Command{
 		//  Update environment state
 		env.UpdateState(environment.Active)
 
-		log.Warn("Use Ctrl + C to stop running evironment")
+		log.Warn("Use Ctrl + C to stop the environment")
 
 		//  wait for Ctrl+C
 		end_waiter.Wait()
