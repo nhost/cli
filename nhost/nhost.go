@@ -1073,7 +1073,6 @@ func GenerateConfig(options App) Configuration {
 				"default_role":                   "user",
 				"default_allowed_roles":          "user,me",
 				"allowed_roles":                  "user,me",
-				"signin_email_verified_required": true,
 				"mfa": map[interface{}]interface{}{
 					"enabled": false,
 					"issuer":  "nhost",
@@ -1102,6 +1101,7 @@ func GenerateConfig(options App) Configuration {
 			},
 			"email": map[interface{}]interface{}{
 				"enabled":            false,
+        "signin_email_verified_required": true,
 				"template_fetch_url": "",
 				"passwordless": map[interface{}]interface{}{
 					"enabled": false,
