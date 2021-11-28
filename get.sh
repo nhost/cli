@@ -71,12 +71,12 @@ if [[ "$unamestr" == 'Linux' ]]; then
     platform='linux'
 elif [[ "$unamestr" == 'Darwin' ]]; then
     platform='darwin'
-elif [[ "$unamestr" == 'Windows' ]]; then
+elif [[ "$unamestr" == 'Windows' ]] || [[ "$unamestr" = MINGW* ]]; then
     platform='windows'
 fi
 
 if [[ "$platform" == 'unknown' ]]; then
-    die "Unknown OS platform"
+    die "Unknown OS platform ${unamestr}"
 fi
 
 arch='unknown'
@@ -91,7 +91,14 @@ fi
 
 # some variables
 suffix="-${platform}-${arch}"
-targetFile="cli-$version$suffix.tar.gz"
+
+if [[ "$platform" != 'windows' ]]; then
+    extension=".tar.gz"
+else 
+    extension='.zip'
+fi
+
+targetFile="cli-$version$suffix$extension"
 
 if [ -e $targetFile ]; then
     rm $targetFile
@@ -102,13 +109,22 @@ url=https://github.com/$REPO/releases/download/$version/$targetFile
 
 try curl -L -f -o $targetFile "$url"
 try chmod +x $targetFile
-try tar -xvf $targetFile
+
+if [[ "$platform" != 'windows' ]]; then
+    try tar -xvf $targetFile
+else 
+    try unzip $targetFile
+fi
 try rm ./$targetFile
 
 log "${GREEN}Download complete!${NC}"
 echo
-try sudo mv ./cli ${INSTALL_PATH}/nhost
-nhost version
-echo
-log "${BLUE}Use Nhost CLI with: nhost --help${NC}"
 
+if [[ "$platform" != 'windows' ]]; then
+    try mv ./cli ${INSTALL_PATH}/nhost
+    nhost version
+    echo
+    log "${BLUE}Use Nhost CLI with: nhost --help${NC}"
+else 
+    log "${BLUE}Please copy cli.exe in a directory covered by your Windows path"
+fi
