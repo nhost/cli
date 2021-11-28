@@ -125,6 +125,7 @@ if [[ "$platform" != 'windows' ]]; then
     nhost version
     echo
     log "${BLUE}Use Nhost CLI with: nhost --help${NC}"
-else 
-    log "${BLUE}Please copy cli.exe in a directory covered by your Windows path"
+else
+    try mv cli.exe nhost.exe
+    log "${BLUE}Please copy nhost.exe in a directory covered by your Windows path"
 fi
