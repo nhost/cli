@@ -125,6 +125,11 @@ func Test_Pipeline(t *testing.T) {
 	os.Chown(filepath.Join(nhost.DOT_NHOST, "minio", "data"), os.Getuid(), os.Getgid())
 	os.Chmod(filepath.Join(nhost.DOT_NHOST, "minio", "data"), 0777)
 
+	//	Remove temp dir
+	if err := os.RemoveAll(filepath.Join(nhost.DOT_NHOST, "minio", "data", ".minio.sys")); err != nil {
+		t.Errorf("Failed to remove temp dir: %v", err)
+	}
+
 	/*
 			//	Might as well not even bother deleting the temporary directory
 
