@@ -30,5 +30,8 @@ jobs:
       - name: Install Dependencies
         run: go get
 
+      - name: Test
+        run: go test -timeout 1h -run ^Test_Pipeline$ github.com/${{ github.repository }}/cmd
+
       - name: Build
         run: go build
