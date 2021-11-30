@@ -7,8 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
 )
 
@@ -118,6 +120,9 @@ func Test_Pipeline(t *testing.T) {
 	for _, tt := range tests {
 		tt.run(t)
 	}
+
+	//	Take ownership of minio location before removing temp dir
+	os.Chmod(filepath.Join(nhost.DOT_NHOST, "minio", "data"), 0777)
 
 	/*
 			//	Might as well not even bother deleting the temporary directory
