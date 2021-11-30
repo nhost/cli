@@ -18,6 +18,8 @@ jobs:
             goos: darwin 
           - goarch: arm64
             goos: windows
+          - goarch: arm64
+            goos: linux
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2.3.4
@@ -30,8 +32,8 @@ jobs:
       - name: Install Dependencies
         run: go get
 
-      - name: Test
+      - name: Run Tests
         run: go test -timeout 1h -run ^Test_Pipeline$ github.com/${{ github.repository }}/cmd
 
-      - name: Build
+      - name: Build Binary
         run: go build

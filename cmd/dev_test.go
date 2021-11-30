@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
 )
 
@@ -66,6 +67,18 @@ var firstRunDevTest = test{
 var cleanupTest = test{
 	name: "cleanup",
 	operation: func() error {
+
+		//	Take ownership of Minio data location,
+		//	to avoid the following error:
+		//	TempDir RemoveAll cleanup: unlinkat /tmp/Test_Pipeline3097199488/001/test/.nhost/main/minio/data/.minio.sys/buckets/.tracker.bin: permission denied
+		//	This is a known issue with Minio.
+		if err := os.Chmod(nhost.DOT_NHOST, 0777); err != nil {
+			return err
+		}
+
+		if err := os.Chown(nhost.DOT_NHOST, os.Getuid(), os.Getgid()); err != nil {
+			return err
+		}
 
 		//	First, initiate the cleanup
 		env.Cleanup()
