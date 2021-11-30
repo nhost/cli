@@ -124,11 +124,11 @@ func Test_Pipeline(t *testing.T) {
 
 	//	Take ownership of minio location before removing temp dir
 	file := filepath.Join(nhost.DOT_NHOST, "minio", "data", ".minio.sys", "buckets", ".tracker.bin")
-	if err := os.Chmod(file, 0777); err != nil {
+	if err := os.Chown(file, os.Geteuid(), os.Getgid()); err != nil {
 		t.Errorf("Failed to take ownership of %s: %v", file, err)
 	}
 
-	if err := os.Chown(file, os.Geteuid(), os.Getgid()); err != nil {
+	if err := os.Chmod(file, 0777); err != nil {
 		t.Errorf("Failed to take ownership of %s: %v", file, err)
 	}
 
