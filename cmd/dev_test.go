@@ -124,7 +124,8 @@ func Test_Pipeline(t *testing.T) {
 
 	//	Take ownership of minio location before removing temp dir
 	file := filepath.Join(nhost.DOT_NHOST, "minio", "data", ".minio.sys", "buckets", ".tracker.bin")
-	if err := exec.Command("rm", "-rf", file).Run(); err != nil {
+	if output, err := exec.Command("sudo", "rm", "-rf", file).CombinedOutput(); err != nil {
+		t.Error(string(output))
 		t.Errorf("Failed to remove temp dir: %v", err)
 	}
 
