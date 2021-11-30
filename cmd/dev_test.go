@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"github.com/nhost/cli/nhost"
@@ -123,8 +122,8 @@ func Test_Pipeline(t *testing.T) {
 	}
 
 	//	Take ownership of minio location before removing temp dir
-	file := filepath.Join(nhost.DOT_NHOST, "minio", "data")
-	if output, err := exec.Command("sudo", "rm", "-rf", file).CombinedOutput(); err != nil {
+	//	file := filepath.Join(nhost.DOT_NHOST, "minio", "data")
+	if output, err := exec.Command("sudo", "rm", "-rf", nhost.DOT_NHOST).CombinedOutput(); err != nil {
 		t.Error(string(output))
 		t.Errorf("Failed to remove temp dir: %v", err)
 	}
