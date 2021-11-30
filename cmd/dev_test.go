@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"syscall"
 	"testing"
 
 	"github.com/nhost/cli/nhost"
@@ -124,16 +124,8 @@ func Test_Pipeline(t *testing.T) {
 
 	//	Take ownership of minio location before removing temp dir
 	file := filepath.Join(nhost.DOT_NHOST, "minio", "data", ".minio.sys", "buckets", ".tracker.bin")
-	if err := os.Chown(file, os.Geteuid(), os.Getgid()); err != nil {
-		t.Errorf("Failed to take ownership of %s: %v", file, err)
-	}
-
-	if err := os.Chmod(file, 0777); err != nil {
-		t.Errorf("Failed to take ownership of %s: %v", file, err)
-	}
-
-	if err := syscall.Unlink(file); err != nil {
-		t.Errorf("Failed to unlink minio location: %v", err)
+	if err := exec.Command("rm", "-rf", file).Run(); err != nil {
+		t.Errorf("Failed to remove temp dir: %v", err)
 	}
 
 	/*
