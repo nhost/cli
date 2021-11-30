@@ -122,6 +122,7 @@ func Test_Pipeline(t *testing.T) {
 	}
 
 	//	Take ownership of minio location before removing temp dir
+	os.Chown(filepath.Join(nhost.DOT_NHOST, "minio", "data"), os.Getuid(), os.Getgid())
 	os.Chmod(filepath.Join(nhost.DOT_NHOST, "minio", "data"), 0777)
 
 	/*
