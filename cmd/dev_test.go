@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/nhost/cli/nhost"
@@ -122,12 +123,8 @@ func Test_Pipeline(t *testing.T) {
 	}
 
 	//	Take ownership of minio location before removing temp dir
-	os.Chown(filepath.Join(nhost.DOT_NHOST, "minio", "data"), os.Getuid(), os.Getgid())
-	os.Chmod(filepath.Join(nhost.DOT_NHOST, "minio", "data"), 0777)
-
-	//	Remove temp dir
-	if err := os.RemoveAll(filepath.Join(nhost.DOT_NHOST, "minio", "data", ".minio.sys")); err != nil {
-		t.Errorf("Failed to remove temp dir: %v", err)
+	if err := syscall.Unlink(filepath.Join(nhost.DOT_NHOST, "minio", "data", ".minio.sys", "buckets", ".tracker.bin")); err != nil {
+		t.Errorf("Failed to unlunk minio location: %v", err)
 	}
 
 	/*

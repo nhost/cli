@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/nhost/cli/logger"
@@ -12,11 +11,11 @@ import (
 func InitTests(t *testing.T) {
 
 	//	Create temporary directory for testing
-	path, _ := ioutil.TempDir("", "nhost-test")
+	path := t.TempDir()
 	rootCmd.Flag("path").Value.Set(path)
 
 	logger.DEBUG = true
-	home, _ := ioutil.TempDir("", "nhost-home")
+	home := t.TempDir()
 	nhost.UpdateLocations(util.WORKING_DIR, path)
 	util.WORKING_DIR = path
 
