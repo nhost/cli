@@ -119,17 +119,21 @@ func Test_Pipeline(t *testing.T) {
 		tt.run(t)
 	}
 
-	//	Delete the temporary directory for tests
-	if err := deletePaths(); err != nil {
+	/*
+			//	Might as well not even bother deleting the temporary directory
 
-		//	Directory ownership permission error is already known with Minio.
-		//	TempDir RemoveAll cleanup: unlinkat /tmp/Test_Pipeline3097199488/001/test/.nhost/main/minio/data/.minio.sys/buckets/.tracker.bin: permission denied
-		//	So, ignore this error.
+			//	Delete the temporary directory for tests
+		   	if err := deletePaths(); err != nil {
 
-		if !errors.Is(err, os.ErrPermission) {
-			t.Error(err)
-		}
-	}
+		   		//	Directory ownership permission error is already known with Minio.
+		   		//	TempDir RemoveAll cleanup: unlinkat /tmp/Test_Pipeline3097199488/001/test/.nhost/main/minio/data/.minio.sys/buckets/.tracker.bin: permission denied
+		   		//	So, ignore this error.
+
+		   		if !errors.Is(err, os.ErrPermission) {
+		   			t.Error(err)
+		   		}
+		   	}
+	*/
 }
 
 func healthCheck() error {
