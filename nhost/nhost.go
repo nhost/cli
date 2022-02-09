@@ -368,7 +368,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "mailhog/mailhog"
+				parsed.Services[name].Image = "docker.io/mailhog/mailhog"
 			}
 
 		case "auth":
@@ -382,7 +382,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "nhost/hasura-auth"
+				parsed.Services[name].Image = "docker.io/nhost/hasura-auth"
 			}
 
 			if parsed.Services[name].HealthEndpoint == "" {
@@ -400,7 +400,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "nhost/hasura-storage"
+				parsed.Services[name].Image = "docker.io/nhost/hasura-storage"
 			}
 
 			if parsed.Services[name].HealthEndpoint == "" {
@@ -418,7 +418,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "nhost/postgres"
+				parsed.Services[name].Image = "docker.io/nhost/postgres"
 			}
 
 		case "hasura":
@@ -432,7 +432,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "hasura/graphql-engine"
+				parsed.Services[name].Image = "docker.io/hasura/graphql-engine"
 			}
 
 			if parsed.Services[name].HealthEndpoint == "" {
