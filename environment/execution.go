@@ -97,6 +97,40 @@ func (e *Environment) Execute() error {
 	}
 
 	//
+	//	Fixes #169
+	//
+	//	Detect inconsistent metadata,
+	//	and restart equivalent containers to fix breaking metadata changes.
+	inconsistentMetadata, err := e.Hasura.GetInconsistentMetadata()
+	if !inconsistentMetadata.IsConsistent {
+
+		status.Set("Fixing inconsistent metadata")
+
+		for _, object := range inconsistentMetadata.InconsistentObjects {
+			log.Debug(object.Reason)
+
+			//	Fetch the equivalent container
+			for x := range e.Config.Services {
+				if x == object.Definition.Schema {
+
+					//	Restart the container
+					log.Debugf("Restarting %s container", x)
+					if err := e.Docker.ContainerRestart(e.Context, e.Config.Services[x].ID, nil); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	//	Re-run the healthcheck after restarting containers
+	if err := e.HealthCheck(e.ExecutionContext); err != nil {
+		return err
+	}
+
+	//	End Fix #169
+
+	//
 	//  Apply Seeds if required
 	//
 	if firstRun && util.PathExists(filepath.Join(nhost.SEEDS_DIR, nhost.DATABASE)) {

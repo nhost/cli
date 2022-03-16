@@ -27,6 +27,18 @@ type V2ReplaceMetadataResponse struct {
 }
 
 type GetInconsistentMetadataResponse struct {
-	IsConsistent        bool          `json:"is_consistent"`
-	InconsistentObjects []interface{} `json:"inconsistent_objects"`
+	IsConsistent        bool `json:"is_consistent"`
+	InconsistentObjects []struct {
+		Type       string `json:"type"`
+		Name       string `json:"name"`
+		Reason     string `json:"reason"`
+		Definition struct {
+			Name   string `json:"name"`
+			Schema string `json:"schema"`
+		} `json:"definition"`
+		Table struct {
+			Name   string `json:"name"`
+			Schema string `json:"schema"`
+		} `json:"table"`
+	} `json:"inconsistent_objects"`
 }
