@@ -12,7 +12,7 @@ type CommonMetadataOperations interface {
 	ReloadMetadata() (io.Reader, error)
 	DropInconsistentMetadata() (io.Reader, error)
 	ReplaceMetadata(metadata io.Reader) (io.Reader, error)
-	GetInconsistentMetadata() (*GetInconsistentMetadataResponse, error)
+	GetInconsistentMetadata() (*InconsistentMetadataResponse, error)
 	GetInconsistentMetadataReader() (io.Reader, error)
 }
 
@@ -26,7 +26,7 @@ type V2ReplaceMetadataResponse struct {
 	InconsistentObjects interface{} `json:"inconsistent_objects"`
 }
 
-type GetInconsistentMetadataResponse struct {
+type InconsistentMetadataResponse struct {
 	IsConsistent        bool `json:"is_consistent"`
 	InconsistentObjects []struct {
 		Type       string `json:"type"`

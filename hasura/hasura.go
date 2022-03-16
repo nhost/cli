@@ -211,11 +211,11 @@ func (c *Client) GetMetadata() (HasuraMetadataV3, error) {
 	return UnmarshalHasuraMetadataV3(payload)
 }
 
-func (c *Client) GetInconsistentMetadata() (GetInconsistentMetadataResponse, error) {
+func (c *Client) GetInconsistentMetadata() (InconsistentMetadataResponse, error) {
 
 	log.Debug("Fetching inconsistent metadata")
 
-	var response GetInconsistentMetadataResponse
+	var response InconsistentMetadataResponse
 
 	reqBody := RequestBody{
 		Type: "get_inconsistent_metadata",
