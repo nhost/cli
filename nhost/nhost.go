@@ -401,7 +401,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Version == nil {
-				parsed.Services[name].Version = "0.1.0"
+				parsed.Services[name].Version = "0.1.1"
 			}
 
 			if parsed.Services[name].Image == "" {
@@ -1000,6 +1000,8 @@ func (config *Configuration) Init(port string) error {
 		fmt.Sprintf(`http://%s:%v/v1`, config.Services["hasura"].Name, config.Services["hasura"].Port),
 		"--bind",
 		fmt.Sprintf(":%d", config.Services["storage"].Port),
+		"--public-url",
+		fmt.Sprintf("http://localhost:%d", config.Services["storage"].Port),
 	}
 
 	//  prepare env variables for following container
