@@ -248,6 +248,11 @@ func SearchRelease(releases []Release, version string) (Release, error) {
 			}
 		}
 	}
+
+	if len(releases) == 0 {
+		return response, errors.New("no release found")
+	}
+
 	return releases[0], nil
 }
 
@@ -258,7 +263,7 @@ func GetReleases() ([]Release, error) {
 
 	var array []Release
 
-	resp, err := http.Get(fmt.Sprintf("https://api.github.com/repos/%v/releases", REPOSITORY))
+	resp, err := http.Get("https://cli.nhost.io/releases.json")
 	if err != nil {
 		return array, err
 	}
@@ -378,7 +383,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Version == nil {
-				parsed.Services[name].Version = "0.2.1"
+				parsed.Services[name].Version = "0.3.2"
 			}
 
 			if parsed.Services[name].Image == "" {
