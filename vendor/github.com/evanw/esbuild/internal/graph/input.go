@@ -18,7 +18,6 @@ import (
 )
 
 type InputFile struct {
-	Source         logger.Source
 	Repr           InputFileRepr
 	InputSourceMap *sourcemap.SourceMap
 
@@ -29,18 +28,18 @@ type InputFile struct {
 	UniqueKeyForFileLoader string
 
 	SideEffects SideEffects
+	Source      logger.Source
 	Loader      config.Loader
 }
 
 type OutputFile struct {
-	AbsPath  string
-	Contents []byte
-
 	// If "AbsMetadataFile" is present, this will be filled out with information
 	// about this file in JSON format. This is a partial JSON file that will be
 	// fully assembled later.
 	JSONMetadataChunk string
 
+	AbsPath      string
+	Contents     []byte
 	IsExecutable bool
 }
 
@@ -61,6 +60,10 @@ const (
 	// file in one of our containing directories with a "sideEffects" field.
 	NoSideEffects_PackageJSON
 
+	// This file is considered to have no side effects because the AST was empty
+	// after parsing finished. This should be the case for ".d.ts" files.
+	NoSideEffects_EmptyAST
+
 	// This file was loaded using a data-oriented loader (e.g. "text") that is
 	// known to not have side effects.
 	NoSideEffects_PureData
@@ -76,8 +79,8 @@ type InputFileRepr interface {
 }
 
 type JSRepr struct {
-	AST  js_ast.AST
 	Meta JSReprMeta
+	AST  js_ast.AST
 
 	// If present, this is the CSS file that this JavaScript stub corresponds to.
 	// A JavaScript stub is automatically generated for a CSS file when it's
