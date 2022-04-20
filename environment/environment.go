@@ -242,6 +242,7 @@ func (e *Environment) Prepare() error {
 		return err
 	}
 
+	// Exporting metadata to keep local metadata in sync.
 	log.Debug("Exporting metadata")
 	execute = exec.CommandContext(e.ExecutionContext, e.Hasura.CLI)
 	execute.Dir = nhost.NHOST_DIR
