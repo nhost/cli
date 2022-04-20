@@ -188,7 +188,7 @@ func (e *Environment) Prepare() error {
 
 	if len(metaFiles) == 0 {
 
-		//  Export metadata
+		// Export metadata
 		log.Debug("Exporting metadata")
 
 		execute := exec.CommandContext(e.ExecutionContext, e.Hasura.CLI)
@@ -207,11 +207,7 @@ func (e *Environment) Prepare() error {
 
 	}
 
-	//  If metadata directory is already mounted to nhost_hasura container,
-	//  then Hasura must be auto-applying metadata
-	//  hence, manually applying metadata doesn't make sense
-
-	//  apply metadata
+	// apply metadata
 	log.Debug("Applying metadata")
 
 	execute := exec.CommandContext(e.ExecutionContext, e.Hasura.CLI)
