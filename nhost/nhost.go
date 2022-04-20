@@ -373,7 +373,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "mailhog/mailhog"
+				parsed.Services[name].Image = "docker.io/mailhog/mailhog"
 			}
 
 		case "auth":
@@ -387,7 +387,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "nhost/hasura-auth"
+				parsed.Services[name].Image = "docker.io/nhost/hasura-auth"
 			}
 
 			if parsed.Services[name].HealthEndpoint == "" {
@@ -401,11 +401,11 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Version == nil {
-				parsed.Services[name].Version = "sha-623f285"
+				parsed.Services[name].Version = "0.1.3"
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "nhost/hasura-storage"
+				parsed.Services[name].Image = "docker.io/nhost/hasura-storage"
 			}
 
 			if parsed.Services[name].HealthEndpoint == "" {
@@ -423,7 +423,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "nhost/postgres"
+				parsed.Services[name].Image = "docker.io/nhost/postgres"
 			}
 
 		case "hasura":
@@ -437,7 +437,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Image == "" {
-				parsed.Services[name].Image = "hasura/graphql-engine"
+				parsed.Services[name].Image = "docker.io/hasura/graphql-engine"
 			}
 
 			if parsed.Services[name].HealthEndpoint == "" {
@@ -480,7 +480,7 @@ func GetAddress(s *Service) string {
 
 	switch s.Name {
 	case GetContainerName("postgres"):
-		return fmt.Sprintf(`postgres://%v:%v@%s:%v/postgres`, s.Environment["postgres_user"], s.Environment["postgres_password"], GetContainerName("postgres"), s.Port)
+		return fmt.Sprintf(`postgres://%v:%v@%s:%v/postgres?sslmode=disable`, s.Environment["postgres_user"], s.Environment["postgres_password"], GetContainerName("postgres"), s.Port)
 	default:
 		if s.NoContainer {
 			return s.Address
@@ -701,23 +701,16 @@ func (config *Configuration) Init(port string) error {
 	dataTarget, _ := filepath.Rel(util.WORKING_DIR, DOT_NHOST)
 	log.WithField("service", "data").Debugln("Mounting data from ", dataTarget)
 
-	//  create mount points if they doesn't exist
-	mountPoints := []mount.Mount{
-		{
-			Type:   mount.TypeBind,
-			Source: filepath.Join(DOT_NHOST, "db_data"),
-			Target: "/var/lib/postgresql/data",
-		},
-	}
+	//  create mount point if it doesn't exist
+	sourceDir := filepath.Join(DOT_NHOST, "db_data")
+	targetDir := "/var/lib/postgresql/data"
 
-	for _, mountPoint := range mountPoints {
-		if err := os.MkdirAll(mountPoint.Source, os.ModePerm); err != nil {
-			return err
-		}
+	if err := os.MkdirAll(sourceDir, os.ModePerm); err != nil {
+		return err
 	}
 
 	postgresConfig.Config.Cmd = []string{"-p", fmt.Sprint(config.Services["postgres"].Port)}
-	postgresConfig.HostConfig.Mounts = mountPoints
+	postgresConfig.HostConfig.Binds = []string{fmt.Sprintf("%s:%s:Z", sourceDir, targetDir)}
 
 	var pgUser, pgPass string
 
@@ -824,7 +817,7 @@ func (config *Configuration) Init(port string) error {
 	hasuraConfig.Config.Env = containerVariables
 
 	//  create mount points if they doesn't exit
-	mountPoints = []mount.Mount{
+	mountPoints := []mount.Mount{
 		{
 			Type:   mount.TypeBind,
 			Source: filepath.Join(DOT_NHOST, "minio", "data"),
@@ -956,6 +949,9 @@ func (config *Configuration) Init(port string) error {
 		"STORAGE_SWAGGER_ENABLED=false",
 		"S3_SSL_ENABLED=false",
 		"S3_BUCKET=nhost",
+		fmt.Sprintf("S3_ENDPOINT=%s", GetAddress(config.Services["minio"])),
+		"S3_REGION=fake-region",
+		"S3_ROOT_FOLDER=nhost",
 	}
 
 	//	Add S3 endpoint
@@ -985,6 +981,21 @@ func (config *Configuration) Init(port string) error {
 	//  append storage env vars
 	containerVariables = append(containerVariables, ParseEnvVarsFromConfig(config.Storage, "STORAGE")...)
 	storageConfig.Config.Env = containerVariables
+	storageConfig.Config.Cmd = []string{
+		"serve",
+		"--postgres-migrations",
+		"--postgres-migrations-source",
+		GetAddress(config.Services["postgres"]),
+		"--hasura-metadata",
+		"--hasura-admin-secret",
+		util.ADMIN_SECRET,
+		"--hasura_endpoint",
+		fmt.Sprintf(`http://%s:%v/v1`, config.Services["hasura"].Name, config.Services["hasura"].Port),
+		"--bind",
+		fmt.Sprintf(":%d", config.Services["storage"].Port),
+		"--public-url",
+		fmt.Sprintf("http://localhost:%d", config.Services["storage"].Port),
+	}
 
 	//  prepare env variables for following container
 	//	containerVariables = appenddevVars(config.Auth["smtp"].(map[interface{}]interface{}), "SMTP")
