@@ -235,11 +235,16 @@ func (e *Environment) Prepare() error {
 		if err := e.Docker.ContainerRestart(e.Context, e.Config.Services[x].ID, nil); err != nil {
 			return err
 		}
-		log.Debugf("Restarting %s container done!", x)
 	}
 
-	log.Debugf("Restarting containers completed")
+	//	Run helath-check again to wait for restarted containers to become active
+	if err := e.HealthCheck(e.ExecutionContext); err != nil {
+		return err
+	}
 
+	log.Debug("Exporting metadata")
+	execute = exec.CommandContext(e.ExecutionContext, e.Hasura.CLI)
+	execute.Dir = nhost.NHOST_DIR
 	cmdArgs = []string{e.Hasura.CLI, "metadata", "export"}
 	cmdArgs = append(cmdArgs, e.Hasura.CommonOptionsWithoutDB...)
 	execute.Args = cmdArgs
@@ -250,9 +255,6 @@ func (e *Environment) Prepare() error {
 		status.Errorln("Failed to export metadata")
 		return err
 	}
-
-	log.Debug("Exporting metadata done")
-	log.Debug(string(output))
 
 	return nil
 }
