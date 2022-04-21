@@ -5,6 +5,11 @@
 package js_parser
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/evanw/esbuild/internal/compat"
+	"github.com/evanw/esbuild/internal/helpers"
 	"github.com/evanw/esbuild/internal/js_ast"
 	"github.com/evanw/esbuild/internal/js_lexer"
 	"github.com/evanw/esbuild/internal/logger"
@@ -156,7 +161,9 @@ func (p *parser) skipTypeScriptType(level js_ast.L) {
 }
 
 type skipTypeOpts struct {
-	isReturnType bool
+	isReturnType     bool
+	isIndexSignature bool
+	allowTupleLabels bool
 }
 
 type tsTypeIdentifierKind uint8
@@ -197,8 +204,17 @@ func (p *parser) skipTypeScriptTypeWithOpts(level js_ast.L, opts skipTypeOpts) {
 		switch p.lexer.Token {
 		case js_lexer.TNumericLiteral, js_lexer.TBigIntegerLiteral, js_lexer.TStringLiteral,
 			js_lexer.TNoSubstitutionTemplateLiteral, js_lexer.TTrue, js_lexer.TFalse,
-			js_lexer.TNull, js_lexer.TVoid, js_lexer.TConst:
+			js_lexer.TNull, js_lexer.TVoid:
 			p.lexer.Next()
+
+		case js_lexer.TConst:
+			r := p.lexer.Range()
+			p.lexer.Next()
+
+			// "[const: number]"
+			if opts.allowTupleLabels && p.lexer.Token == js_lexer.TColon {
+				p.log.Add(logger.Error, &p.tracker, r, "Unexpected \"const\"")
+			}
 
 		case js_lexer.TThis:
 			p.lexer.Next()
@@ -229,20 +245,44 @@ func (p *parser) skipTypeScriptTypeWithOpts(level js_ast.L, opts skipTypeOpts) {
 		case js_lexer.TImport:
 			// "import('fs')"
 			p.lexer.Next()
+
+			// "[import: number]"
+			if opts.allowTupleLabels && p.lexer.Token == js_lexer.TColon {
+				return
+			}
+
 			p.lexer.Expect(js_lexer.TOpenParen)
 			p.lexer.Expect(js_lexer.TStringLiteral)
+
+			// "import('./foo.json', { assert: { type: 'json' } })"
+			if p.lexer.Token == js_lexer.TComma {
+				p.lexer.Next()
+				p.skipTypeScriptObjectType()
+
+				// "import('./foo.json', { assert: { type: 'json' } }, )"
+				if p.lexer.Token == js_lexer.TComma {
+					p.lexer.Next()
+				}
+			}
+
 			p.lexer.Expect(js_lexer.TCloseParen)
 
 		case js_lexer.TNew:
 			// "new () => Foo"
 			// "new <T>() => Foo<T>"
 			p.lexer.Next()
-			p.skipTypeScriptTypeParameters()
+
+			// "[new: number]"
+			if opts.allowTupleLabels && p.lexer.Token == js_lexer.TColon {
+				return
+			}
+
+			p.skipTypeScriptTypeParameters(typeParametersNormal)
 			p.skipTypeScriptParenOrFnType()
 
 		case js_lexer.TLessThan:
 			// "<T>() => Foo<T>"
-			p.skipTypeScriptTypeParameters()
+			p.skipTypeScriptTypeParameters(typeParametersNormal)
 			p.skipTypeScriptParenOrFnType()
 
 		case js_lexer.TOpenParen:
@@ -250,11 +290,21 @@ func (p *parser) skipTypeScriptTypeWithOpts(level js_ast.L, opts skipTypeOpts) {
 			p.skipTypeScriptParenOrFnType()
 
 		case js_lexer.TIdentifier:
-			kind := tsTypeIdentifierMap[p.lexer.Identifier]
+			kind := tsTypeIdentifierMap[p.lexer.Identifier.String]
 
 			if kind == tsTypeIdentifierPrefix {
 				p.lexer.Next()
-				p.skipTypeScriptType(js_ast.LPrefix)
+
+				// Valid:
+				//   "[keyof: string]"
+				//   "{[keyof: string]: number}"
+				//
+				// Invalid:
+				//   "A extends B ? keyof : string"
+				//
+				if p.lexer.Token != js_lexer.TColon || (!opts.isIndexSignature && !opts.allowTupleLabels) {
+					p.skipTypeScriptType(js_ast.LPrefix)
+				}
 				break
 			}
 
@@ -304,21 +354,34 @@ func (p *parser) skipTypeScriptTypeWithOpts(level js_ast.L, opts skipTypeOpts) {
 
 		case js_lexer.TTypeof:
 			p.lexer.Next()
+
+			// "[typeof: number]"
+			if opts.allowTupleLabels && p.lexer.Token == js_lexer.TColon {
+				return
+			}
+
 			if p.lexer.Token == js_lexer.TImport {
 				// "typeof import('fs')"
 				continue
 			} else {
 				// "typeof x"
+				if !p.lexer.IsIdentifierOrKeyword() {
+					p.lexer.Expected(js_lexer.TIdentifier)
+				}
+				p.lexer.Next()
+
 				// "typeof x.y"
-				for {
-					if !p.lexer.IsIdentifierOrKeyword() {
+				// "typeof x.#y"
+				for p.lexer.Token == js_lexer.TDot {
+					p.lexer.Next()
+					if !p.lexer.IsIdentifierOrKeyword() && p.lexer.Token != js_lexer.TPrivateIdentifier {
 						p.lexer.Expected(js_lexer.TIdentifier)
 					}
 					p.lexer.Next()
-					if p.lexer.Token != js_lexer.TDot {
-						break
-					}
-					p.lexer.Next()
+				}
+
+				if !p.lexer.HasNewlineBefore {
+					p.skipTypeScriptTypeArguments(false /* isInsideJSXElement */)
 				}
 			}
 
@@ -330,7 +393,7 @@ func (p *parser) skipTypeScriptTypeWithOpts(level js_ast.L, opts skipTypeOpts) {
 				if p.lexer.Token == js_lexer.TDotDotDot {
 					p.lexer.Next()
 				}
-				p.skipTypeScriptType(js_ast.LLowest)
+				p.skipTypeScriptTypeWithOpts(js_ast.LLowest, skipTypeOpts{allowTupleLabels: true})
 				if p.lexer.Token == js_lexer.TQuestion {
 					p.lexer.Next()
 				}
@@ -361,6 +424,18 @@ func (p *parser) skipTypeScriptTypeWithOpts(level js_ast.L, opts skipTypeOpts) {
 			}
 
 		default:
+			// "[function: number]"
+			if opts.allowTupleLabels && p.lexer.IsIdentifierOrKeyword() {
+				if p.lexer.Token != js_lexer.TFunction {
+					p.log.Add(logger.Error, &p.tracker, p.lexer.Range(), fmt.Sprintf("Unexpected %q", p.lexer.Raw()))
+				}
+				p.lexer.Next()
+				if p.lexer.Token != js_lexer.TColon {
+					p.lexer.Expect(js_lexer.TColon)
+				}
+				return
+			}
+
 			p.lexer.Unexpected()
 		}
 		break
@@ -458,7 +533,7 @@ func (p *parser) skipTypeScriptObjectType() {
 		if p.lexer.Token == js_lexer.TOpenBracket {
 			// Index signature or computed property
 			p.lexer.Next()
-			p.skipTypeScriptType(js_ast.LLowest)
+			p.skipTypeScriptTypeWithOpts(js_ast.LLowest, skipTypeOpts{isIndexSignature: true})
 
 			// "{ [key: string]: number }"
 			// "{ readonly [K in keyof T]: T[K] }"
@@ -493,7 +568,7 @@ func (p *parser) skipTypeScriptObjectType() {
 		}
 
 		// Type parameters come right after the optional mark
-		p.skipTypeScriptTypeParameters()
+		p.skipTypeScriptTypeParameters(typeParametersNormal)
 
 		switch p.lexer.Token {
 		case js_lexer.TColon:
@@ -534,14 +609,79 @@ func (p *parser) skipTypeScriptObjectType() {
 	p.lexer.Expect(js_lexer.TCloseBrace)
 }
 
+type typeParameters uint8
+
+const (
+	typeParametersNormal typeParameters = iota
+	typeParametersWithInOutVarianceAnnotations
+)
+
 // This is the type parameter declarations that go with other symbol
 // declarations (class, function, type, etc.)
-func (p *parser) skipTypeScriptTypeParameters() {
+func (p *parser) skipTypeScriptTypeParameters(mode typeParameters) {
 	if p.lexer.Token == js_lexer.TLessThan {
 		p.lexer.Next()
 
 		for {
-			p.lexer.Expect(js_lexer.TIdentifier)
+			hasIn := false
+			hasOut := false
+			expectIdentifier := true
+			invalidModifierRange := logger.Range{}
+
+			// Scan over a sequence of "in" and "out" modifiers (a.k.a. optional variance annotations)
+			for {
+				if p.lexer.Token == js_lexer.TIn {
+					if invalidModifierRange.Len == 0 && (mode != typeParametersWithInOutVarianceAnnotations || hasIn || hasOut) {
+						// Valid:
+						//   "type Foo<in T> = T"
+						// Invalid:
+						//   "type Foo<in in T> = T"
+						//   "type Foo<out in T> = T"
+						invalidModifierRange = p.lexer.Range()
+					}
+					p.lexer.Next()
+					hasIn = true
+					expectIdentifier = true
+					continue
+				}
+
+				if p.lexer.IsContextualKeyword("out") {
+					r := p.lexer.Range()
+					if invalidModifierRange.Len == 0 && mode != typeParametersWithInOutVarianceAnnotations {
+						invalidModifierRange = r
+					}
+					p.lexer.Next()
+					if invalidModifierRange.Len == 0 && hasOut && (p.lexer.Token == js_lexer.TIn || p.lexer.Token == js_lexer.TIdentifier) {
+						// Valid:
+						//   "type Foo<out T> = T"
+						//   "type Foo<out out> = T"
+						//   "type Foo<out out, T> = T"
+						//   "type Foo<out out = T> = T"
+						//   "type Foo<out out extends T> = T"
+						// Invalid:
+						//   "type Foo<out out in T> = T"
+						//   "type Foo<out out T> = T"
+						invalidModifierRange = r
+					}
+					hasOut = true
+					expectIdentifier = false
+					continue
+				}
+
+				break
+			}
+
+			// Only report an error for the first invalid modifier
+			if invalidModifierRange.Len > 0 {
+				p.log.Add(logger.Error, &p.tracker, invalidModifierRange, fmt.Sprintf(
+					"The modifier %q is not valid here:", p.source.TextForRange(invalidModifierRange)))
+			}
+
+			// expectIdentifier => Mandatory identifier (e.g. after "type Foo <in ___")
+			// !expectIdentifier => Optional identifier (e.g. after "type Foo <out ___" since "out" may be the identifier)
+			if expectIdentifier || p.lexer.Token == js_lexer.TIdentifier {
+				p.lexer.Expect(js_lexer.TIdentifier)
+			}
 
 			// "class Foo<T extends number> {}"
 			if p.lexer.Token == js_lexer.TExtends {
@@ -632,7 +772,7 @@ func (p *parser) trySkipTypeScriptTypeParametersThenOpenParenWithBacktracking() 
 		}
 	}()
 
-	p.skipTypeScriptTypeParameters()
+	p.skipTypeScriptTypeParameters(typeParametersNormal)
 	if p.lexer.Token != js_lexer.TOpenParen {
 		p.lexer.Unexpected()
 	}
@@ -716,65 +856,80 @@ func (p *parser) isTSArrowFnJSX() (isTSArrowFn bool) {
 	return
 }
 
+func (p *parser) nextTokenIsOpenParenOrLessThanOrDot() (result bool) {
+	oldLexer := p.lexer
+	p.lexer.Next()
+
+	result = p.lexer.Token == js_lexer.TOpenParen ||
+		p.lexer.Token == js_lexer.TLessThan ||
+		p.lexer.Token == js_lexer.TDot
+
+	// Restore the lexer
+	p.lexer = oldLexer
+	return
+}
+
 // This function is taken from the official TypeScript compiler source code:
 // https://github.com/microsoft/TypeScript/blob/master/src/compiler/parser.ts
 func (p *parser) canFollowTypeArgumentsInExpression() bool {
 	switch p.lexer.Token {
 	case
-		// These are the only tokens can legally follow a type argument list. So we
-		// definitely want to treat them as type arg lists.
+		// These tokens can follow a type argument list in a call expression.
 		js_lexer.TOpenParen,                     // foo<x>(
 		js_lexer.TNoSubstitutionTemplateLiteral, // foo<T> `...`
 		js_lexer.TTemplateHead:                  // foo<T> `...${100}...`
 		return true
 
+	// Consider something a type argument list only if the following token can't start an expression.
 	case
-		// These cases can't legally follow a type arg list. However, they're not
-		// legal expressions either. The user is probably in the middle of a
-		// generic type. So treat it as such.
-		js_lexer.TDot,                     // foo<x>.
-		js_lexer.TCloseParen,              // foo<x>)
-		js_lexer.TCloseBracket,            // foo<x>]
-		js_lexer.TColon,                   // foo<x>:
-		js_lexer.TSemicolon,               // foo<x>;
-		js_lexer.TQuestion,                // foo<x>?
-		js_lexer.TEqualsEquals,            // foo<x> ==
-		js_lexer.TEqualsEqualsEquals,      // foo<x> ===
-		js_lexer.TExclamationEquals,       // foo<x> !=
-		js_lexer.TExclamationEqualsEquals, // foo<x> !==
-		js_lexer.TAmpersandAmpersand,      // foo<x> &&
-		js_lexer.TBarBar,                  // foo<x> ||
-		js_lexer.TQuestionQuestion,        // foo<x> ??
-		js_lexer.TCaret,                   // foo<x> ^
-		js_lexer.TAmpersand,               // foo<x> &
-		js_lexer.TBar,                     // foo<x> |
-		js_lexer.TCloseBrace,              // foo<x> }
-		js_lexer.TEndOfFile:               // foo<x>
-		return true
+		// From "isStartOfExpression()"
+		js_lexer.TPlus,
+		js_lexer.TMinus,
+		js_lexer.TTilde,
+		js_lexer.TExclamation,
+		js_lexer.TDelete,
+		js_lexer.TTypeof,
+		js_lexer.TVoid,
+		js_lexer.TPlusPlus,
+		js_lexer.TMinusMinus,
+		js_lexer.TLessThan,
 
-	case
-		// We don't want to treat these as type arguments. Otherwise we'll parse
-		// this as an invocation expression. Instead, we want to parse out the
-		// expression in isolation from the type arguments.
-		js_lexer.TComma,     // foo<x>,
-		js_lexer.TOpenBrace: // foo<x> {
+		// From "isStartOfLeftHandSideExpression()"
+		js_lexer.TThis,
+		js_lexer.TSuper,
+		js_lexer.TNull,
+		js_lexer.TTrue,
+		js_lexer.TFalse,
+		js_lexer.TNumericLiteral,
+		js_lexer.TBigIntegerLiteral,
+		js_lexer.TStringLiteral,
+		js_lexer.TOpenBracket,
+		js_lexer.TOpenBrace,
+		js_lexer.TFunction,
+		js_lexer.TClass,
+		js_lexer.TNew,
+		js_lexer.TSlash,
+		js_lexer.TSlashEquals,
+		js_lexer.TIdentifier:
 		return false
+
+	case js_lexer.TImport:
+		return !p.nextTokenIsOpenParenOrLessThanOrDot()
 
 	default:
-		// Anything else treat as an expression.
-		return false
+		return true
 	}
 }
 
 func (p *parser) skipTypeScriptInterfaceStmt(opts parseStmtOpts) {
-	name := p.lexer.Identifier
+	name := p.lexer.Identifier.String
 	p.lexer.Expect(js_lexer.TIdentifier)
 
 	if opts.isModuleScope {
 		p.localTypeNames[name] = true
 	}
 
-	p.skipTypeScriptTypeParameters()
+	p.skipTypeScriptTypeParameters(typeParametersWithInOutVarianceAnnotations)
 
 	if p.lexer.Token == js_lexer.TExtends {
 		p.lexer.Next()
@@ -814,23 +969,31 @@ func (p *parser) skipTypeScriptTypeStmt(opts parseStmtOpts) {
 		return
 	}
 
-	name := p.lexer.Identifier
+	name := p.lexer.Identifier.String
 	p.lexer.Expect(js_lexer.TIdentifier)
 
 	if opts.isModuleScope {
 		p.localTypeNames[name] = true
 	}
 
-	p.skipTypeScriptTypeParameters()
+	p.skipTypeScriptTypeParameters(typeParametersWithInOutVarianceAnnotations)
 	p.lexer.Expect(js_lexer.TEquals)
 	p.skipTypeScriptType(js_ast.LLowest)
 	p.lexer.ExpectOrInsertSemicolon()
 }
 
-func (p *parser) parseTypeScriptDecorators() []js_ast.Expr {
+func (p *parser) parseTypeScriptDecorators(tsDecoratorScope *js_ast.Scope) []js_ast.Expr {
 	var tsDecorators []js_ast.Expr
+
 	if p.options.ts.Parse {
+		// TypeScript decorators cause us to temporarily revert to the scope that
+		// encloses the class declaration, since that's where the generated code
+		// for TypeScript decorators will be inserted.
+		oldScope := p.currentScope
+		p.currentScope = tsDecoratorScope
+
 		for p.lexer.Token == js_lexer.TAt {
+			loc := p.lexer.Loc()
 			p.lexer.Next()
 
 			// Parse a new/call expression with "exprFlagTSDecorator" so we ignore
@@ -841,38 +1004,96 @@ func (p *parser) parseTypeScriptDecorators() []js_ast.Expr {
 			//   }
 			//
 			// This matches the behavior of the TypeScript compiler.
-			tsDecorators = append(tsDecorators, p.parseExprWithFlags(js_ast.LNew, exprFlagTSDecorator))
+			value := p.parseExprWithFlags(js_ast.LNew, exprFlagTSDecorator)
+			value.Loc = loc
+			tsDecorators = append(tsDecorators, value)
 		}
+
+		// Avoid "popScope" because this decorator scope is not hierarchical
+		p.currentScope = oldScope
 	}
+
 	return tsDecorators
+}
+
+func (p *parser) logInvalidDecoratorError(classKeyword logger.Range) {
+	if p.options.ts.Parse && p.lexer.Token == js_lexer.TAt {
+		// Forbid decorators inside class expressions
+		p.lexer.AddRangeErrorWithNotes(p.lexer.Range(), "Decorators can only be used with class declarations in TypeScript",
+			[]logger.MsgData{p.tracker.MsgData(classKeyword, "This is a class expression, not a class declaration:")})
+
+		// Parse and discard decorators for error recovery
+		scopeIndex := len(p.scopesInOrder)
+		p.parseTypeScriptDecorators(p.currentScope)
+		p.discardScopesUpTo(scopeIndex)
+	}
+}
+
+func (p *parser) logMisplacedDecoratorError(tsDecorators *deferredTSDecorators) {
+	found := fmt.Sprintf("%q", p.lexer.Raw())
+	if p.lexer.Token == js_lexer.TEndOfFile {
+		found = "end of file"
+	}
+
+	// Try to be helpful by pointing out the decorator
+	p.lexer.AddRangeErrorWithNotes(p.lexer.Range(), fmt.Sprintf("Expected \"class\" after TypeScript decorator but found %s", found), []logger.MsgData{
+		p.tracker.MsgData(logger.Range{Loc: tsDecorators.values[0].Loc}, "The preceding TypeScript decorator is here:"),
+		{Text: "Decorators can only be used with class declarations in TypeScript."},
+	})
+	p.discardScopesUpTo(tsDecorators.scopeIndex)
 }
 
 func (p *parser) parseTypeScriptEnumStmt(loc logger.Loc, opts parseStmtOpts) js_ast.Stmt {
 	p.lexer.Expect(js_lexer.TEnum)
 	nameLoc := p.lexer.Loc()
-	nameText := p.lexer.Identifier
+	nameText := p.lexer.Identifier.String
 	p.lexer.Expect(js_lexer.TIdentifier)
 	name := js_ast.LocRef{Loc: nameLoc, Ref: js_ast.InvalidRef}
-	argRef := js_ast.InvalidRef
+
+	// Generate the namespace object
+	exportedMembers := p.getOrCreateExportedNamespaceMembers(nameText, opts.isExport)
+	tsNamespace := &js_ast.TSNamespaceScope{
+		ExportedMembers: exportedMembers,
+		ArgRef:          js_ast.InvalidRef,
+		IsEnumScope:     true,
+	}
+	enumMemberData := &js_ast.TSNamespaceMemberNamespace{
+		ExportedMembers: exportedMembers,
+	}
+
+	// Declare the enum and create the scope
 	if !opts.isTypeScriptDeclare {
 		name.Ref = p.declareSymbol(js_ast.SymbolTSEnum, nameLoc, nameText)
 		p.pushScopeForParsePass(js_ast.ScopeEntry, loc)
+		p.currentScope.TSNamespace = tsNamespace
+		p.refToTSNamespaceMemberData[name.Ref] = enumMemberData
 	}
-	p.lexer.Expect(js_lexer.TOpenBrace)
 
+	p.lexer.Expect(js_lexer.TOpenBrace)
 	values := []js_ast.EnumValue{}
 
+	oldFnOrArrowData := p.fnOrArrowDataParse
+	p.fnOrArrowDataParse = fnOrArrowDataParse{
+		isThisDisallowed: true,
+		needsAsyncLoc:    logger.Loc{Start: -1},
+	}
+
+	// Parse the body
 	for p.lexer.Token != js_lexer.TCloseBrace {
+		nameRange := p.lexer.Range()
 		value := js_ast.EnumValue{
-			Loc: p.lexer.Loc(),
+			Loc: nameRange.Loc,
 			Ref: js_ast.InvalidRef,
 		}
 
 		// Parse the name
+		var nameText string
 		if p.lexer.Token == js_lexer.TStringLiteral {
 			value.Name = p.lexer.StringLiteral()
+			nameText = helpers.UTF16ToString(value.Name)
 		} else if p.lexer.IsIdentifierOrKeyword() {
-			value.Name = js_lexer.StringToUTF16(p.lexer.Identifier)
+			nameText = p.lexer.Identifier.String
+			value.Name = helpers.StringToUTF16(nameText)
 		} else {
 			p.lexer.Expect(js_lexer.TIdentifier)
 		}
@@ -880,7 +1101,7 @@ func (p *parser) parseTypeScriptEnumStmt(loc logger.Loc, opts parseStmtOpts) js_
 
 		// Identifiers can be referenced by other values
 		if !opts.isTypeScriptDeclare && js_lexer.IsIdentifierUTF16(value.Name) {
-			value.Ref = p.declareSymbol(js_ast.SymbolOther, value.Loc, js_lexer.UTF16ToString(value.Name))
+			value.Ref = p.declareSymbol(js_ast.SymbolOther, value.Loc, helpers.UTF16ToString(value.Name))
 		}
 
 		// Parse the initializer
@@ -891,11 +1112,43 @@ func (p *parser) parseTypeScriptEnumStmt(loc logger.Loc, opts parseStmtOpts) js_
 
 		values = append(values, value)
 
+		// Add this enum value as a member of the enum's namespace
+		exportedMembers[nameText] = js_ast.TSNamespaceMember{
+			Loc:         value.Loc,
+			Data:        &js_ast.TSNamespaceMemberProperty{},
+			IsEnumValue: true,
+		}
+
 		if p.lexer.Token != js_lexer.TComma && p.lexer.Token != js_lexer.TSemicolon {
+			if p.lexer.IsIdentifierOrKeyword() || p.lexer.Token == js_lexer.TStringLiteral {
+				var errorLoc logger.Loc
+				var errorText string
+
+				if value.ValueOrNil.Data == nil {
+					errorLoc = logger.Loc{Start: nameRange.End()}
+					errorText = fmt.Sprintf("Expected \",\" after %q in enum", nameText)
+				} else {
+					var nextName string
+					if p.lexer.Token == js_lexer.TStringLiteral {
+						nextName = helpers.UTF16ToString(p.lexer.StringLiteral())
+					} else {
+						nextName = p.lexer.Identifier.String
+					}
+					errorLoc = p.lexer.Loc()
+					errorText = fmt.Sprintf("Expected \",\" before %q in enum", nextName)
+				}
+
+				data := p.tracker.MsgData(logger.Range{Loc: errorLoc}, errorText)
+				data.Location.Suggestion = ","
+				p.log.AddMsg(logger.Msg{Kind: logger.Error, Data: data})
+				panic(js_lexer.LexerPanic{})
+			}
 			break
 		}
 		p.lexer.Next()
 	}
+
+	p.fnOrArrowDataParse = oldFnOrArrowData
 
 	if !opts.isTypeScriptDeclare {
 		// Avoid a collision with the enum closure argument variable if the
@@ -931,11 +1184,12 @@ func (p *parser) parseTypeScriptEnumStmt(loc logger.Loc, opts parseStmtOpts) js_
 			// Add a "_" to make tests easier to read, since non-bundler tests don't
 			// run the renamer. For external-facing things the renamer will avoid
 			// collisions automatically so this isn't important for correctness.
-			argRef = p.newSymbol(js_ast.SymbolHoisted, "_"+nameText)
-			p.currentScope.Generated = append(p.currentScope.Generated, argRef)
+			tsNamespace.ArgRef = p.newSymbol(js_ast.SymbolHoisted, "_"+nameText)
+			p.currentScope.Generated = append(p.currentScope.Generated, tsNamespace.ArgRef)
 		} else {
-			argRef = p.declareSymbol(js_ast.SymbolHoisted, nameLoc, nameText)
+			tsNamespace.ArgRef = p.declareSymbol(js_ast.SymbolHoisted, nameLoc, nameText)
 		}
+		p.refToTSNamespaceMemberData[tsNamespace.ArgRef] = enumMemberData
 
 		p.popScope()
 	}
@@ -952,7 +1206,7 @@ func (p *parser) parseTypeScriptEnumStmt(loc logger.Loc, opts parseStmtOpts) js_
 
 	return js_ast.Stmt{Loc: loc, Data: &js_ast.SEnum{
 		Name:     name,
-		Arg:      argRef,
+		Arg:      tsNamespace.ArgRef,
 		Values:   values,
 		IsExport: opts.isExport,
 	}}
@@ -967,7 +1221,7 @@ func (p *parser) parseTypeScriptImportEqualsStmt(loc logger.Loc, opts parseStmtO
 	value := js_ast.Expr{Loc: p.lexer.Loc(), Data: &js_ast.EIdentifier{Ref: p.storeNameInRef(name)}}
 	p.lexer.Expect(js_lexer.TIdentifier)
 
-	if name == "require" && p.lexer.Token == js_lexer.TOpenParen {
+	if name.String == "require" && p.lexer.Token == js_lexer.TOpenParen {
 		// "import ns = require('x')"
 		p.lexer.Next()
 		path := js_ast.Expr{Loc: p.lexer.Loc(), Data: &js_ast.EString{Value: p.lexer.StringLiteral()}}
@@ -984,7 +1238,7 @@ func (p *parser) parseTypeScriptImportEqualsStmt(loc logger.Loc, opts parseStmtO
 			p.lexer.Next()
 			value.Data = &js_ast.EDot{
 				Target:  value,
-				Name:    p.lexer.Identifier,
+				Name:    p.lexer.Identifier.String,
 				NameLoc: p.lexer.Loc(),
 			}
 			p.lexer.Expect(js_lexer.TIdentifier)
@@ -1013,17 +1267,65 @@ func (p *parser) parseTypeScriptImportEqualsStmt(loc logger.Loc, opts parseStmtO
 	}}
 }
 
+// Generate a TypeScript namespace object for this namespace's scope. If this
+// namespace is another block that is to be merged with an existing namespace,
+// use that earlier namespace's object instead.
+func (p *parser) getOrCreateExportedNamespaceMembers(name string, isExport bool) js_ast.TSNamespaceMembers {
+	// Merge with a sibling namespace from the same scope
+	if existingMember, ok := p.currentScope.Members[name]; ok {
+		if memberData, ok := p.refToTSNamespaceMemberData[existingMember.Ref]; ok {
+			if nsMemberData, ok := memberData.(*js_ast.TSNamespaceMemberNamespace); ok {
+				return nsMemberData.ExportedMembers
+			}
+		}
+	}
+
+	// Merge with a sibling namespace from a different scope
+	if isExport {
+		if parentNamespace := p.currentScope.TSNamespace; parentNamespace != nil {
+			if existing, ok := parentNamespace.ExportedMembers[name]; ok {
+				if existing, ok := existing.Data.(*js_ast.TSNamespaceMemberNamespace); ok {
+					return existing.ExportedMembers
+				}
+			}
+		}
+	}
+
+	// Otherwise, generate a new namespace object
+	return make(js_ast.TSNamespaceMembers)
+}
+
 func (p *parser) parseTypeScriptNamespaceStmt(loc logger.Loc, opts parseStmtOpts) js_ast.Stmt {
 	// "namespace Foo {}"
 	nameLoc := p.lexer.Loc()
-	nameText := p.lexer.Identifier
+	nameText := p.lexer.Identifier.String
 	p.lexer.Next()
 
+	// Generate the namespace object
+	exportedMembers := p.getOrCreateExportedNamespaceMembers(nameText, opts.isExport)
+	tsNamespace := &js_ast.TSNamespaceScope{
+		ExportedMembers: exportedMembers,
+		ArgRef:          js_ast.InvalidRef,
+	}
+	nsMemberData := &js_ast.TSNamespaceMemberNamespace{
+		ExportedMembers: exportedMembers,
+	}
+
+	// Declare the namespace and create the scope
 	name := js_ast.LocRef{Loc: nameLoc, Ref: js_ast.InvalidRef}
 	scopeIndex := p.pushScopeForParsePass(js_ast.ScopeEntry, loc)
+	p.currentScope.TSNamespace = tsNamespace
 
 	oldHasNonLocalExportDeclareInsideNamespace := p.hasNonLocalExportDeclareInsideNamespace
+	oldFnOrArrowData := p.fnOrArrowDataParse
 	p.hasNonLocalExportDeclareInsideNamespace = false
+	p.fnOrArrowDataParse = fnOrArrowDataParse{
+		isThisDisallowed:   true,
+		isReturnDisallowed: true,
+		needsAsyncLoc:      logger.Loc{Start: -1},
+	}
+
+	// Parse the statements inside the namespace
 	var stmts []js_ast.Stmt
 	if p.lexer.Token == js_lexer.TDot {
 		dotLoc := p.lexer.Loc()
@@ -1043,8 +1345,75 @@ func (p *parser) parseTypeScriptNamespaceStmt(loc logger.Loc, opts parseStmtOpts
 		})
 		p.lexer.Next()
 	}
+
 	hasNonLocalExportDeclareInsideNamespace := p.hasNonLocalExportDeclareInsideNamespace
 	p.hasNonLocalExportDeclareInsideNamespace = oldHasNonLocalExportDeclareInsideNamespace
+	p.fnOrArrowDataParse = oldFnOrArrowData
+
+	// Add any exported members from this namespace's body as members of the
+	// associated namespace object.
+	for _, stmt := range stmts {
+		switch s := stmt.Data.(type) {
+		case *js_ast.SFunction:
+			if s.IsExport {
+				name := p.symbols[s.Fn.Name.Ref.InnerIndex].OriginalName
+				member := js_ast.TSNamespaceMember{
+					Loc:  s.Fn.Name.Loc,
+					Data: &js_ast.TSNamespaceMemberProperty{},
+				}
+				exportedMembers[name] = member
+				p.refToTSNamespaceMemberData[s.Fn.Name.Ref] = member.Data
+			}
+
+		case *js_ast.SClass:
+			if s.IsExport {
+				name := p.symbols[s.Class.Name.Ref.InnerIndex].OriginalName
+				member := js_ast.TSNamespaceMember{
+					Loc:  s.Class.Name.Loc,
+					Data: &js_ast.TSNamespaceMemberProperty{},
+				}
+				exportedMembers[name] = member
+				p.refToTSNamespaceMemberData[s.Class.Name.Ref] = member.Data
+			}
+
+		case *js_ast.SNamespace:
+			if s.IsExport {
+				if memberData, ok := p.refToTSNamespaceMemberData[s.Name.Ref]; ok {
+					if nsMemberData, ok := memberData.(*js_ast.TSNamespaceMemberNamespace); ok {
+						member := js_ast.TSNamespaceMember{
+							Loc: s.Name.Loc,
+							Data: &js_ast.TSNamespaceMemberNamespace{
+								ExportedMembers: nsMemberData.ExportedMembers,
+							},
+						}
+						exportedMembers[p.symbols[s.Name.Ref.InnerIndex].OriginalName] = member
+						p.refToTSNamespaceMemberData[s.Name.Ref] = member.Data
+					}
+				}
+			}
+
+		case *js_ast.SEnum:
+			if s.IsExport {
+				if memberData, ok := p.refToTSNamespaceMemberData[s.Name.Ref]; ok {
+					if nsMemberData, ok := memberData.(*js_ast.TSNamespaceMemberNamespace); ok {
+						member := js_ast.TSNamespaceMember{
+							Loc: s.Name.Loc,
+							Data: &js_ast.TSNamespaceMemberNamespace{
+								ExportedMembers: nsMemberData.ExportedMembers,
+							},
+						}
+						exportedMembers[p.symbols[s.Name.Ref.InnerIndex].OriginalName] = member
+						p.refToTSNamespaceMemberData[s.Name.Ref] = member.Data
+					}
+				}
+			}
+
+		case *js_ast.SLocal:
+			if s.IsExport {
+				p.exportDeclsInsideNamespace(exportedMembers, s.Decls)
+			}
+		}
+	}
 
 	// Import assignments may be only used in type expressions, not value
 	// expressions. If this is the case, the TypeScript compiler removes
@@ -1075,7 +1444,6 @@ func (p *parser) parseTypeScriptNamespaceStmt(loc logger.Loc, opts parseStmtOpts
 		return js_ast.Stmt{Loc: loc, Data: &js_ast.STypeScript{}}
 	}
 
-	argRef := js_ast.InvalidRef
 	if !opts.isTypeScriptDeclare {
 		// Avoid a collision with the namespace closure argument variable if the
 		// namespace exports a symbol with the same name as the namespace itself:
@@ -1097,23 +1465,59 @@ func (p *parser) parseTypeScriptNamespaceStmt(loc logger.Loc, opts parseStmtOpts
 			// Add a "_" to make tests easier to read, since non-bundler tests don't
 			// run the renamer. For external-facing things the renamer will avoid
 			// collisions automatically so this isn't important for correctness.
-			argRef = p.newSymbol(js_ast.SymbolHoisted, "_"+nameText)
-			p.currentScope.Generated = append(p.currentScope.Generated, argRef)
+			tsNamespace.ArgRef = p.newSymbol(js_ast.SymbolHoisted, "_"+nameText)
+			p.currentScope.Generated = append(p.currentScope.Generated, tsNamespace.ArgRef)
 		} else {
-			argRef = p.declareSymbol(js_ast.SymbolHoisted, nameLoc, nameText)
+			tsNamespace.ArgRef = p.declareSymbol(js_ast.SymbolHoisted, nameLoc, nameText)
 		}
+		p.refToTSNamespaceMemberData[tsNamespace.ArgRef] = nsMemberData
 	}
 
 	p.popScope()
 	if !opts.isTypeScriptDeclare {
 		name.Ref = p.declareSymbol(js_ast.SymbolTSNamespace, nameLoc, nameText)
+		p.refToTSNamespaceMemberData[name.Ref] = nsMemberData
 	}
 	return js_ast.Stmt{Loc: loc, Data: &js_ast.SNamespace{
 		Name:     name,
-		Arg:      argRef,
+		Arg:      tsNamespace.ArgRef,
 		Stmts:    stmts,
 		IsExport: opts.isExport,
 	}}
+}
+
+func (p *parser) exportDeclsInsideNamespace(exportedMembers js_ast.TSNamespaceMembers, decls []js_ast.Decl) {
+	for _, decl := range decls {
+		p.exportBindingInsideNamespace(exportedMembers, decl.Binding)
+	}
+}
+
+func (p *parser) exportBindingInsideNamespace(exportedMembers js_ast.TSNamespaceMembers, binding js_ast.Binding) {
+	switch b := binding.Data.(type) {
+	case *js_ast.BMissing:
+
+	case *js_ast.BIdentifier:
+		name := p.symbols[b.Ref.InnerIndex].OriginalName
+		member := js_ast.TSNamespaceMember{
+			Loc:  binding.Loc,
+			Data: &js_ast.TSNamespaceMemberProperty{},
+		}
+		exportedMembers[name] = member
+		p.refToTSNamespaceMemberData[b.Ref] = member.Data
+
+	case *js_ast.BArray:
+		for _, item := range b.Items {
+			p.exportBindingInsideNamespace(exportedMembers, item.Binding)
+		}
+
+	case *js_ast.BObject:
+		for _, property := range b.Properties {
+			p.exportBindingInsideNamespace(exportedMembers, property.Value)
+		}
+
+	default:
+		panic("Internal error")
+	}
 }
 
 func (p *parser) generateClosureForTypeScriptNamespaceOrEnum(
@@ -1130,71 +1534,256 @@ func (p *parser) generateClosureForTypeScriptNamespaceOrEnum(
 	// Make sure to only emit a variable once for a given namespace, since there
 	// can be multiple namespace blocks for the same namespace
 	if (symbol.Kind == js_ast.SymbolTSNamespace || symbol.Kind == js_ast.SymbolTSEnum) && !p.emittedNamespaceVars[nameRef] {
+		decls := []js_ast.Decl{{Binding: js_ast.Binding{Loc: nameLoc, Data: &js_ast.BIdentifier{Ref: nameRef}}}}
 		p.emittedNamespaceVars[nameRef] = true
-		if p.enclosingNamespaceArgRef == nil {
-			// Top-level namespace
+		if p.currentScope == p.moduleScope {
+			// Top-level namespace: "var"
 			stmts = append(stmts, js_ast.Stmt{Loc: stmtLoc, Data: &js_ast.SLocal{
 				Kind:     js_ast.LocalVar,
-				Decls:    []js_ast.Decl{{Binding: js_ast.Binding{Loc: nameLoc, Data: &js_ast.BIdentifier{Ref: nameRef}}}},
+				Decls:    decls,
 				IsExport: isExport,
 			}})
 		} else {
-			// Nested namespace
+			// Nested namespace: "let"
 			stmts = append(stmts, js_ast.Stmt{Loc: stmtLoc, Data: &js_ast.SLocal{
 				Kind:  js_ast.LocalLet,
-				Decls: []js_ast.Decl{{Binding: js_ast.Binding{Loc: nameLoc, Data: &js_ast.BIdentifier{Ref: nameRef}}}},
+				Decls: decls,
 			}})
 		}
 	}
 
 	var argExpr js_ast.Expr
-	if isExport && p.enclosingNamespaceArgRef != nil {
-		// "name = enclosing.name || (enclosing.name = {})"
-		name := p.symbols[nameRef.InnerIndex].OriginalName
-		argExpr = js_ast.Assign(
-			js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
-			js_ast.Expr{Loc: nameLoc, Data: &js_ast.EBinary{
-				Op: js_ast.BinOpLogicalOr,
-				Left: js_ast.Expr{Loc: nameLoc, Data: &js_ast.EDot{
-					Target:  js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: *p.enclosingNamespaceArgRef}},
-					Name:    name,
-					NameLoc: nameLoc,
+	if p.options.minifySyntax && !p.options.unsupportedJSFeatures.Has(compat.LogicalAssignment) {
+		// If the "||=" operator is supported, our minified output can be slightly smaller
+		if isExport && p.enclosingNamespaceArgRef != nil {
+			// "name = (enclosing.name ||= {})"
+			argExpr = js_ast.Assign(
+				js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
+				js_ast.Expr{Loc: nameLoc, Data: &js_ast.EBinary{
+					Op: js_ast.BinOpLogicalOrAssign,
+					Left: js_ast.Expr{Loc: nameLoc, Data: p.dotOrMangledPropVisit(
+						js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: *p.enclosingNamespaceArgRef}},
+						p.symbols[nameRef.InnerIndex].OriginalName,
+						nameLoc,
+					)},
+					Right: js_ast.Expr{Loc: nameLoc, Data: &js_ast.EObject{}},
 				}},
+			)
+			p.recordUsage(*p.enclosingNamespaceArgRef)
+			p.recordUsage(nameRef)
+		} else {
+			// "name ||= {}"
+			argExpr = js_ast.Expr{Loc: nameLoc, Data: &js_ast.EBinary{
+				Op:    js_ast.BinOpLogicalOrAssign,
+				Left:  js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
+				Right: js_ast.Expr{Loc: nameLoc, Data: &js_ast.EObject{}},
+			}}
+			p.recordUsage(nameRef)
+		}
+	} else {
+		if isExport && p.enclosingNamespaceArgRef != nil {
+			// "name = enclosing.name || (enclosing.name = {})"
+			name := p.symbols[nameRef.InnerIndex].OriginalName
+			argExpr = js_ast.Assign(
+				js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
+				js_ast.Expr{Loc: nameLoc, Data: &js_ast.EBinary{
+					Op: js_ast.BinOpLogicalOr,
+					Left: js_ast.Expr{Loc: nameLoc, Data: p.dotOrMangledPropVisit(
+						js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: *p.enclosingNamespaceArgRef}},
+						name,
+						nameLoc,
+					)},
+					Right: js_ast.Assign(
+						js_ast.Expr{Loc: nameLoc, Data: p.dotOrMangledPropVisit(
+							js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: *p.enclosingNamespaceArgRef}},
+							name,
+							nameLoc,
+						)},
+						js_ast.Expr{Loc: nameLoc, Data: &js_ast.EObject{}},
+					),
+				}},
+			)
+			p.recordUsage(*p.enclosingNamespaceArgRef)
+			p.recordUsage(*p.enclosingNamespaceArgRef)
+			p.recordUsage(nameRef)
+		} else {
+			// "name || (name = {})"
+			argExpr = js_ast.Expr{Loc: nameLoc, Data: &js_ast.EBinary{
+				Op:   js_ast.BinOpLogicalOr,
+				Left: js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
 				Right: js_ast.Assign(
-					js_ast.Expr{Loc: nameLoc, Data: &js_ast.EDot{
-						Target:  js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: *p.enclosingNamespaceArgRef}},
-						Name:    name,
-						NameLoc: nameLoc,
-					}},
+					js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
 					js_ast.Expr{Loc: nameLoc, Data: &js_ast.EObject{}},
 				),
-			}},
-		)
-		p.recordUsage(*p.enclosingNamespaceArgRef)
-		p.recordUsage(*p.enclosingNamespaceArgRef)
-		p.recordUsage(nameRef)
+			}}
+			p.recordUsage(nameRef)
+			p.recordUsage(nameRef)
+		}
+	}
+
+	// Try to use an arrow function if possible for compactness
+	var targetExpr js_ast.Expr
+	args := []js_ast.Arg{{Binding: js_ast.Binding{Loc: nameLoc, Data: &js_ast.BIdentifier{Ref: argRef}}}}
+	if p.options.unsupportedJSFeatures.Has(compat.Arrow) {
+		targetExpr = js_ast.Expr{Loc: stmtLoc, Data: &js_ast.EFunction{Fn: js_ast.Fn{
+			Args: args,
+			Body: js_ast.FnBody{Loc: stmtLoc, Block: js_ast.SBlock{Stmts: stmtsInsideClosure}},
+		}}}
 	} else {
-		// "name || (name = {})"
-		argExpr = js_ast.Expr{Loc: nameLoc, Data: &js_ast.EBinary{
-			Op:   js_ast.BinOpLogicalOr,
-			Left: js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
-			Right: js_ast.Assign(
-				js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
-				js_ast.Expr{Loc: nameLoc, Data: &js_ast.EObject{}},
-			),
+		// "(() => { foo() })()" => "(() => foo())()"
+		if p.options.minifySyntax && len(stmtsInsideClosure) == 1 {
+			if expr, ok := stmtsInsideClosure[0].Data.(*js_ast.SExpr); ok {
+				stmtsInsideClosure[0].Data = &js_ast.SReturn{ValueOrNil: expr.Value}
+			}
+		}
+		targetExpr = js_ast.Expr{Loc: stmtLoc, Data: &js_ast.EArrow{
+			Args:       args,
+			Body:       js_ast.FnBody{Loc: stmtLoc, Block: js_ast.SBlock{Stmts: stmtsInsideClosure}},
+			PreferExpr: true,
 		}}
-		p.recordUsage(nameRef)
-		p.recordUsage(nameRef)
 	}
 
 	// Call the closure with the name object
 	stmts = append(stmts, js_ast.Stmt{Loc: stmtLoc, Data: &js_ast.SExpr{Value: js_ast.Expr{Loc: stmtLoc, Data: &js_ast.ECall{
-		Target: js_ast.Expr{Loc: stmtLoc, Data: &js_ast.EFunction{Fn: js_ast.Fn{
-			Args: []js_ast.Arg{{Binding: js_ast.Binding{Loc: nameLoc, Data: &js_ast.BIdentifier{Ref: argRef}}}},
-			Body: js_ast.FnBody{Loc: stmtLoc, Stmts: stmtsInsideClosure},
-		}}},
-		Args: []js_ast.Expr{argExpr},
+		Target: targetExpr,
+		Args:   []js_ast.Expr{argExpr},
 	}}}})
 
 	return stmts
+}
+
+func (p *parser) generateClosureForTypeScriptEnum(
+	stmts []js_ast.Stmt, stmtLoc logger.Loc, isExport bool, nameLoc logger.Loc,
+	nameRef js_ast.Ref, argRef js_ast.Ref, exprsInsideClosure []js_ast.Expr,
+	allValuesArePure bool,
+) []js_ast.Stmt {
+	// Bail back to the namespace code for enums that aren't at the top level.
+	// Doing this for nested enums is problematic for two reasons. First of all
+	// enums inside of namespaces must be property accesses off the namespace
+	// object instead of variable declarations. Also we'd need to use "let"
+	// instead of "var" which doesn't allow sibling declarations to be merged.
+	if p.currentScope != p.moduleScope {
+		stmtsInsideClosure := []js_ast.Stmt{}
+		if len(exprsInsideClosure) > 0 {
+			if p.options.minifySyntax {
+				// "a; b; c;" => "a, b, c;"
+				joined := js_ast.JoinAllWithComma(exprsInsideClosure)
+				stmtsInsideClosure = append(stmtsInsideClosure, js_ast.Stmt{Loc: joined.Loc, Data: &js_ast.SExpr{Value: joined}})
+			} else {
+				for _, expr := range exprsInsideClosure {
+					stmtsInsideClosure = append(stmtsInsideClosure, js_ast.Stmt{Loc: expr.Loc, Data: &js_ast.SExpr{Value: expr}})
+				}
+			}
+		}
+		return p.generateClosureForTypeScriptNamespaceOrEnum(
+			stmts, stmtLoc, isExport, nameLoc, nameRef, argRef, stmtsInsideClosure)
+	}
+
+	// This uses an output format for enums that's different but equivalent to
+	// what TypeScript uses. Here is TypeScript's output:
+	//
+	//   var x;
+	//   (function (x) {
+	//     x[x["y"] = 1] = "y";
+	//   })(x || (x = {}));
+	//
+	// And here's our output:
+	//
+	//   var x = /* @__PURE__ */ ((x) => {
+	//     x[x["y"] = 1] = "y";
+	//     return x;
+	//   })(x || {});
+	//
+	// One benefit is that the minified output is smaller:
+	//
+	//   // Old output minified
+	//   var x;(function(n){n[n.y=1]="y"})(x||(x={}));
+	//
+	//   // New output minified
+	//   var x=(r=>(r[r.y=1]="y",r))(x||{});
+	//
+	// Another benefit is that the @__PURE__ annotation means it automatically
+	// works with tree-shaking, even with more advanced features such as sibling
+	// enum declarations and enum/namespace merges. Ideally all uses of the enum
+	// are just direct references to enum members (and are therefore inlined as
+	// long as the enum value is a constant) and the enum definition itself is
+	// unused and can be removed as dead code.
+
+	// Follow the link chain in case symbols were merged
+	symbol := p.symbols[nameRef.InnerIndex]
+	for symbol.Link != js_ast.InvalidRef {
+		nameRef = symbol.Link
+		symbol = p.symbols[nameRef.InnerIndex]
+	}
+
+	// Generate the body of the closure, including a return statement at the end
+	stmtsInsideClosure := []js_ast.Stmt{}
+	if len(exprsInsideClosure) > 0 {
+		argExpr := js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: argRef}}
+		if p.options.minifySyntax {
+			// "a; b; return c;" => "return a, b, c;"
+			joined := js_ast.JoinAllWithComma(exprsInsideClosure)
+			joined = js_ast.JoinWithComma(joined, argExpr)
+			stmtsInsideClosure = append(stmtsInsideClosure, js_ast.Stmt{Loc: joined.Loc, Data: &js_ast.SReturn{ValueOrNil: joined}})
+		} else {
+			for _, expr := range exprsInsideClosure {
+				stmtsInsideClosure = append(stmtsInsideClosure, js_ast.Stmt{Loc: expr.Loc, Data: &js_ast.SExpr{Value: expr}})
+			}
+			stmtsInsideClosure = append(stmtsInsideClosure, js_ast.Stmt{Loc: argExpr.Loc, Data: &js_ast.SReturn{ValueOrNil: argExpr}})
+		}
+	}
+
+	// Try to use an arrow function if possible for compactness
+	var targetExpr js_ast.Expr
+	args := []js_ast.Arg{{Binding: js_ast.Binding{Loc: nameLoc, Data: &js_ast.BIdentifier{Ref: argRef}}}}
+	if p.options.unsupportedJSFeatures.Has(compat.Arrow) {
+		targetExpr = js_ast.Expr{Loc: stmtLoc, Data: &js_ast.EFunction{Fn: js_ast.Fn{
+			Args: args,
+			Body: js_ast.FnBody{Loc: stmtLoc, Block: js_ast.SBlock{Stmts: stmtsInsideClosure}},
+		}}}
+	} else {
+		targetExpr = js_ast.Expr{Loc: stmtLoc, Data: &js_ast.EArrow{
+			Args:       args,
+			Body:       js_ast.FnBody{Loc: stmtLoc, Block: js_ast.SBlock{Stmts: stmtsInsideClosure}},
+			PreferExpr: p.options.minifySyntax,
+		}}
+	}
+
+	// Call the closure with the name object and store it to the variable
+	decls := []js_ast.Decl{{
+		Binding: js_ast.Binding{Loc: nameLoc, Data: &js_ast.BIdentifier{Ref: nameRef}},
+		ValueOrNil: js_ast.Expr{Loc: stmtLoc, Data: &js_ast.ECall{
+			Target: targetExpr,
+			Args: []js_ast.Expr{{Loc: nameLoc, Data: &js_ast.EBinary{
+				Op:    js_ast.BinOpLogicalOr,
+				Left:  js_ast.Expr{Loc: nameLoc, Data: &js_ast.EIdentifier{Ref: nameRef}},
+				Right: js_ast.Expr{Loc: nameLoc, Data: &js_ast.EObject{}},
+			}}},
+			CanBeUnwrappedIfUnused: allValuesArePure,
+		}},
+	}}
+	p.recordUsage(nameRef)
+
+	// Use a "var" statement since this is a top-level enum, but only use "export" once
+	stmts = append(stmts, js_ast.Stmt{Loc: stmtLoc, Data: &js_ast.SLocal{
+		Kind:     js_ast.LocalVar,
+		Decls:    decls,
+		IsExport: isExport && !p.emittedNamespaceVars[nameRef],
+	}})
+	p.emittedNamespaceVars[nameRef] = true
+
+	return stmts
+}
+
+func (p *parser) wrapInlinedEnum(value js_ast.Expr, comment string) js_ast.Expr {
+	if strings.Contains(comment, "*/") {
+		// Don't wrap with a comment
+		return value
+	}
+
+	// Wrap with a comment
+	return js_ast.Expr{Loc: value.Loc, Data: &js_ast.EInlinedEnum{
+		Value:   value,
+		Comment: comment,
+	}}
 }
