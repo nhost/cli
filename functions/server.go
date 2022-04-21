@@ -248,11 +248,8 @@ func (s *Server) FunctionHandler(w http.ResponseWriter, r *http.Request) {
 	//	Handle Environment Variables
 	//
 
-	//	If environment variables haven't been loaded
-	//	then load them from .env.development
-	if len(envVars) == 0 {
-		envVars, _ = nhost.Env()
-	}
+	//	Load env vars from .env.development
+	envVars, _ = nhost.Env()
 
 	//	If the environment is active,
 	//	assign runtime environment variables
