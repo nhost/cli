@@ -383,7 +383,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Version == nil {
-				parsed.Services[name].Version = "0.6.1"
+				parsed.Services[name].Version = "0.6.2"
 			}
 
 			if parsed.Services[name].Image == "" {
