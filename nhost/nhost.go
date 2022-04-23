@@ -401,7 +401,7 @@ func (c *Configuration) Wrap() error {
 			}
 
 			if parsed.Services[name].Version == nil {
-				parsed.Services[name].Version = "0.1.3"
+				parsed.Services[name].Version = "0.1.4"
 			}
 
 			if parsed.Services[name].Image == "" {
@@ -948,7 +948,6 @@ func (config *Configuration) Init(port string) error {
 		"STORAGE_LOG_LEVEL=info",
 		"STORAGE_SWAGGER_ENABLED=false",
 		"S3_SSL_ENABLED=false",
-		"S3_BUCKET=nhost",
 		fmt.Sprintf("S3_ENDPOINT=%s", GetAddress(config.Services["minio"])),
 		"S3_REGION=fake-region",
 		"S3_ROOT_FOLDER=nhost",
