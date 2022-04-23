@@ -181,32 +181,6 @@ func (e *Environment) Prepare() error {
 
 	}
 
-	metaFiles, err := os.ReadDir(nhost.METADATA_DIR)
-	if err != nil {
-		return err
-	}
-
-	if len(metaFiles) == 0 {
-
-		// Export metadata
-		log.Debug("Exporting metadata")
-
-		execute := exec.CommandContext(e.ExecutionContext, e.Hasura.CLI)
-		execute.Dir = nhost.NHOST_DIR
-
-		cmdArgs := []string{e.Hasura.CLI, "metadata", "export"}
-		cmdArgs = append(cmdArgs, e.Hasura.CommonOptionsWithoutDB...)
-		execute.Args = cmdArgs
-
-		output, err := execute.CombinedOutput()
-		if err != nil {
-			log.Debug(string(output))
-			status.Errorln("Failed to export metadata")
-			return err
-		}
-
-	}
-
 	// apply metadata
 	log.Debug("Applying metadata")
 
