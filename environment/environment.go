@@ -178,7 +178,6 @@ func (e *Environment) Prepare() error {
 			status.Errorln("Failed to apply migrations")
 			return err
 		}
-
 	}
 
 	// apply metadata
