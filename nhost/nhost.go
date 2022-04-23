@@ -948,7 +948,7 @@ func (config *Configuration) Init(port string) error {
 		"STORAGE_LOG_LEVEL=info",
 		"STORAGE_SWAGGER_ENABLED=false",
 		"S3_SSL_ENABLED=false",
-        "S3_BUCKET=nhost",
+		"S3_BUCKET=nhost",
 		fmt.Sprintf("S3_ENDPOINT=%s", GetAddress(config.Services["minio"])),
 		"S3_REGION=fake-region",
 	}
