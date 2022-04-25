@@ -65,7 +65,7 @@ jobs:
           go-version: ${{ steps.go-mod-details.outputs.go_version }}
       -
         name: Test
-        run: go test -v -count=1 -coverprofile="coverage-${{ matrix.platform }}-${{ steps.go-mod-details.outputs.go_version }}.cov" -covermode=atomic ./...
+        run: go test -v -count=1 -coverprofile="coverage-${{ matrix.platform }}-${{ steps.go-mod-details.outputs.go_version }}.cov" -covermode=atomic -run ^Test_Pipeline$ ./...
 
   # draft your next release notes as pull requests are merged into "master"
   # the configuration is at /.github/release-drafter.yml.
