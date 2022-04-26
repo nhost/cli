@@ -67,6 +67,31 @@ jobs:
         name: Test
         run: go test -v -count=1 -coverprofile="coverage-${{ matrix.platform }}-${{ steps.go-mod-details.outputs.go_version }}.cov" -covermode=atomic -run ^Test_Pipeline$ ./...
 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout code
+        uses: actions/checkout@v3
+      -
+        name: Get go.mod details
+        uses: Eun/go-mod-details@v1.0.4
+        id: go-mod-details
+      -
+        name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ steps.go-mod-details.outputs.go_version }}
+      -
+        name: GoReleaser
+        uses: goreleaser/goreleaser-action@v2.9.1
+        with:
+          version: latest
+          args: build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
   # draft your next release notes as pull requests are merged into "master"
   # the configuration is at /.github/release-drafter.yml.
   update_release_draft:
