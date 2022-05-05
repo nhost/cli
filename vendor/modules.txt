@@ -139,7 +139,7 @@ github.com/googleapis/gax-go/v2/apierror/internal/proto
 github.com/gorilla/websocket
 # github.com/hashicorp/go-cleanhttp v0.5.2
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-getter v1.5.9
+# github.com/hashicorp/go-getter v1.5.11
 ## explicit
 github.com/hashicorp/go-getter
 github.com/hashicorp/go-getter/helper/url
