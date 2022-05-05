@@ -89,7 +89,7 @@ github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
-# github.com/evanw/esbuild v0.13.9
+# github.com/evanw/esbuild v0.14.38
 ## explicit
 github.com/evanw/esbuild/internal/api_helpers
 github.com/evanw/esbuild/internal/ast
