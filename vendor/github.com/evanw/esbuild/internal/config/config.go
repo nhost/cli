@@ -20,8 +20,8 @@ type JSXOptions struct {
 }
 
 type JSXExpr struct {
-	Parts    []string
 	Constant js_ast.E
+	Parts    []string
 }
 
 type TSOptions struct {
@@ -36,17 +36,6 @@ const (
 	PlatformNode
 	PlatformNeutral
 )
-
-type StrictOptions struct {
-	// Loose:  "class Foo { foo = 1 }" => "class Foo { constructor() { this.foo = 1; } }"
-	// Strict: "class Foo { foo = 1 }" => "class Foo { constructor() { __publicField(this, 'foo', 1); } }"
-	//
-	// The disadvantage of strictness here is code bloat and performance. The
-	// advantage is following the class field specification accurately. For
-	// example, loose mode will incorrectly trigger setter methods while strict
-	// mode won't.
-	ClassFields bool
-}
 
 type SourceMap uint8
 
@@ -72,7 +61,7 @@ func (lc LegalComments) HasExternalFile() bool {
 	return lc == LegalCommentsLinkedWithComment || lc == LegalCommentsExternalWithoutComment
 }
 
-type Loader int
+type Loader uint8
 
 const (
 	LoaderNone Loader = iota
@@ -165,10 +154,10 @@ func (f Format) String() string {
 }
 
 type StdinInfo struct {
-	Loader        Loader
 	Contents      string
 	SourceFile    string
 	AbsResolveDir string
+	Loader        Loader
 }
 
 type WildcardPattern struct {
@@ -176,10 +165,18 @@ type WildcardPattern struct {
 	Suffix string
 }
 
-type ExternalModules struct {
-	NodeModules map[string]bool
-	AbsPaths    map[string]bool
-	Patterns    []WildcardPattern
+type ExternalMatchers struct {
+	Exact    map[string]bool
+	Patterns []WildcardPattern
+}
+
+func (matchers ExternalMatchers) HasMatchers() bool {
+	return len(matchers.Exact) > 0 || len(matchers.Patterns) > 0
+}
+
+type ExternalSettings struct {
+	PreResolve  ExternalMatchers
+	PostResolve ExternalMatchers
 }
 
 type Mode uint8
@@ -188,14 +185,6 @@ const (
 	ModePassThrough Mode = iota
 	ModeConvertFormat
 	ModeBundle
-)
-
-type ModuleType uint8
-
-const (
-	ModuleUnknown ModuleType = iota
-	ModuleCommonJS
-	ModuleESM
 )
 
 type MaybeBool uint8
@@ -207,48 +196,36 @@ const (
 )
 
 type Options struct {
-	Mode              Mode
-	ModuleType        ModuleType
-	PreserveSymlinks  bool
-	RemoveWhitespace  bool
-	MinifyIdentifiers bool
-	MangleSyntax      bool
-	ProfilerNames     bool
-	CodeSplitting     bool
-	WatchMode         bool
-	AllowOverwrite    bool
-	LegalComments     LegalComments
+	ModuleTypeData js_ast.ModuleTypeData
+	Defines        *ProcessedDefines
+	TSTarget       *TSTarget
+	MangleProps    *regexp.Regexp
+	ReserveProps   *regexp.Regexp
 
-	// If true, make sure to generate a single file that can be written to stdout
-	WriteToStdout bool
-
-	OmitRuntimeForTests     bool
-	PreserveUnusedImportsTS bool
-	UseDefineForClassFields MaybeBool
-	ASCIIOnly               bool
-	KeepNames               bool
-	IgnoreDCEAnnotations    bool
-	TreeShaking             bool
-
-	Defines  *ProcessedDefines
-	TS       TSOptions
-	JSX      JSXOptions
-	Platform Platform
-
-	IsTargetUnconfigured   bool // If true, TypeScript's "target" setting is respected
-	UnsupportedJSFeatures  compat.JSFeature
-	UnsupportedCSSFeatures compat.CSSFeature
-	TSTarget               *TSTarget
+	// When mangling property names, call this function with a callback and do
+	// the property name mangling inside the callback. The callback takes an
+	// argument which is the mangle cache map to mutate. These callbacks are
+	// serialized so mutating the map does not require extra synchronization.
+	//
+	// This is a callback for determinism reasons. We may be building multiple
+	// entry points in parallel that are supposed to share a single cache. We
+	// don't want the order that each entry point mangles properties in to cause
+	// the output to change, so we serialize the property mangling over all entry
+	// points in entry point order. However, we still want to link everything in
+	// parallel so only property mangling is serialized, which is implemented by
+	// this function blocking until the previous entry point's property mangling
+	// has finished.
+	ExclusiveMangleCacheUpdate func(cb func(mangleCache map[string]interface{}))
 
 	// This is the original information that was used to generate the
 	// unsupported feature sets above. It's used for error messages.
 	OriginalTargetEnv string
 
-	ExtensionOrder  []string
-	MainFields      []string
-	Conditions      []string
-	AbsNodePaths    []string // The "NODE_PATH" variable from Node.js
-	ExternalModules ExternalModules
+	ExtensionOrder   []string
+	MainFields       []string
+	Conditions       []string
+	AbsNodePaths     []string // The "NODE_PATH" variable from Node.js
+	ExternalSettings ExternalSettings
 
 	AbsOutputFile      string
 	AbsOutputDir       string
@@ -258,11 +235,11 @@ type Options struct {
 	GlobalName         []string
 	TsConfigOverride   string
 	ExtensionToLoader  map[string]Loader
-	OutputFormat       Format
-	PublicPath         string
-	InjectAbsPaths     []string
-	InjectedDefines    []InjectedDefine
-	InjectedFiles      []InjectedFile
+
+	PublicPath      string
+	InjectAbsPaths  []string
+	InjectedDefines []InjectedDefine
+	InjectedFiles   []InjectedFile
 
 	JSBanner  string
 	JSFooter  string
@@ -273,22 +250,91 @@ type Options struct {
 	ChunkPathTemplate []PathTemplate
 	AssetPathTemplate []PathTemplate
 
-	Plugins []Plugin
+	Plugins    []Plugin
+	SourceRoot string
+	Stdin      *StdinInfo
+	JSX        JSXOptions
 
-	NeedsMetafile bool
+	UnsupportedJSFeatures  compat.JSFeature
+	UnsupportedCSSFeatures compat.CSSFeature
 
-	SourceMap             SourceMap
-	SourceRoot            string
-	ExcludeSourcesContent bool
+	TS                TSOptions
+	Mode              Mode
+	PreserveSymlinks  bool
+	MinifyWhitespace  bool
+	MinifyIdentifiers bool
+	MinifySyntax      bool
+	ProfilerNames     bool
+	CodeSplitting     bool
+	WatchMode         bool
+	AllowOverwrite    bool
+	LegalComments     LegalComments
 
-	Stdin *StdinInfo
+	// If true, make sure to generate a single file that can be written to stdout
+	WriteToStdout bool
+
+	OmitRuntimeForTests     bool
+	UnusedImportsTS         UnusedImportsTS
+	UseDefineForClassFields MaybeBool
+	ASCIIOnly               bool
+	KeepNames               bool
+	IgnoreDCEAnnotations    bool
+	TreeShaking             bool
+	DropDebugger            bool
+	MangleQuoted            bool
+	Platform                Platform
+	TargetFromAPI           TargetFromAPI
+	OutputFormat            Format
+	NeedsMetafile           bool
+	SourceMap               SourceMap
+	ExcludeSourcesContent   bool
+}
+
+type TargetFromAPI uint8
+
+const (
+	// In this state, the "target" field in "tsconfig.json" is respected
+	TargetWasUnconfigured TargetFromAPI = iota
+
+	// In this state, the "target" field in "tsconfig.json" is overridden
+	TargetWasConfigured
+
+	// In this state, "useDefineForClassFields" is true unless overridden
+	TargetWasConfiguredAndAtLeastES2022
+)
+
+type UnusedImportsTS uint8
+
+const (
+	// "import { unused } from 'foo'" => "" (TypeScript's default behavior)
+	UnusedImportsRemoveStmt UnusedImportsTS = iota
+
+	// "import { unused } from 'foo'" => "import 'foo'" ("importsNotUsedAsValues" != "remove")
+	UnusedImportsKeepStmtRemoveValues
+
+	// "import { unused } from 'foo'" => "import { unused } from 'foo'" ("preserveValueImports" == true)
+	UnusedImportsKeepValues
+)
+
+func UnusedImportsFromTsconfigValues(preserveImportsNotUsedAsValues bool, preserveValueImports bool) UnusedImportsTS {
+	if preserveValueImports {
+		return UnusedImportsKeepValues
+	}
+	if preserveImportsNotUsedAsValues {
+		return UnusedImportsKeepStmtRemoveValues
+	}
+	return UnusedImportsRemoveStmt
 }
 
 type TSTarget struct {
-	Source                logger.Source
-	Range                 logger.Range
-	Target                string
+	// This information is only used for error messages
+	Target string
+	Source logger.Source
+	Range  logger.Range
+
+	// This information can affect code transformation
 	UnsupportedJSFeatures compat.JSFeature
+	TargetIsAtLeastES2022 bool
 }
 
 type PathPlaceholder uint8
@@ -307,6 +353,10 @@ const (
 	// A hash of the contents of this file, and the contents and output paths of
 	// all dependencies (except for their hash placeholders)
 	HashPlaceholder
+
+	// The original extension of the file, or the name of the output file
+	// (e.g. "css", "svg", "png")
+	ExtPlaceholder
 )
 
 type PathTemplate struct {
@@ -318,6 +368,7 @@ type PathPlaceholders struct {
 	Dir  *string
 	Name *string
 	Hash *string
+	Ext  *string
 }
 
 func (placeholders PathPlaceholders) Get(placeholder PathPlaceholder) *string {
@@ -328,6 +379,8 @@ func (placeholders PathPlaceholders) Get(placeholder PathPlaceholder) *string {
 		return placeholders.Name
 	case HashPlaceholder:
 		return placeholders.Hash
+	case ExtPlaceholder:
+		return placeholders.Ext
 	}
 	return nil
 }
@@ -347,6 +400,8 @@ func TemplateToString(template []PathTemplate) string {
 			sb.WriteString("[name]")
 		case HashPlaceholder:
 			sb.WriteString("[hash]")
+		case ExtPlaceholder:
+			sb.WriteString("[ext]")
 		}
 	}
 	return sb.String()
@@ -397,15 +452,15 @@ func ShouldCallRuntimeRequire(mode Mode, outputFormat Format) bool {
 }
 
 type InjectedDefine struct {
-	Source logger.Source
 	Data   js_ast.E
 	Name   string
+	Source logger.Source
 }
 
 type InjectedFile struct {
-	Source     logger.Source
 	Exports    []InjectableExport
 	DefineName string
+	Source     logger.Source
 }
 
 type InjectableExport struct {
@@ -479,55 +534,55 @@ type Plugin struct {
 }
 
 type OnStart struct {
-	Name     string
 	Callback func() OnStartResult
+	Name     string
 }
 
 type OnStartResult struct {
-	Msgs        []logger.Msg
 	ThrownError error
+	Msgs        []logger.Msg
 }
 
 type OnResolve struct {
-	Name      string
 	Filter    *regexp.Regexp
-	Namespace string
 	Callback  func(OnResolveArgs) OnResolveResult
+	Name      string
+	Namespace string
 }
 
 type OnResolveArgs struct {
 	Path       string
-	Importer   logger.Path
 	ResolveDir string
-	Kind       ast.ImportKind
 	PluginData interface{}
+	Importer   logger.Path
+	Kind       ast.ImportKind
 }
 
 type OnResolveResult struct {
 	PluginName string
-
-	Path             logger.Path
-	External         bool
-	IsSideEffectFree bool
-	PluginData       interface{}
 
 	Msgs        []logger.Msg
 	ThrownError error
 
 	AbsWatchFiles []string
 	AbsWatchDirs  []string
+
+	PluginData       interface{}
+	Path             logger.Path
+	External         bool
+	IsSideEffectFree bool
 }
 
 type OnLoad struct {
-	Name      string
 	Filter    *regexp.Regexp
-	Namespace string
 	Callback  func(OnLoadArgs) OnLoadResult
+	Name      string
+	Namespace string
 }
 
 type OnLoadArgs struct {
-	Path       logger.Path
 	PluginData interface{}
+	Path       logger.Path
 }
 
 type OnLoadResult struct {
@@ -535,7 +590,6 @@ type OnLoadResult struct {
 
 	Contents      *string
 	AbsResolveDir string
-	Loader        Loader
 	PluginData    interface{}
 
 	Msgs        []logger.Msg
@@ -543,4 +597,6 @@ type OnLoadResult struct {
 
 	AbsWatchFiles []string
 	AbsWatchDirs  []string
+
+	Loader Loader
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
@@ -36,13 +35,13 @@ import (
 )
 
 type scannerFile struct {
-	inputFile  graph.InputFile
-	pluginData interface{}
-
 	// If "AbsMetadataFile" is present, this will be filled out with information
 	// about this file in JSON format. This is a partial JSON file that will be
 	// fully assembled later.
 	jsonMetadataChunk string
+
+	pluginData interface{}
+	inputFile  graph.InputFile
 }
 
 // This is data related to source maps. It's computed in parallel with linking
@@ -61,16 +60,16 @@ type dataForSourceMap struct {
 }
 
 type Bundle struct {
-	fs          fs.FS
-	res         resolver.Resolver
-	files       []scannerFile
-	entryPoints []graph.EntryPoint
-
 	// The unique key prefix is a random string that is unique to every bundling
 	// operation. It is used as a prefix for the unique keys assigned to every
 	// chunk during linking. These unique keys are used to identify each chunk
 	// before the final output paths have been computed.
 	uniqueKeyPrefix string
+
+	fs          fs.FS
+	res         resolver.Resolver
+	files       []scannerFile
+	entryPoints []graph.EntryPoint
 }
 
 type parseArgs struct {
@@ -78,23 +77,23 @@ type parseArgs struct {
 	log             logger.Log
 	res             resolver.Resolver
 	caches          *cache.CacheSet
-	keyPath         logger.Path
 	prettyPath      string
-	sourceIndex     uint32
 	importSource    *logger.Source
 	sideEffects     graph.SideEffects
-	importPathRange logger.Range
 	pluginData      interface{}
-	options         config.Options
 	results         chan parseResult
 	inject          chan config.InjectedFile
-	skipResolve     bool
 	uniqueKeyPrefix string
+	keyPath         logger.Path
+	options         config.Options
+	importPathRange logger.Range
+	sourceIndex     uint32
+	skipResolve     bool
 }
 
 type parseResult struct {
-	file           scannerFile
 	resolveResults []*resolver.ResolveResult
+	file           scannerFile
 	tlaCheck       tlaCheck
 	ok             bool
 }
@@ -175,14 +174,9 @@ func parseFile(args parseArgs) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			stack := strings.TrimSpace(string(debug.Stack()))
-			tracker := logger.MakeLineColumnTracker(&source)
-			data := logger.RangeData(&tracker, logger.Range{}, fmt.Sprintf("panic: %v", r))
-			data.Location.LineText = fmt.Sprintf("%s\n%s", data.Location.LineText, stack)
-			args.log.AddMsg(logger.Msg{
-				Kind: logger.Error,
-				Data: data,
-			})
+			args.log.AddWithNotes(logger.Error, nil, logger.Range{},
+				fmt.Sprintf("panic: %v (while parsing %q)", r, source.PrettyPath),
+				[]logger.MsgData{{Text: helpers.PrettyPrintedStack()}})
 			args.results <- result
 		}
 	}()
@@ -190,12 +184,18 @@ func parseFile(args parseArgs) {
 	switch loader {
 	case config.LoaderJS:
 		ast, ok := args.caches.JSCache.Parse(args.log, source, js_parser.OptionsFromConfig(&args.options))
+		if len(ast.Parts) <= 1 { // Ignore the implicitly-generated namespace export part
+			result.file.inputFile.SideEffects.Kind = graph.NoSideEffects_EmptyAST
+		}
 		result.file.inputFile.Repr = &graph.JSRepr{AST: ast}
 		result.ok = ok
 
 	case config.LoaderJSX:
 		args.options.JSX.Parse = true
 		ast, ok := args.caches.JSCache.Parse(args.log, source, js_parser.OptionsFromConfig(&args.options))
+		if len(ast.Parts) <= 1 { // Ignore the implicitly-generated namespace export part
+			result.file.inputFile.SideEffects.Kind = graph.NoSideEffects_EmptyAST
+		}
 		result.file.inputFile.Repr = &graph.JSRepr{AST: ast}
 		result.ok = ok
 
@@ -203,6 +203,9 @@ func parseFile(args parseArgs) {
 		args.options.TS.Parse = true
 		args.options.TS.NoAmbiguousLessThan = loader == config.LoaderTSNoAmbiguousLessThan
 		ast, ok := args.caches.JSCache.Parse(args.log, source, js_parser.OptionsFromConfig(&args.options))
+		if len(ast.Parts) <= 1 { // Ignore the implicitly-generated namespace export part
+			result.file.inputFile.SideEffects.Kind = graph.NoSideEffects_EmptyAST
+		}
 		result.file.inputFile.Repr = &graph.JSRepr{AST: ast}
 		result.ok = ok
 
@@ -210,14 +213,18 @@ func parseFile(args parseArgs) {
 		args.options.TS.Parse = true
 		args.options.JSX.Parse = true
 		ast, ok := args.caches.JSCache.Parse(args.log, source, js_parser.OptionsFromConfig(&args.options))
+		if len(ast.Parts) <= 1 { // Ignore the implicitly-generated namespace export part
+			result.file.inputFile.SideEffects.Kind = graph.NoSideEffects_EmptyAST
+		}
 		result.file.inputFile.Repr = &graph.JSRepr{AST: ast}
 		result.ok = ok
 
 	case config.LoaderCSS:
 		ast := args.caches.CSSCache.Parse(args.log, source, css_parser.Options{
-			MangleSyntax:           args.options.MangleSyntax,
-			RemoveWhitespace:       args.options.RemoveWhitespace,
+			MinifySyntax:           args.options.MinifySyntax,
+			MinifyWhitespace:       args.options.MinifyWhitespace,
 			UnsupportedCSSFeatures: args.options.UnsupportedCSSFeatures,
+			OriginalTargetEnv:      args.options.OriginalTargetEnv,
 		})
 		result.file.inputFile.Repr = &graph.CSSRepr{AST: ast}
 		result.ok = true
@@ -235,7 +242,7 @@ func parseFile(args parseArgs) {
 
 	case config.LoaderText:
 		encoded := base64.StdEncoding.EncodeToString([]byte(source.Contents))
-		expr := js_ast.Expr{Data: &js_ast.EString{Value: js_lexer.StringToUTF16(source.Contents)}}
+		expr := js_ast.Expr{Data: &js_ast.EString{Value: helpers.StringToUTF16(source.Contents)}}
 		ast := js_parser.LazyExportAST(args.log, source, js_parser.OptionsFromConfig(&args.options), expr, "")
 		ast.URLForCSS = "data:text/plain;base64," + encoded
 		if pluginName != "" {
@@ -249,7 +256,7 @@ func parseFile(args parseArgs) {
 	case config.LoaderBase64:
 		mimeType := guessMimeType(ext, source.Contents)
 		encoded := base64.StdEncoding.EncodeToString([]byte(source.Contents))
-		expr := js_ast.Expr{Data: &js_ast.EString{Value: js_lexer.StringToUTF16(encoded)}}
+		expr := js_ast.Expr{Data: &js_ast.EString{Value: helpers.StringToUTF16(encoded)}}
 		ast := js_parser.LazyExportAST(args.log, source, js_parser.OptionsFromConfig(&args.options), expr, "")
 		ast.URLForCSS = "data:" + mimeType + ";base64," + encoded
 		if pluginName != "" {
@@ -262,7 +269,7 @@ func parseFile(args parseArgs) {
 
 	case config.LoaderBinary:
 		encoded := base64.StdEncoding.EncodeToString([]byte(source.Contents))
-		expr := js_ast.Expr{Data: &js_ast.EString{Value: js_lexer.StringToUTF16(encoded)}}
+		expr := js_ast.Expr{Data: &js_ast.EString{Value: helpers.StringToUTF16(encoded)}}
 		helper := "__toBinary"
 		if args.options.Platform == config.PlatformNode {
 			helper = "__toBinaryNode"
@@ -281,7 +288,7 @@ func parseFile(args parseArgs) {
 		mimeType := guessMimeType(ext, source.Contents)
 		encoded := base64.StdEncoding.EncodeToString([]byte(source.Contents))
 		url := fmt.Sprintf("data:%s;base64,%s", mimeType, encoded)
-		expr := js_ast.Expr{Data: &js_ast.EString{Value: js_lexer.StringToUTF16(url)}}
+		expr := js_ast.Expr{Data: &js_ast.EString{Value: helpers.StringToUTF16(url)}}
 		ast := js_parser.LazyExportAST(args.log, source, js_parser.OptionsFromConfig(&args.options), expr, "")
 		ast.URLForCSS = url
 		if pluginName != "" {
@@ -295,7 +302,7 @@ func parseFile(args parseArgs) {
 	case config.LoaderFile:
 		uniqueKey := fmt.Sprintf("%sA%08d", args.uniqueKeyPrefix, args.sourceIndex)
 		uniqueKeyPath := uniqueKey + source.KeyPath.IgnoredSuffix
-		expr := js_ast.Expr{Data: &js_ast.EString{Value: js_lexer.StringToUTF16(uniqueKeyPath)}}
+		expr := js_ast.Expr{Data: &js_ast.EString{Value: helpers.StringToUTF16(uniqueKeyPath)}}
 		ast := js_parser.LazyExportAST(args.log, source, js_parser.OptionsFromConfig(&args.options), expr, "")
 		ast.URLForCSS = uniqueKeyPath
 		if pluginName != "" {
@@ -317,7 +324,7 @@ func parseFile(args parseArgs) {
 			message = fmt.Sprintf("Do not know how to load path: %s", source.PrettyPath)
 		}
 		tracker := logger.MakeLineColumnTracker(args.importSource)
-		args.log.AddRangeError(&tracker, args.importPathRange, message)
+		args.log.Add(logger.Error, &tracker, args.importPathRange, message)
 	}
 
 	// This must come before we send on the "results" channel to avoid deadlock
@@ -371,7 +378,7 @@ func parseFile(args parseArgs) {
 
 				// Ignore records that the parser has discarded. This is used to remove
 				// type-only imports in TypeScript files.
-				if record.IsUnused {
+				if record.Flags.Has(ast.IsUnused) {
 					continue
 				}
 
@@ -387,7 +394,7 @@ func parseFile(args parseArgs) {
 				}
 
 				// Run the resolver and log an error if the path couldn't be resolved
-				resolveResult, didLogError, debug := runOnResolvePlugins(
+				resolveResult, didLogError, debug := RunOnResolvePlugins(
 					args.options.Plugins,
 					args.res,
 					args.log,
@@ -395,7 +402,7 @@ func parseFile(args parseArgs) {
 					&args.caches.FSCache,
 					&source,
 					record.Range,
-					source.KeyPath.Namespace,
+					source.KeyPath,
 					record.Path.Text,
 					record.Kind,
 					absResolveDir,
@@ -406,8 +413,11 @@ func parseFile(args parseArgs) {
 				// All "require.resolve()" imports should be external because we don't
 				// want to waste effort traversing into them
 				if record.Kind == ast.ImportRequireResolve {
-					if !record.HandlesImportErrors && (resolveResult == nil || !resolveResult.IsExternal) {
-						args.log.AddRangeWarning(&tracker, record.Range,
+					if resolveResult != nil && resolveResult.IsExternal {
+						// Allow path substitution as long as the result is external
+						result.resolveResults[importRecordIndex] = resolveResult
+					} else if !record.Flags.Has(ast.HandlesImportErrors) {
+						args.log.Add(logger.Warning, &tracker, record.Range,
 							fmt.Sprintf("%q should be marked as external for use with \"require.resolve\"", record.Path.Text))
 					}
 					continue
@@ -418,41 +428,15 @@ func parseFile(args parseArgs) {
 					// external imports instead of causing errors. This matches a common
 					// code pattern for conditionally importing a module with a graceful
 					// fallback.
-					if !didLogError && !record.HandlesImportErrors {
-						hint := ""
-						if resolver.IsPackagePath(record.Path.Text) {
-							if record.Kind == ast.ImportRequire {
-								hint = ", or surround it with try/catch to handle the failure at run-time"
-							} else if record.Kind == ast.ImportDynamic {
-								hint = ", or add \".catch()\" to handle the failure at run-time"
-							}
-							hint = fmt.Sprintf(" (mark it as external to exclude it from the bundle%s)", hint)
-							if pluginName == "" && !args.fs.IsAbs(record.Path.Text) {
-								if query := args.res.ProbeResolvePackageAsRelative(absResolveDir, record.Path.Text, record.Kind); query != nil {
-									hint = fmt.Sprintf(" (use %q to reference the file %q)", "./"+record.Path.Text, args.res.PrettyPath(query.PathPair.Primary))
-								}
-							}
-						}
-						if args.options.Platform != config.PlatformNode {
-							if _, ok := resolver.BuiltInNodeModules[record.Path.Text]; ok {
-								switch logger.API {
-								case logger.CLIAPI:
-									hint = " (use \"--platform=node\" when building for node)"
-								case logger.JSAPI:
-									hint = " (use \"platform: 'node'\" when building for node)"
-								case logger.GoAPI:
-									hint = " (use \"Platform: api.PlatformNode\" when building for node)"
-								}
-							}
-						}
-						if absResolveDir == "" && pluginName != "" {
-							hint = fmt.Sprintf(" (the plugin %q didn't set a resolve directory)", pluginName)
-						}
-						debug.LogErrorMsg(args.log, &source, record.Range, fmt.Sprintf("Could not resolve %q%s", record.Path.Text, hint))
-					} else if args.log.Level <= logger.LevelDebug && !didLogError && record.HandlesImportErrors {
-						args.log.AddRangeDebug(&tracker, record.Range,
-							fmt.Sprintf("Importing %q was allowed even though it could not be resolved because dynamic import failures appear to be handled here",
-								record.Path.Text))
+					if !didLogError && !record.Flags.Has(ast.HandlesImportErrors) {
+						text, suggestion, notes := ResolveFailureErrorTextSuggestionNotes(args.res, record.Path.Text, record.Kind,
+							pluginName, args.fs, absResolveDir, args.options.Platform, source.PrettyPath)
+						debug.LogErrorMsg(args.log, &source, record.Range, text, suggestion, notes)
+					} else if args.log.Level <= logger.LevelDebug && !didLogError && record.Flags.Has(ast.HandlesImportErrors) {
+						args.log.AddWithNotes(logger.Debug, &tracker, record.Range,
+							fmt.Sprintf("Importing %q was allowed even though it could not be resolved because dynamic import failures appear to be handled here:",
+								record.Path.Text), []logger.MsgData{tracker.MsgData(js_lexer.RangeOfIdentifier(source, record.ErrorHandlerLoc),
+								"The handler for dynamic import failures is here:")})
 					}
 					continue
 				}
@@ -484,6 +468,67 @@ func parseFile(args parseArgs) {
 	}
 
 	args.results <- result
+}
+
+func ResolveFailureErrorTextSuggestionNotes(
+	res resolver.Resolver,
+	path string,
+	kind ast.ImportKind,
+	pluginName string,
+	fs fs.FS,
+	absResolveDir string,
+	platform config.Platform,
+	originatingFilePath string,
+) (text string, suggestion string, notes []logger.MsgData) {
+	text = fmt.Sprintf("Could not resolve %q", path)
+	hint := ""
+
+	if resolver.IsPackagePath(path) {
+		hint = fmt.Sprintf("You can mark the path %q as external to exclude it from the bundle, which will remove this error.", path)
+		if kind == ast.ImportRequire {
+			hint += " You can also surround this \"require\" call with a try/catch block to handle this failure at run-time instead of bundle-time."
+		} else if kind == ast.ImportDynamic {
+			hint += " You can also add \".catch()\" here to handle this failure at run-time instead of bundle-time."
+		}
+		if pluginName == "" && !fs.IsAbs(path) {
+			if query := res.ProbeResolvePackageAsRelative(absResolveDir, path, kind); query != nil {
+				hint = fmt.Sprintf("Use the relative path %q to reference the file %q. "+
+					"Without the leading \"./\", the path %q is being interpreted as a package path instead.",
+					"./"+path, res.PrettyPath(query.PathPair.Primary), path)
+				suggestion = string(js_printer.QuoteForJSON("./"+path, false))
+			}
+		}
+	}
+
+	if platform != config.PlatformNode {
+		if _, ok := resolver.BuiltInNodeModules[path]; ok {
+			var how string
+			switch logger.API {
+			case logger.CLIAPI:
+				how = "--platform=node"
+			case logger.JSAPI:
+				how = "platform: 'node'"
+			case logger.GoAPI:
+				how = "Platform: api.PlatformNode"
+			}
+			hint = fmt.Sprintf("The package %q wasn't found on the file system but is built into node. "+
+				"Are you trying to bundle for node? You can use %q to do that, which will remove this error.", path, how)
+		}
+	}
+
+	if absResolveDir == "" && pluginName != "" {
+		where := ""
+		if originatingFilePath != "" {
+			where = fmt.Sprintf(" for the file %q", originatingFilePath)
+		}
+		hint = fmt.Sprintf("The plugin %q didn't set a resolve directory%s, "+
+			"so esbuild did not search for %q on the file system.", pluginName, where, path)
+	}
+
+	if hint != "" {
+		notes = append(notes, logger.MsgData{Text: hint})
+	}
+	return
 }
 
 func joinWithPublicPath(publicPath string, relPath string) string {
@@ -550,7 +595,7 @@ func extractSourceMapFromComment(
 		if contents, err := parsed.DecodeData(); err == nil {
 			return logger.Path{Text: source.PrettyPath, IgnoredSuffix: "#sourceMappingURL"}, &contents
 		} else {
-			log.AddRangeWarning(&tracker, comment.Range, fmt.Sprintf("Unsupported source map comment: %s", err.Error()))
+			log.Add(logger.Warning, &tracker, comment.Range, fmt.Sprintf("Unsupported source map comment: %s", err.Error()))
 			return logger.Path{}, nil
 		}
 	}
@@ -561,14 +606,14 @@ func extractSourceMapFromComment(
 		path := logger.Path{Text: absPath, Namespace: "file"}
 		contents, err, originalError := fsCache.ReadFile(fs, absPath)
 		if log.Level <= logger.LevelDebug && originalError != nil {
-			log.AddRangeDebug(&tracker, comment.Range, fmt.Sprintf("Failed to read file %q: %s", res.PrettyPath(path), originalError.Error()))
+			log.Add(logger.Debug, &tracker, comment.Range, fmt.Sprintf("Failed to read file %q: %s", res.PrettyPath(path), originalError.Error()))
 		}
 		if err != nil {
 			if err == syscall.ENOENT {
 				// Don't report a warning because this is likely unactionable
 				return logger.Path{}, nil
 			}
-			log.AddRangeWarning(&tracker, comment.Range, fmt.Sprintf("Cannot read file %q: %s", res.PrettyPath(path), err.Error()))
+			log.Add(logger.Warning, &tracker, comment.Range, fmt.Sprintf("Cannot read file %q: %s", res.PrettyPath(path), err.Error()))
 			return logger.Path{}, nil
 		}
 		return path, &contents
@@ -578,7 +623,7 @@ func extractSourceMapFromComment(
 	return logger.Path{}, nil
 }
 
-func sanetizeLocation(res resolver.Resolver, loc *logger.MsgLocation) {
+func sanitizeLocation(res resolver.Resolver, loc *logger.MsgLocation) {
 	if loc != nil {
 		if loc.Namespace == "" {
 			loc.Namespace = "file"
@@ -612,17 +657,17 @@ func logPluginMessages(
 
 		// Sanitize the locations
 		for _, note := range msg.Notes {
-			sanetizeLocation(res, note.Location)
+			sanitizeLocation(res, note.Location)
 		}
 		if msg.Data.Location == nil {
-			msg.Data.Location = logger.LocationOrNil(&tracker, importPathRange)
+			msg.Data.Location = tracker.MsgLocationOrNil(importPathRange)
 		} else {
-			sanetizeLocation(res, msg.Data.Location)
-			if msg.Data.Location.File == "" && importSource != nil {
-				msg.Data.Location.File = importSource.PrettyPath
-			}
+			sanitizeLocation(res, msg.Data.Location)
 			if importSource != nil {
-				msg.Notes = append(msg.Notes, logger.RangeData(&tracker, importPathRange,
+				if msg.Data.Location.File == "" {
+					msg.Data.Location.File = importSource.PrettyPath
+				}
+				msg.Notes = append(msg.Notes, tracker.MsgData(importPathRange,
 					fmt.Sprintf("The plugin %q was triggered by this import", name)))
 			}
 		}
@@ -639,7 +684,7 @@ func logPluginMessages(
 			Kind:       logger.Error,
 			Data: logger.MsgData{
 				Text:       text,
-				Location:   logger.LocationOrNil(&tracker, importPathRange),
+				Location:   tracker.MsgLocationOrNil(importPathRange),
 				UserDetail: thrown,
 			},
 		})
@@ -648,7 +693,7 @@ func logPluginMessages(
 	return didLogError
 }
 
-func runOnResolvePlugins(
+func RunOnResolvePlugins(
 	plugins []config.Plugin,
 	res resolver.Resolver,
 	log logger.Log,
@@ -656,7 +701,7 @@ func runOnResolvePlugins(
 	fsCache *cache.FSCache,
 	importSource *logger.Source,
 	importPathRange logger.Range,
-	importNamespace string,
+	importer logger.Path,
 	path string,
 	kind ast.ImportKind,
 	absResolveDir string,
@@ -667,15 +712,11 @@ func runOnResolvePlugins(
 		ResolveDir: absResolveDir,
 		Kind:       kind,
 		PluginData: pluginData,
+		Importer:   importer,
 	}
 	applyPath := logger.Path{
 		Text:      path,
-		Namespace: importNamespace,
-	}
-	if importSource != nil {
-		resolverArgs.Importer = importSource.KeyPath
-	} else {
-		resolverArgs.Importer.Namespace = importNamespace
+		Namespace: importer.Namespace,
 	}
 	tracker := logger.MakeLineColumnTracker(importSource)
 
@@ -728,10 +769,10 @@ func runOnResolvePlugins(
 			// Paths in the file namespace must be absolute paths
 			if result.Path.Namespace == "file" && !fs.IsAbs(result.Path.Text) {
 				if nsFromPlugin == "file" {
-					log.AddRangeError(&tracker, importPathRange,
+					log.Add(logger.Error, &tracker, importPathRange,
 						fmt.Sprintf("Plugin %q returned a path in the \"file\" namespace that is not an absolute path: %s", pluginName, result.Path.Text))
 				} else {
-					log.AddRangeError(&tracker, importPathRange,
+					log.Add(logger.Error, &tracker, importPathRange,
 						fmt.Sprintf("Plugin %q returned a non-absolute path: %s (set a namespace if this is not a file path)", pluginName, result.Path.Text))
 				}
 				return nil, true, resolver.DebugMeta{}
@@ -761,7 +802,7 @@ func runOnResolvePlugins(
 	// Warn when the case used for importing differs from the actual file name
 	if result != nil && result.DifferentCase != nil && !helpers.IsInsideNodeModules(absResolveDir) {
 		diffCase := *result.DifferentCase
-		log.AddRangeWarning(&tracker, importPathRange, fmt.Sprintf(
+		log.Add(logger.Warning, &tracker, importPathRange, fmt.Sprintf(
 			"Use %q instead of %q to avoid issues with case-sensitive file systems",
 			res.PrettyPath(logger.Path{Text: fs.Join(diffCase.Dir, diffCase.Actual), Namespace: "file"}),
 			res.PrettyPath(logger.Path{Text: fs.Join(diffCase.Dir, diffCase.Query), Namespace: "file"}),
@@ -772,10 +813,10 @@ func runOnResolvePlugins(
 }
 
 type loaderPluginResult struct {
-	loader        config.Loader
+	pluginData    interface{}
 	absResolveDir string
 	pluginName    string
-	pluginData    interface{}
+	loader        config.Loader
 }
 
 func runOnLoadPlugins(
@@ -868,14 +909,14 @@ func runOnLoadPlugins(
 			}, true
 		} else {
 			if log.Level <= logger.LevelDebug && originalError != nil {
-				log.AddDebug(nil, logger.Loc{}, fmt.Sprintf("Failed to read file %q: %s", source.KeyPath.Text, originalError.Error()))
+				log.Add(logger.Debug, nil, logger.Range{}, fmt.Sprintf("Failed to read file %q: %s", source.KeyPath.Text, originalError.Error()))
 			}
 			if err == syscall.ENOENT {
-				log.AddRangeError(&tracker, importPathRange,
+				log.Add(logger.Error, &tracker, importPathRange,
 					fmt.Sprintf("Could not read from file: %s", source.KeyPath.Text))
 				return loaderPluginResult{}, false
 			} else {
-				log.AddRangeError(&tracker, importPathRange,
+				log.Add(logger.Error, &tracker, importPathRange,
 					fmt.Sprintf("Cannot read file %q: %s", res.PrettyPath(source.KeyPath), err.Error()))
 				return loaderPluginResult{}, false
 			}
@@ -888,7 +929,7 @@ func runOnLoadPlugins(
 		if parsed, ok := resolver.ParseDataURL(source.KeyPath.Text); ok {
 			if mimeType := parsed.DecodeMIMEType(); mimeType != resolver.MIMETypeUnsupported {
 				if contents, err := parsed.DecodeData(); err != nil {
-					log.AddRangeError(&tracker, importPathRange,
+					log.Add(logger.Error, &tracker, importPathRange,
 						fmt.Sprintf("Could not load data URL: %s", err.Error()))
 					return loaderPluginResult{loader: config.LoaderNone}, true
 				} else {
@@ -944,17 +985,24 @@ type scanner struct {
 	fs              fs.FS
 	res             resolver.Resolver
 	caches          *cache.CacheSet
-	options         config.Options
 	timer           *helpers.Timer
 	uniqueKeyPrefix string
 
-	// This is not guarded by a mutex because it's only ever modified by a single
+	// These are not guarded by a mutex because it's only ever modified by a single
 	// thread. Note that not all results in the "results" array are necessarily
 	// valid. Make sure to check the "ok" flag before using them.
 	results       []parseResult
-	visited       map[logger.Path]uint32
+	visited       map[logger.Path]visitedFile
 	resultChannel chan parseResult
-	remaining     int
+
+	options config.Options
+
+	// Also not guarded by a mutex for the same reason
+	remaining int
+}
+
+type visitedFile struct {
+	sourceIndex uint32
 }
 
 type EntryPoint struct {
@@ -1004,7 +1052,7 @@ func ScanBundle(
 	// Each bundling operation gets a separate unique key
 	uniqueKeyPrefix, err := generateUniqueKeyPrefix()
 	if err != nil {
-		log.AddError(nil, logger.Loc{}, fmt.Sprintf("Failed to read from randomness source: %s", err.Error()))
+		log.Add(logger.Error, nil, logger.Range{}, fmt.Sprintf("Failed to read from randomness source: %s", err.Error()))
 	}
 
 	s := scanner{
@@ -1015,7 +1063,7 @@ func ScanBundle(
 		options:         options,
 		timer:           timer,
 		results:         make([]parseResult, 0, caches.SourceIndexCache.LenHint()),
-		visited:         make(map[logger.Path]uint32),
+		visited:         make(map[logger.Path]visitedFile),
 		resultChannel:   make(chan parseResult),
 		uniqueKeyPrefix: uniqueKeyPrefix,
 	}
@@ -1036,12 +1084,48 @@ func ScanBundle(
 		}
 	}()
 
+	// Wait for all "onStart" plugins here before continuing. People sometimes run
+	// setup code in "onStart" that "onLoad" expects to be able to use without
+	// "onLoad" needing to block on the completion of their "onStart" callback.
+	//
+	// We want to enable this:
+	//
+	//   let plugin = {
+	//     name: 'example',
+	//     setup(build) {
+	//       let started = false
+	//       build.onStart(() => started = true)
+	//       build.onLoad({ filter: /.*/ }, () => {
+	//         assert(started === true)
+	//       })
+	//     },
+	//   }
+	//
+	// without people having to write something like this:
+	//
+	//   let plugin = {
+	//     name: 'example',
+	//     setup(build) {
+	//       let started = {}
+	//       started.promise = new Promise(resolve => {
+	//         started.resolve = resolve
+	//       })
+	//       build.onStart(() => {
+	//         started.resolve(true)
+	//       })
+	//       build.onLoad({ filter: /.*/ }, async () => {
+	//         assert(await started.promise === true)
+	//       })
+	//     },
+	//   }
+	//
+	onStartWaitGroup.Wait()
+
 	s.preprocessInjectedFiles()
 	entryPointMeta := s.addEntryPoints(entryPoints)
 	s.scanAllDependencies()
 	files := s.processScannedFiles()
 
-	onStartWaitGroup.Wait()
 	return Bundle{
 		fs:              fs,
 		res:             res,
@@ -1076,13 +1160,15 @@ func (s *scanner) maybeParseFile(
 	}
 
 	// Only parse a given file path once
-	sourceIndex, ok := s.visited[visitedKey]
+	visited, ok := s.visited[visitedKey]
 	if ok {
-		return sourceIndex
+		return visited.sourceIndex
 	}
 
-	sourceIndex = s.allocateSourceIndex(visitedKey, cache.SourceIndexNormal)
-	s.visited[visitedKey] = sourceIndex
+	visited = visitedFile{
+		sourceIndex: s.allocateSourceIndex(visitedKey, cache.SourceIndexNormal),
+	}
+	s.visited[visitedKey] = visited
 	s.remaining++
 	optionsClone := s.options
 	if kind != inputKindStdin {
@@ -1099,18 +1185,22 @@ func (s *scanner) maybeParseFile(
 	if resolveResult.UseDefineForClassFieldsTS != config.Unspecified {
 		optionsClone.UseDefineForClassFields = resolveResult.UseDefineForClassFieldsTS
 	}
-	if resolveResult.PreserveUnusedImportsTS {
-		optionsClone.PreserveUnusedImportsTS = true
+	if resolveResult.UnusedImportsTS != config.UnusedImportsRemoveStmt {
+		optionsClone.UnusedImportsTS = resolveResult.UnusedImportsTS
 	}
 	optionsClone.TSTarget = resolveResult.TSTarget
 
 	// Set the module type preference using node's module type rules
 	if strings.HasSuffix(path.Text, ".mjs") {
-		optionsClone.ModuleType = config.ModuleESM
+		optionsClone.ModuleTypeData.Type = js_ast.ModuleESM_MJS
+	} else if strings.HasSuffix(path.Text, ".mts") {
+		optionsClone.ModuleTypeData.Type = js_ast.ModuleESM_MTS
 	} else if strings.HasSuffix(path.Text, ".cjs") {
-		optionsClone.ModuleType = config.ModuleCommonJS
+		optionsClone.ModuleTypeData.Type = js_ast.ModuleCommonJS_CJS
+	} else if strings.HasSuffix(path.Text, ".cts") {
+		optionsClone.ModuleTypeData.Type = js_ast.ModuleCommonJS_CTS
 	} else {
-		optionsClone.ModuleType = resolveResult.ModuleType
+		optionsClone.ModuleTypeData = resolveResult.ModuleTypeData
 	}
 
 	// Enable bundling for injected files so we always do tree shaking. We
@@ -1128,6 +1218,10 @@ func (s *scanner) maybeParseFile(
 	if path.Namespace == "dataurl" {
 		if _, ok := resolver.ParseDataURL(path.Text); ok {
 			prettyPath = path.Text
+			if len(prettyPath) > 65 {
+				prettyPath = prettyPath[:65]
+			}
+			prettyPath = strings.ReplaceAll(prettyPath, "\n", "\\n")
 			if len(prettyPath) > 64 {
 				prettyPath = prettyPath[:64] + "..."
 			}
@@ -1148,7 +1242,7 @@ func (s *scanner) maybeParseFile(
 		caches:          s.caches,
 		keyPath:         path,
 		prettyPath:      prettyPath,
-		sourceIndex:     sourceIndex,
+		sourceIndex:     visited.sourceIndex,
 		importSource:    importSource,
 		sideEffects:     sideEffects,
 		importPathRange: importPathRange,
@@ -1160,7 +1254,7 @@ func (s *scanner) maybeParseFile(
 		uniqueKeyPrefix: s.uniqueKeyPrefix,
 	})
 
-	return sourceIndex
+	return visited.sourceIndex
 }
 
 func (s *scanner) allocateSourceIndex(path logger.Path, kind cache.SourceIndexKind) uint32 {
@@ -1197,7 +1291,7 @@ func (s *scanner) preprocessInjectedFiles() {
 		// These should be unique by construction so no need to check for collisions
 		visitedKey := logger.Path{Text: fmt.Sprintf("<define:%s>", define.Name)}
 		sourceIndex := s.allocateSourceIndex(visitedKey, cache.SourceIndexNormal)
-		s.visited[visitedKey] = sourceIndex
+		s.visited[visitedKey] = visitedFile{sourceIndex: sourceIndex}
 		source := logger.Source{
 			Index:          sourceIndex,
 			KeyPath:        visitedKey,
@@ -1242,7 +1336,7 @@ func (s *scanner) preprocessInjectedFiles() {
 		absPathKey := canonicalFileSystemPathForWindows(absPath)
 
 		if duplicateInjectedFiles[absPathKey] {
-			s.log.AddError(nil, logger.Loc{}, fmt.Sprintf("Duplicate injected file %q", prettyPath))
+			s.log.Add(logger.Error, nil, logger.Range{}, fmt.Sprintf("Duplicate injected file %q", prettyPath))
 			continue
 		}
 
@@ -1250,7 +1344,7 @@ func (s *scanner) preprocessInjectedFiles() {
 		resolveResult := s.res.ResolveAbs(absPath)
 
 		if resolveResult == nil {
-			s.log.AddError(nil, logger.Loc{}, fmt.Sprintf("Could not resolve %q", prettyPath))
+			s.log.Add(logger.Error, nil, logger.Range{}, fmt.Sprintf("Could not resolve %q", prettyPath))
 			continue
 		}
 
@@ -1331,7 +1425,7 @@ func (s *scanner) addEntryPoints(entryPoints []EntryPoint) []graph.EntryPoint {
 				}
 			}
 		} else if s.log.Level <= logger.LevelDebug && originalError != nil {
-			s.log.AddDebug(nil, logger.Loc{}, fmt.Sprintf("Failed to read directory %q: %s", absPath, originalError.Error()))
+			s.log.Add(logger.Debug, nil, logger.Range{}, fmt.Sprintf("Failed to read directory %q: %s", absPath, originalError.Error()))
 		}
 	}
 
@@ -1343,13 +1437,13 @@ func (s *scanner) addEntryPoints(entryPoints []EntryPoint) []graph.EntryPoint {
 	entryPointWaitGroup.Add(len(entryPoints))
 	for i, entryPoint := range entryPoints {
 		go func(i int, entryPoint EntryPoint) {
-			namespace := ""
+			var importer logger.Path
 			if entryPoint.IsFile {
-				namespace = "file"
+				importer.Namespace = "file"
 			}
 
 			// Run the resolver and log an error if the path couldn't be resolved
-			resolveResult, didLogError, debug := runOnResolvePlugins(
+			resolveResult, didLogError, debug := RunOnResolvePlugins(
 				s.options.Plugins,
 				s.res,
 				s.log,
@@ -1357,7 +1451,7 @@ func (s *scanner) addEntryPoints(entryPoints []EntryPoint) []graph.EntryPoint {
 				&s.caches.FSCache,
 				nil,
 				logger.Range{},
-				namespace,
+				importer,
 				entryPoint.InputPath,
 				ast.ImportEntryPoint,
 				entryPointAbsResolveDir,
@@ -1365,20 +1459,28 @@ func (s *scanner) addEntryPoints(entryPoints []EntryPoint) []graph.EntryPoint {
 			)
 			if resolveResult != nil {
 				if resolveResult.IsExternal {
-					s.log.AddError(nil, logger.Loc{}, fmt.Sprintf("The entry point %q cannot be marked as external", entryPoint.InputPath))
+					s.log.Add(logger.Error, nil, logger.Range{}, fmt.Sprintf("The entry point %q cannot be marked as external", entryPoint.InputPath))
 				} else {
 					entryPointResolveResults[i] = resolveResult
 				}
 			} else if !didLogError {
-				hint := ""
+				var notes []logger.MsgData
 				if !s.fs.IsAbs(entryPoint.InputPath) {
 					if strings.ContainsRune(entryPoint.InputPath, '*') {
-						hint = " (glob syntax must be expanded first before passing the paths to esbuild)"
+						notes = append(notes, logger.MsgData{
+							Text: "It looks like you are trying to use glob syntax (i.e. \"*\") with esbuild. " +
+								"This syntax is typically handled by your shell, and isn't handled by esbuild itself. " +
+								"You must expand glob syntax first before passing your paths to esbuild.",
+						})
 					} else if query := s.res.ProbeResolvePackageAsRelative(entryPointAbsResolveDir, entryPoint.InputPath, ast.ImportEntryPoint); query != nil {
-						hint = fmt.Sprintf(" (use %q to reference the file %q)", "./"+entryPoint.InputPath, s.res.PrettyPath(query.PathPair.Primary))
+						notes = append(notes, logger.MsgData{
+							Text: fmt.Sprintf("Use the relative path %q to reference the file %q. "+
+								"Without the leading \"./\", the path %q is being interpreted as a package path instead.",
+								"./"+entryPoint.InputPath, s.res.PrettyPath(query.PathPair.Primary), entryPoint.InputPath),
+						})
 					}
 				}
-				debug.LogErrorMsg(s.log, nil, logger.Range{}, fmt.Sprintf("Could not resolve %q%s", entryPoint.InputPath, hint))
+				debug.LogErrorMsg(s.log, nil, logger.Range{}, fmt.Sprintf("Could not resolve %q", entryPoint.InputPath), "", notes)
 			}
 			entryPointWaitGroup.Done()
 		}(i, entryPoint)
@@ -1557,6 +1659,11 @@ func (s *scanner) scanAllDependencies() {
 						&result.file.inputFile.Source, record.Range, resolveResult.PluginData, inputKindNormal, nil)
 					record.SourceIndex = ast.MakeIndex32(sourceIndex)
 				} else {
+					// Allow this import statement to be removed if something marked it as "sideEffects: false"
+					if resolveResult.PrimarySideEffectsData != nil {
+						record.Flags |= ast.IsExternalWithoutSideEffects
+					}
+
 					// If the path to the external module is relative to the source
 					// file, rewrite the path to be relative to the working directory
 					if path.Namespace == "file" {
@@ -1628,8 +1735,8 @@ func (s *scanner) processScannedFiles() []scannerFile {
 					if secondaryKey.Namespace == "file" {
 						secondaryKey.Text = canonicalFileSystemPathForWindows(secondaryKey.Text)
 					}
-					if secondarySourceIndex, ok := s.visited[secondaryKey]; ok {
-						record.SourceIndex = ast.MakeIndex32(secondarySourceIndex)
+					if secondaryVisited, ok := s.visited[secondaryKey]; ok {
+						record.SourceIndex = ast.MakeIndex32(secondaryVisited.sourceIndex)
 					}
 				}
 
@@ -1651,10 +1758,10 @@ func (s *scanner) processScannedFiles() []scannerFile {
 					// Using a JavaScript file with CSS "@import" is not allowed
 					otherFile := &s.results[record.SourceIndex.GetIndex()].file
 					if _, ok := otherFile.inputFile.Repr.(*graph.JSRepr); ok {
-						s.log.AddRangeError(&tracker, record.Range,
+						s.log.Add(logger.Error, &tracker, record.Range,
 							fmt.Sprintf("Cannot import %q into a CSS file", otherFile.inputFile.Source.PrettyPath))
 					} else if record.Kind == ast.ImportAtConditional {
-						s.log.AddRangeError(&tracker, record.Range,
+						s.log.Add(logger.Error, &tracker, record.Range,
 							"Bundling with conditional \"@import\" rules is not currently supported")
 					}
 
@@ -1663,12 +1770,12 @@ func (s *scanner) processScannedFiles() []scannerFile {
 					otherFile := &s.results[record.SourceIndex.GetIndex()].file
 					switch otherRepr := otherFile.inputFile.Repr.(type) {
 					case *graph.CSSRepr:
-						s.log.AddRangeError(&tracker, record.Range,
+						s.log.Add(logger.Error, &tracker, record.Range,
 							fmt.Sprintf("Cannot use %q as a URL", otherFile.inputFile.Source.PrettyPath))
 
 					case *graph.JSRepr:
 						if otherRepr.AST.URLForCSS == "" {
-							s.log.AddRangeError(&tracker, record.Range,
+							s.log.Add(logger.Error, &tracker, record.Range,
 								fmt.Sprintf("Cannot use %q as a URL", otherFile.inputFile.Source.PrettyPath))
 						}
 					}
@@ -1681,7 +1788,7 @@ func (s *scanner) processScannedFiles() []scannerFile {
 					otherFile := &s.results[record.SourceIndex.GetIndex()].file
 					if css, ok := otherFile.inputFile.Repr.(*graph.CSSRepr); ok {
 						if s.options.WriteToStdout {
-							s.log.AddRangeError(&tracker, record.Range,
+							s.log.Add(logger.Error, &tracker, record.Range,
 								fmt.Sprintf("Cannot import %q into a JavaScript file without an output path configured", otherFile.inputFile.Source.PrettyPath))
 						} else if !css.JSSourceIndex.IsValid() {
 							stubKey := otherFile.inputFile.Source.KeyPath
@@ -1724,13 +1831,18 @@ func (s *scanner) processScannedFiles() []scannerFile {
 				// about it. Note that this can result in esbuild silently generating
 				// broken code. If this actually happens for people, it's probably worth
 				// re-enabling the warning about code inside "node_modules".
-				if record.WasOriginallyBareImport && !s.options.IgnoreDCEAnnotations &&
+				if record.Flags.Has(ast.WasOriginallyBareImport) && !s.options.IgnoreDCEAnnotations &&
 					!helpers.IsInsideNodeModules(result.file.inputFile.Source.KeyPath.Text) {
 					if otherModule := &s.results[record.SourceIndex.GetIndex()].file.inputFile; otherModule.SideEffects.Kind != graph.HasSideEffects &&
 						// Do not warn if this is from a plugin, since removing the import
 						// would cause the plugin to not run, and running a plugin is a side
 						// effect.
-						otherModule.SideEffects.Kind != graph.NoSideEffects_PureData_FromPlugin {
+						otherModule.SideEffects.Kind != graph.NoSideEffects_PureData_FromPlugin &&
+
+						// Do not warn if this has no side effects because the parsed AST
+						// is empty. This is the case for ".d.ts" files, for example.
+						otherModule.SideEffects.Kind != graph.NoSideEffects_EmptyAST {
+
 						var notes []logger.MsgData
 						var by string
 						if data := otherModule.SideEffects.Data; data != nil {
@@ -1744,10 +1856,10 @@ func (s *scanner) processScannedFiles() []scannerFile {
 									text = "\"sideEffects\" is false in the enclosing \"package.json\" file"
 								}
 								tracker := logger.MakeLineColumnTracker(data.Source)
-								notes = append(notes, logger.RangeData(&tracker, data.Range, text))
+								notes = append(notes, tracker.MsgData(data.Range, text))
 							}
 						}
-						s.log.AddRangeWarningWithNotes(&tracker, record.Range,
+						s.log.AddWithNotes(logger.Warning, &tracker, record.Range,
 							fmt.Sprintf("Ignoring this import because %q was marked as having no side effects%s",
 								otherModule.Source.PrettyPath, by), notes)
 					}
@@ -1780,21 +1892,22 @@ func (s *scanner) processScannedFiles() []scannerFile {
 
 			// Generate the input for the template
 			_, _, originalExt := logger.PlatformIndependentPathDirBaseExt(result.file.inputFile.Source.KeyPath.Text)
-			dir, base, ext := pathRelativeToOutbase(
+			dir, base := pathRelativeToOutbase(
 				&result.file.inputFile,
 				&s.options,
 				s.fs,
-				originalExt,
 				/* avoidIndex */ false,
 				/* customFilePath */ "",
 			)
 
 			// Apply the asset path template
+			templateExt := strings.TrimPrefix(originalExt, ".")
 			relPath := config.TemplateToString(config.SubstituteTemplate(s.options.AssetPathTemplate, config.PathPlaceholders{
 				Dir:  &dir,
 				Name: &base,
 				Hash: &hash,
-			})) + ext
+				Ext:  &templateExt,
+			})) + originalExt
 
 			// Optionally add metadata about the file
 			var jsonMetadataChunk string
@@ -1873,8 +1986,8 @@ func (s *scanner) validateTLA(sourceIndex uint32) tlaCheck {
 							if parentRepr.AST.TopLevelAwaitKeyword.Len > 0 {
 								tlaPrettyPath = parentResult.file.inputFile.Source.PrettyPath
 								tracker := logger.MakeLineColumnTracker(&parentResult.file.inputFile.Source)
-								notes = append(notes, logger.RangeData(&tracker, parentRepr.AST.TopLevelAwaitKeyword,
-									fmt.Sprintf("The top-level await in %q is here", tlaPrettyPath)))
+								notes = append(notes, tracker.MsgData(parentRepr.AST.TopLevelAwaitKeyword,
+									fmt.Sprintf("The top-level await in %q is here:", tlaPrettyPath)))
 								break
 							}
 
@@ -1886,9 +1999,9 @@ func (s *scanner) validateTLA(sourceIndex uint32) tlaCheck {
 							otherSourceIndex = parentResult.tlaCheck.parent.GetIndex()
 
 							tracker := logger.MakeLineColumnTracker(&parentResult.file.inputFile.Source)
-							notes = append(notes, logger.RangeData(&tracker,
+							notes = append(notes, tracker.MsgData(
 								parentRepr.AST.ImportRecords[parent.importRecordIndex].Range,
-								fmt.Sprintf("The file %q imports the file %q here",
+								fmt.Sprintf("The file %q imports the file %q here:",
 									parentResult.file.inputFile.Source.PrettyPath, s.results[otherSourceIndex].file.inputFile.Source.PrettyPath)))
 						}
 
@@ -1904,7 +2017,7 @@ func (s *scanner) validateTLA(sourceIndex uint32) tlaCheck {
 						}
 
 						tracker := logger.MakeLineColumnTracker(&result.file.inputFile.Source)
-						s.log.AddRangeErrorWithNotes(&tracker, record.Range, text, notes)
+						s.log.AddWithNotes(logger.Error, &tracker, record.Range, text, notes)
 					}
 				}
 			}
@@ -1971,7 +2084,7 @@ func applyOptionDefaults(options *config.Options) {
 	options.ProfilerNames = !options.MinifyIdentifiers
 }
 
-func (b *Bundle) Compile(log logger.Log, options config.Options, timer *helpers.Timer) ([]graph.OutputFile, string) {
+func (b *Bundle) Compile(log logger.Log, options config.Options, timer *helpers.Timer, mangleCache map[string]interface{}) ([]graph.OutputFile, string) {
 	timer.Begin("Compile phase")
 	defer timer.End("Compile phase")
 
@@ -1980,6 +2093,11 @@ func (b *Bundle) Compile(log logger.Log, options config.Options, timer *helpers.
 	// The format can't be "preserve" while bundling
 	if options.Mode == config.ModeBundle && options.OutputFormat == config.FormatPreserve {
 		options.OutputFormat = config.FormatESModule
+	}
+
+	// In most cases we don't need synchronized access to the mangle cache
+	options.ExclusiveMangleCacheUpdate = func(cb func(mangleCache map[string]interface{})) {
+		cb(mangleCache)
 	}
 
 	files := make([]graph.InputFile, len(b.files))
@@ -1998,20 +2116,35 @@ func (b *Bundle) Compile(log logger.Log, options config.Options, timer *helpers.
 	var resultGroups [][]graph.OutputFile
 	if options.CodeSplitting || len(b.entryPoints) == 1 {
 		// If code splitting is enabled or if there's only one entry point, link all entry points together
-		resultGroups = [][]graph.OutputFile{link(
-			&options, timer, log, b.fs, b.res, files, b.entryPoints, b.uniqueKeyPrefix, allReachableFiles, dataForSourceMaps)}
+		resultGroups = [][]graph.OutputFile{link(&options, timer, log, b.fs, b.res,
+			files, b.entryPoints, b.uniqueKeyPrefix, allReachableFiles, dataForSourceMaps)}
 	} else {
 		// Otherwise, link each entry point with the runtime file separately
 		waitGroup := sync.WaitGroup{}
 		resultGroups = make([][]graph.OutputFile, len(b.entryPoints))
+		serializer := helpers.MakeSerializer(len(b.entryPoints))
 		for i, entryPoint := range b.entryPoints {
 			waitGroup.Add(1)
 			go func(i int, entryPoint graph.EntryPoint) {
 				entryPoints := []graph.EntryPoint{entryPoint}
 				forked := timer.Fork()
-				reachableFiles := findReachableFiles(files, entryPoints)
-				resultGroups[i] = link(
-					&options, forked, log, b.fs, b.res, files, entryPoints, b.uniqueKeyPrefix, reachableFiles, dataForSourceMaps)
+				var optionsPtr *config.Options
+				if mangleCache != nil {
+					// Each goroutine needs a separate options object
+					optionsClone := options
+					optionsClone.ExclusiveMangleCacheUpdate = func(cb func(mangleCache map[string]interface{})) {
+						// Serialize all accesses to the mangle cache in entry point order for determinism
+						serializer.Enter(i)
+						defer serializer.Leave(i)
+						cb(mangleCache)
+					}
+					optionsPtr = &optionsClone
+				} else {
+					// Each goroutine can share an options object
+					optionsPtr = &options
+				}
+				resultGroups[i] = link(optionsPtr, forked, log, b.fs, b.res, files, entryPoints,
+					b.uniqueKeyPrefix, findReachableFiles(files, entryPoints), dataForSourceMaps)
 				timer.Join(forked)
 				waitGroup.Done()
 			}(i, entryPoint)
@@ -2056,7 +2189,7 @@ func (b *Bundle) Compile(log logger.Log, options config.Options, timer *helpers.
 					case logger.GoAPI:
 						hint = " (use \"AllowOverwrite: true\" to allow this)"
 					}
-					log.AddError(nil, logger.Loc{},
+					log.Add(logger.Error, nil, logger.Range{},
 						fmt.Sprintf("Refusing to overwrite input file %q%s",
 							b.files[sourceIndex].inputFile.Source.PrettyPath, hint))
 				}
@@ -2093,7 +2226,7 @@ func (b *Bundle) Compile(log logger.Log, options config.Options, timer *helpers.
 			if relPath, ok := b.fs.Rel(b.fs.Cwd(), outputPath); ok {
 				outputPath = relPath
 			}
-			log.AddError(nil, logger.Loc{}, "Two output files share the same path but have different contents: "+outputPath)
+			log.Add(logger.Error, nil, logger.Range{}, "Two output files share the same path but have different contents: "+outputPath)
 		}
 		outputFiles = outputFiles[:end]
 	}
@@ -2189,7 +2322,7 @@ func (b *Bundle) computeDataForSourceMapsInParallel(options *config.Options, rea
 								if value := sm.SourcesContent[i]; value.Quoted != "" {
 									if options.ASCIIOnly && !isASCIIOnly(value.Quoted) {
 										// Re-quote non-ASCII values if output is ASCII-only
-										quotedContents = js_printer.QuoteForJSON(js_lexer.UTF16ToString(value.Value), options.ASCIIOnly)
+										quotedContents = js_printer.QuoteForJSON(helpers.UTF16ToString(value.Value), options.ASCIIOnly)
 									} else {
 										// Otherwise just use the value directly from the input file
 										quotedContents = []byte(value.Quoted)
@@ -2261,14 +2394,14 @@ func (b *Bundle) generateMetadataJSON(results []graph.OutputFile, allReachableFi
 }
 
 type runtimeCacheKey struct {
-	MangleSyntax      bool
+	MinifySyntax      bool
 	MinifyIdentifiers bool
 	ES6               bool
 }
 
 type runtimeCache struct {
-	astMutex sync.Mutex
 	astMap   map[runtimeCacheKey]js_ast.AST
+	astMutex sync.Mutex
 }
 
 var globalRuntimeCache runtimeCache
@@ -2276,7 +2409,7 @@ var globalRuntimeCache runtimeCache
 func (cache *runtimeCache) parseRuntime(options *config.Options) (source logger.Source, runtimeAST js_ast.AST, ok bool) {
 	key := runtimeCacheKey{
 		// All configuration options that the runtime code depends on must go here
-		MangleSyntax:      options.MangleSyntax,
+		MinifySyntax:      options.MinifySyntax,
 		MinifyIdentifiers: options.MinifyIdentifiers,
 		ES6:               runtime.CanUseES6(options.UnsupportedJSFeatures),
 	}
@@ -2310,7 +2443,7 @@ func (cache *runtimeCache) parseRuntime(options *config.Options) (source logger.
 	log := logger.NewDeferLog(logger.DeferLogAll)
 	runtimeAST, ok = js_parser.Parse(log, source, js_parser.OptionsFromConfig(&config.Options{
 		// These configuration options must only depend on the key
-		MangleSyntax:      key.MangleSyntax,
+		MinifySyntax:      key.MinifySyntax,
 		MinifyIdentifiers: key.MinifyIdentifiers,
 		UnsupportedJSFeatures: compat.UnsupportedJSFeatures(
 			map[compat.Engine][]int{compat.ES: {constraint}}),
