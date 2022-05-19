@@ -11,7 +11,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2
-	github.com/hashicorp/go-getter v1.5.9
+	github.com/hashicorp/go-getter v1.6.0
 	github.com/koding/websocketproxy v0.0.0-20181220232114-7ed82d81a28c
 	github.com/manifoldco/promptui v0.8.0
 	github.com/mattn/go-colorable v0.1.11
