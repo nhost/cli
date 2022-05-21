@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -614,10 +615,23 @@ func (s *Service) InitConfig() {
 		"service": s.Name,
 	}).Debug("Initializing")
 
-	s.Config = &container.Config{
+	user, err := user.Current()
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"type":    "configuration",
+			"service": s.Name,
+		}).Error(err)
+	}
+
+	cfg := &container.Config{
 		Image:        fmt.Sprintf(`%s:%v`, s.Image, s.Version),
 		ExposedPorts: nat.PortSet{nat.Port(fmt.Sprint(s.Port)): struct{}{}},
 	}
+	if s.Name == "nhost_postgres" {
+		cfg.User = fmt.Sprintf(`%s:%s`, user.Uid, user.Gid)
+	}
+
+	s.Config = cfg
 	s.HostConfig = &container.HostConfig{
 		//  AutoRemove:   true,
 		PortBindings: map[nat.Port][]nat.PortBinding{nat.Port(fmt.Sprintf("%v", s.Port)): {{HostIP: "127.0.0.1", HostPort: fmt.Sprintf("%v", s.Port)}}},
@@ -935,19 +949,19 @@ func (config *Configuration) Init(port string) error {
 
 	//  prepare env variables for following container
 	containerVariables = []string{
-        fmt.Sprintf("BIND=:%d", config.Services["storage"].Port),
+		fmt.Sprintf("BIND=:%d", config.Services["storage"].Port),
 		fmt.Sprintf("PUBLIC_URL=http://localhost:%d", config.Services["storage"].Port),
 
 		"HASURA_METADATA=1",
 		fmt.Sprintf(`HASURA_ENDPOINT=http://%s:%d/v1`, config.Services["hasura"].Name, config.Services["hasura"].Port),
-		"HASURA_GRAPHQL_ADMIN_SECRET=%s"+ util.ADMIN_SECRET,
+		"HASURA_GRAPHQL_ADMIN_SECRET=%s" + util.ADMIN_SECRET,
 
 		fmt.Sprintf("S3_ACCESS_KEY=%s", minioConfig.Environment["minio_root_user"]),
 		fmt.Sprintf("S3_SECRET_KEY=%s", minioConfig.Environment["minio_root_password"]),
 		"S3_BUCKET=nhost",
 
 		"POSTGRES_MIGRATIONS=1",
-        "POSTGRES_MIGRATIONS_SOURCE="+ GetAddress(config.Services["postgres"]),
+		"POSTGRES_MIGRATIONS_SOURCE=" + GetAddress(config.Services["postgres"]),
 	}
 
 	//	Add S3 endpoint
