@@ -38,7 +38,7 @@ const (
 	//   });
 	//
 	//   // bar.ts
-	//   let foo = flag ? (init_foo(), foo_exports) : null;
+	//   let foo = flag ? (init_foo(), __toCommonJS(foo_exports)) : null;
 	//
 	WrapESM
 )
@@ -101,15 +101,15 @@ type JSReprMeta struct {
 	// determinism due to random map iteration order.
 	SortedAndFilteredExportAliases []string
 
-	// If this is an entry point, this array holds a reference to one free
-	// temporary symbol for each entry in "sortedAndFilteredExportAliases".
-	// These may be needed to store copies of CommonJS re-exports in ESM.
-	CJSExportCopies []js_ast.Ref
-
 	// This is merged on top of the corresponding map from the parser in the AST.
 	// You should call "TopLevelSymbolToParts" to access this instead of accessing
 	// it directly.
 	TopLevelSymbolToPartsOverlay map[js_ast.Ref][]uint32
+
+	// If this is an entry point, this array holds a reference to one free
+	// temporary symbol for each entry in "sortedAndFilteredExportAliases".
+	// These may be needed to store copies of CommonJS re-exports in ESM.
+	CJSExportCopies []js_ast.Ref
 
 	// The index of the automatically-generated part used to represent the
 	// CommonJS or ESM wrapper. This part is empty and is only useful for tree
@@ -133,6 +133,11 @@ type JSReprMeta struct {
 
 	Wrap WrapKind
 
+	// If true, we need to insert "var exports = {};". This is the case for ESM
+	// files when the import namespace is captured via "import * as" and also
+	// when they are the target of a "require()" call.
+	NeedsExportsVariable bool
+
 	// If true, the "__export(exports, { ... })" call will be force-included even
 	// if there are no parts that reference "exports". Otherwise this call will
 	// be removed due to the tree shaking pass. This is used when for entry point
@@ -143,8 +148,7 @@ type JSReprMeta struct {
 	// This is set when we need to pull in the "__export" symbol in to the part
 	// at "nsExportPartIndex". This can't be done in "createExportsForFile"
 	// because of concurrent map hazards. Instead, it must be done later.
-	NeedsExportSymbolFromRuntime       bool
-	NeedsMarkAsModuleSymbolFromRuntime bool
+	NeedsExportSymbolFromRuntime bool
 
 	// Wrapped files must also ensure that their dependencies are wrapped. This
 	// flag is used during the traversal that enforces this invariant, and is used
@@ -167,8 +171,6 @@ type ImportData struct {
 }
 
 type ExportData struct {
-	Ref js_ast.Ref
-
 	// Export star resolution happens first before import resolution. That means
 	// it cannot yet determine if duplicate names from export star resolution are
 	// ambiguous (point to different symbols) or not (point to the same symbol).
@@ -191,6 +193,8 @@ type ExportData struct {
 	// which are ambiguous. To handle this case, ambiguity resolution must be
 	// deferred until import resolution time. That is done using this array.
 	PotentiallyAmbiguousExportStarRefs []ImportData
+
+	Ref js_ast.Ref
 
 	// This is the file that the named export above came from. This will be
 	// different from the file that contains this object if this is a re-export.
