@@ -19,8 +19,6 @@ import (
 const defaultTerminalWidth = 80
 
 type Log struct {
-	Level LogLevel
-
 	AddMsg    func(Msg)
 	HasErrors func() bool
 
@@ -30,6 +28,9 @@ type Log struct {
 	AlmostDone func()
 
 	Done func() []Msg
+
+	Level     LogLevel
+	Overrides map[MsgID]LogLevel
 }
 
 type LogLevel int8
@@ -58,45 +59,117 @@ const (
 func (kind MsgKind) String() string {
 	switch kind {
 	case Error:
-		return "error"
+		return "ERROR"
 	case Warning:
-		return "warning"
+		return "WARNING"
 	case Info:
-		return "info"
+		return "INFO"
 	case Note:
-		return "note"
+		return "NOTE"
 	case Debug:
-		return "debug"
+		return "DEBUG"
 	case Verbose:
-		return "verbose"
+		return "VERBOSE"
 	default:
 		panic("Internal error")
 	}
 }
 
+func (kind MsgKind) Icon() string {
+	// Special-case Windows command prompt, which only supports a few characters
+	if isProbablyWindowsCommandPrompt() {
+		switch kind {
+		case Error:
+			return "X"
+		case Warning:
+			return "▲"
+		case Info:
+			return "►"
+		case Note:
+			return "→"
+		case Debug:
+			return "●"
+		case Verbose:
+			return "♦"
+		default:
+			panic("Internal error")
+		}
+	}
+
+	switch kind {
+	case Error:
+		return "✘"
+	case Warning:
+		return "▲"
+	case Info:
+		return "▶"
+	case Note:
+		return "→"
+	case Debug:
+		return "●"
+	case Verbose:
+		return "⬥"
+	default:
+		panic("Internal error")
+	}
+}
+
+var windowsCommandPrompt struct {
+	mutex         sync.Mutex
+	once          bool
+	isProbablyCMD bool
+}
+
+func isProbablyWindowsCommandPrompt() bool {
+	windowsCommandPrompt.mutex.Lock()
+	defer windowsCommandPrompt.mutex.Unlock()
+
+	if !windowsCommandPrompt.once {
+		windowsCommandPrompt.once = true
+
+		// Assume we are running in Windows Command Prompt if we're on Windows. If
+		// so, we can't use emoji because it won't be supported. Except we can
+		// still use emoji if the WT_SESSION environment variable is present
+		// because that means we're running in the new Windows Terminal instead.
+		if runtime.GOOS == "windows" {
+			windowsCommandPrompt.isProbablyCMD = true
+			for _, env := range os.Environ() {
+				if strings.HasPrefix(env, "WT_SESSION=") {
+					windowsCommandPrompt.isProbablyCMD = false
+					break
+				}
+			}
+		}
+	}
+
+	return windowsCommandPrompt.isProbablyCMD
+}
+
 type Msg struct {
-	PluginName string
-	Kind       MsgKind
-	Data       MsgData
 	Notes      []MsgData
+	PluginName string
+	Data       MsgData
+	Kind       MsgKind
 }
 
 type MsgData struct {
-	Text     string
-	Location *MsgLocation
-
 	// Optional user-specified data that is passed through unmodified
 	UserDetail interface{}
+
+	Location *MsgLocation
+	Text     string
+
+	DisableMaximumWidth bool
 }
 
 type MsgLocation struct {
 	File       string
 	Namespace  string
+	LineText   string
+	Suggestion string
 	Line       int // 1-based
 	Column     int // 0-based, in bytes
 	Length     int // in bytes
-	LineText   string
-	Suggestion string
 }
 
 type Loc struct {
@@ -230,21 +303,6 @@ func PlatformIndependentPathDirBaseExt(path string) (dir string, base string, ex
 }
 
 type Source struct {
-	Index uint32
-
-	// This is used as a unique key to identify this source file. It should never
-	// be shown to the user (e.g. never print this to the terminal).
-	//
-	// If it's marked as an absolute path, it's a platform-dependent path that
-	// includes environment-specific things such as Windows backslash path
-	// separators and potentially the user's home directory. Only use this for
-	// passing to syscalls for reading and writing to the file system. Do not
-	// include this in any output data.
-	//
-	// If it's marked as not an absolute path, it's an opaque string that is used
-	// to refer to an automatically-generated module.
-	KeyPath Path
-
 	// This is used for error messages and the metadata JSON file.
 	//
 	// This is a mostly platform-independent path. It's relative to the current
@@ -260,10 +318,36 @@ type Source struct {
 	IdentifierName string
 
 	Contents string
+
+	// This is used as a unique key to identify this source file. It should never
+	// be shown to the user (e.g. never print this to the terminal).
+	//
+	// If it's marked as an absolute path, it's a platform-dependent path that
+	// includes environment-specific things such as Windows backslash path
+	// separators and potentially the user's home directory. Only use this for
+	// passing to syscalls for reading and writing to the file system. Do not
+	// include this in any output data.
+	//
+	// If it's marked as not an absolute path, it's an opaque string that is used
+	// to refer to an automatically-generated module.
+	KeyPath Path
+
+	Index uint32
 }
 
 func (s *Source) TextForRange(r Range) string {
 	return s.Contents[r.Loc.Start : r.Loc.Start+r.Len]
+}
+
+func (s *Source) LocBeforeWhitespace(loc Loc) Loc {
+	for loc.Start > 0 {
+		c, width := utf8.DecodeLastRuneInString(s.Contents[:loc.Start])
+		if c != ' ' && c != '\t' && c != '\r' && c != '\n' {
+			break
+		}
+		loc.Start -= int32(width)
+	}
+	return loc
 }
 
 func (s *Source) RangeOfOperatorBefore(loc Loc, op string) Range {
@@ -437,7 +521,8 @@ func NewStderrLog(options OutputOptions) Log {
 	}
 
 	return Log{
-		Level: options.LogLevel,
+		Level:     options.LogLevel,
+		Overrides: options.Overrides,
 
 		AddMsg: func(msg Msg) {
 			mutex.Lock()
@@ -539,7 +624,7 @@ func OutputOptionsForArgs(osArgs []string) OutputOptions {
 		switch arg {
 		case "--color=false":
 			options.Color = ColorNever
-		case "--color=true":
+		case "--color=true", "--color":
 			options.Color = ColorAlways
 		case "--log-level=info":
 			options.LogLevel = LevelInfo
@@ -574,6 +659,20 @@ type Colors struct {
 	Cyan    string
 	Magenta string
 	Yellow  string
+
+	RedBgRed     string
+	RedBgWhite   string
+	GreenBgGreen string
+	GreenBgWhite string
+	BlueBgBlue   string
+	BlueBgWhite  string
+
+	CyanBgCyan       string
+	CyanBgBlack      string
+	MagentaBgMagenta string
+	MagentaBgBlack   string
+	YellowBgYellow   string
+	YellowBgBlack    string
 }
 
 var TerminalColors = Colors{
@@ -589,6 +688,20 @@ var TerminalColors = Colors{
 	Cyan:    "\033[36m",
 	Magenta: "\033[35m",
 	Yellow:  "\033[33m",
+
+	RedBgRed:     "\033[41;31m",
+	RedBgWhite:   "\033[41;97m",
+	GreenBgGreen: "\033[42;32m",
+	GreenBgWhite: "\033[42;97m",
+	BlueBgBlue:   "\033[44;34m",
+	BlueBgWhite:  "\033[44;97m",
+
+	CyanBgCyan:       "\033[46;36m",
+	CyanBgBlack:      "\033[46;30m",
+	MagentaBgMagenta: "\033[45;35m",
+	MagentaBgBlack:   "\033[45;30m",
+	YellowBgYellow:   "\033[43;33m",
+	YellowBgBlack:    "\033[43;30m",
 }
 
 func PrintText(file *os.File, level LogLevel, osArgs []string, callback func(Colors) string) {
@@ -671,22 +784,8 @@ const sizeWarningThreshold = 1024 * 1024
 
 func PrintSummary(useColor UseColor, table SummaryTable, start *time.Time) {
 	PrintTextWithColor(os.Stderr, useColor, func(colors Colors) string {
-		isProbablyWindowsCommandPrompt := false
+		isProbablyWindowsCommandPrompt := isProbablyWindowsCommandPrompt()
 		sb := strings.Builder{}
-
-		// Assume we are running in Windows Command Prompt if we're on Windows. If
-		// so, we can't use emoji because it won't be supported. Except we can
-		// still use emoji if the WT_SESSION environment variable is present
-		// because that means we're running in the new Windows Terminal instead.
-		if runtime.GOOS == "windows" {
-			isProbablyWindowsCommandPrompt = true
-			for _, env := range os.Environ() {
-				if strings.HasPrefix(env, "WT_SESSION=") {
-					isProbablyWindowsCommandPrompt = false
-					break
-				}
-			}
-		}
 
 		if len(table) > 0 {
 			info := GetTerminalInfo(os.Stderr)
@@ -835,13 +934,14 @@ const (
 	DeferLogNoVerboseOrDebug
 )
 
-func NewDeferLog(kind DeferLogKind) Log {
+func NewDeferLog(kind DeferLogKind, overrides map[MsgID]LogLevel) Log {
 	var msgs SortableMsgs
 	var mutex sync.Mutex
 	var hasErrors bool
 
 	return Log{
-		Level: LevelInfo,
+		Level:     LevelInfo,
+		Overrides: overrides,
 
 		AddMsg: func(msg Msg) {
 			if kind == DeferLogNoVerboseOrDebug && (msg.Kind == Verbose || msg.Kind == Debug) {
@@ -882,42 +982,25 @@ const (
 )
 
 type OutputOptions struct {
-	IncludeSource bool
 	MessageLimit  int
+	IncludeSource bool
 	Color         UseColor
 	LogLevel      LogLevel
+	Overrides     map[MsgID]LogLevel
 }
 
 func (msg Msg) String(options OutputOptions, terminalInfo TerminalInfo) string {
-	// Compute the maximum margin
-	maxMargin := 0
-	if options.IncludeSource {
-		if msg.Data.Location != nil {
-			maxMargin = len(fmt.Sprintf("%d", msg.Data.Location.Line))
-		}
-		for _, note := range msg.Notes {
-			if note.Location != nil {
-				margin := len(fmt.Sprintf("%d", note.Location.Line))
-				if margin > maxMargin {
-					maxMargin = margin
-				}
-			}
-		}
-	}
-
 	// Format the message
-	text := msgString(options.IncludeSource, terminalInfo, msg.Kind, msg.Data, maxMargin, msg.PluginName)
-
-	// Put a blank line between the message and the notes if the message has a stack trace
-	gap := ""
-	if loc := msg.Data.Location; loc != nil && strings.ContainsRune(loc.LineText, '\n') {
-		gap = "\n"
-	}
+	text := msgString(options.IncludeSource, terminalInfo, msg.Kind, msg.Data, msg.PluginName)
 
 	// Format the notes
-	for _, note := range msg.Notes {
-		text += gap
-		text += msgString(options.IncludeSource, terminalInfo, Note, note, maxMargin, "")
+	var oldData MsgData
+	for i, note := range msg.Notes {
+		if options.IncludeSource && (i == 0 || strings.IndexByte(oldData.Text, '\n') >= 0 || oldData.Location != nil) {
+			text += "\n"
+		}
+		text += msgString(options.IncludeSource, terminalInfo, Note, note, "")
+		oldData = note
 	}
 
 	// Add extra spacing between messages if source code is present
@@ -928,110 +1011,229 @@ func (msg Msg) String(options OutputOptions, terminalInfo TerminalInfo) string {
 }
 
 // The number of margin characters in addition to the line number
-const extraMarginChars = 7
+const extraMarginChars = 9
 
 func marginWithLineText(maxMargin int, line int) string {
 	number := fmt.Sprintf("%d", line)
-	return fmt.Sprintf("    %s%s │ ", strings.Repeat(" ", maxMargin-len(number)), number)
+	return fmt.Sprintf("      %s%s │ ", strings.Repeat(" ", maxMargin-len(number)), number)
 }
 
 func emptyMarginText(maxMargin int, isLast bool) string {
 	space := strings.Repeat(" ", maxMargin)
 	if isLast {
-		return fmt.Sprintf("    %s ╵ ", space)
+		return fmt.Sprintf("      %s ╵ ", space)
 	}
-	return fmt.Sprintf("    %s │ ", space)
+	return fmt.Sprintf("      %s │ ", space)
 }
 
-func msgString(includeSource bool, terminalInfo TerminalInfo, kind MsgKind, data MsgData, maxMargin int, pluginName string) string {
+func msgString(includeSource bool, terminalInfo TerminalInfo, kind MsgKind, data MsgData, pluginName string) string {
+	if !includeSource {
+		if loc := data.Location; loc != nil {
+			return fmt.Sprintf("%s: %s: %s\n", loc.File, kind.String(), data.Text)
+		}
+		return fmt.Sprintf("%s: %s\n", kind.String(), data.Text)
+	}
+
 	var colors Colors
 	if terminalInfo.UseColorEscapes {
 		colors = TerminalColors
 	}
 
-	var kindColor string
-	prefixColor := colors.Bold
-	messageColor := colors.Bold
-	textIndent := ""
+	var iconColor string
+	var kindColorBrackets string
+	var kindColorText string
 
-	if includeSource {
-		textIndent = " > "
+	location := ""
+
+	if data.Location != nil {
+		maxMargin := len(fmt.Sprintf("%d", data.Location.Line))
+		d := detailStruct(data, terminalInfo, maxMargin)
+
+		if d.Suggestion != "" {
+			location = fmt.Sprintf("\n    %s:%d:%d:\n%s%s%s%s%s%s\n%s%s%s%s%s\n%s%s%s%s%s\n%s",
+				d.Path, d.Line, d.Column,
+				colors.Dim, d.SourceBefore, colors.Green, d.SourceMarked, colors.Dim, d.SourceAfter,
+				emptyMarginText(maxMargin, false), d.Indent, colors.Green, d.Marker, colors.Dim,
+				emptyMarginText(maxMargin, true), d.Indent, colors.Green, d.Suggestion, colors.Reset,
+				d.ContentAfter,
+			)
+		} else {
+			location = fmt.Sprintf("\n    %s:%d:%d:\n%s%s%s%s%s%s\n%s%s%s%s%s\n%s",
+				d.Path, d.Line, d.Column,
+				colors.Dim, d.SourceBefore, colors.Green, d.SourceMarked, colors.Dim, d.SourceAfter,
+				emptyMarginText(maxMargin, true), d.Indent, colors.Green, d.Marker, colors.Reset,
+				d.ContentAfter,
+			)
+		}
 	}
 
 	switch kind {
 	case Verbose:
-		kindColor = colors.Cyan
+		iconColor = colors.Cyan
+		kindColorBrackets = colors.CyanBgCyan
+		kindColorText = colors.CyanBgBlack
 
 	case Debug:
-		kindColor = colors.Blue
+		iconColor = colors.Green
+		kindColorBrackets = colors.GreenBgGreen
+		kindColorText = colors.GreenBgWhite
 
 	case Info:
-		kindColor = colors.Green
+		iconColor = colors.Blue
+		kindColorBrackets = colors.BlueBgBlue
+		kindColorText = colors.BlueBgWhite
 
 	case Error:
-		kindColor = colors.Red
+		iconColor = colors.Red
+		kindColorBrackets = colors.RedBgRed
+		kindColorText = colors.RedBgWhite
 
 	case Warning:
-		kindColor = colors.Magenta
+		iconColor = colors.Yellow
+		kindColorBrackets = colors.YellowBgYellow
+		kindColorText = colors.YellowBgBlack
 
 	case Note:
-		prefixColor = colors.Reset
-		kindColor = colors.Bold
-		messageColor = ""
-		if includeSource {
-			textIndent = "   "
+		sb := strings.Builder{}
+
+		for _, line := range strings.Split(data.Text, "\n") {
+			// Special-case word wrapping
+			if wrapWidth := terminalInfo.Width; wrapWidth > 2 {
+				if !data.DisableMaximumWidth && wrapWidth > 100 {
+					wrapWidth = 100 // Enforce a maximum paragraph width for readability
+				}
+				for _, run := range wrapWordsInString(line, wrapWidth-2) {
+					sb.WriteString("  ")
+					sb.WriteString(linkifyText(run, colors.Underline, colors.Reset))
+					sb.WriteByte('\n')
+				}
+				continue
+			}
+
+			// Otherwise, just write an indented line
+			sb.WriteString("  ")
+			sb.WriteString(linkifyText(line, colors.Underline, colors.Reset))
+			sb.WriteByte('\n')
 		}
 
-	default:
-		panic("Internal error")
+		sb.WriteString(location)
+		return sb.String()
 	}
 
-	var pluginText string
 	if pluginName != "" {
-		pluginText = fmt.Sprintf("%s[plugin: %s] ", colors.Yellow, pluginName)
+		pluginName = fmt.Sprintf("%s%s[plugin %s]%s ", colors.Bold, colors.Magenta, pluginName, colors.Reset)
 	}
 
-	if data.Location == nil {
-		return fmt.Sprintf("%s%s%s%s: %s%s%s%s\n%s",
-			prefixColor, textIndent, kindColor, kind.String(),
-			pluginText, colors.Reset, messageColor, data.Text,
-			colors.Reset)
+	return fmt.Sprintf("%s%s %s[%s%s%s]%s %s%s%s%s\n%s",
+		iconColor, kind.Icon(),
+		kindColorBrackets, kindColorText, kind.String(), kindColorBrackets, colors.Reset,
+		pluginName,
+		colors.Bold, data.Text, colors.Reset,
+		location,
+	)
+}
+
+func linkifyText(text string, underline string, reset string) string {
+	if underline == "" {
+		return text
 	}
 
-	if !includeSource {
-		return fmt.Sprintf("%s%s%s: %s%s: %s%s%s%s\n%s",
-			prefixColor, textIndent, data.Location.File,
-			kindColor, kind.String(),
-			pluginText, colors.Reset, messageColor, data.Text,
-			colors.Reset)
+	https := strings.Index(text, "https://")
+	if https == -1 {
+		return text
 	}
 
-	d := detailStruct(data, terminalInfo, maxMargin)
+	sb := strings.Builder{}
+	for {
+		https := strings.Index(text, "https://")
+		if https == -1 {
+			break
+		}
 
-	callout := d.Marker
-	calloutPrefix := ""
+		end := strings.IndexByte(text[https:], ' ')
+		if end == -1 {
+			end = len(text)
+		} else {
+			end += https
+		}
 
-	if d.Suggestion != "" {
-		callout = d.Suggestion
-		calloutPrefix = fmt.Sprintf("%s%s%s%s%s\n",
-			emptyMarginText(maxMargin, false), d.Indent, colors.Green, d.Marker, colors.Dim)
+		// Remove trailing punctuation
+		if end > https {
+			switch text[end-1] {
+			case '.', ',', '?', '!', ')', ']', '}':
+				end--
+			}
+		}
+
+		sb.WriteString(text[:https])
+		sb.WriteString(underline)
+		sb.WriteString(text[https:end])
+		sb.WriteString(reset)
+		text = text[end:]
 	}
 
-	return fmt.Sprintf("%s%s%s:%d:%d: %s%s: %s%s%s%s\n%s%s%s%s%s%s%s\n%s%s%s%s%s%s%s\n%s",
-		prefixColor, textIndent, d.Path, d.Line, d.Column,
-		kindColor, kind.String(),
-		pluginText, colors.Reset, messageColor, d.Message,
-		colors.Reset, colors.Dim, d.SourceBefore, colors.Green, d.SourceMarked, colors.Dim, d.SourceAfter,
-		calloutPrefix, emptyMarginText(maxMargin, true), d.Indent, colors.Green, callout, colors.Dim, d.ContentAfter,
-		colors.Reset)
+	sb.WriteString(text)
+	return sb.String()
+}
+
+func wrapWordsInString(text string, width int) []string {
+	runs := []string{}
+
+outer:
+	for text != "" {
+		i := 0
+		x := 0
+		wordEndI := 0
+
+		// Skip over any leading spaces
+		for i < len(text) && text[i] == ' ' {
+			i++
+			x++
+		}
+
+		// Find out how many words will fit in this run
+		for i < len(text) {
+			oldWordEndI := wordEndI
+			wordStartI := i
+
+			// Find the end of the word
+			for i < len(text) {
+				c, width := utf8.DecodeRuneInString(text[i:])
+				if c == ' ' {
+					break
+				}
+				i += width
+				x += 1 // Naively assume that each unicode code point is a single column
+			}
+			wordEndI = i
+
+			// Split into a new run if this isn't the first word in the run and the end is past the width
+			if wordStartI > 0 && x > width {
+				runs = append(runs, text[:oldWordEndI])
+				text = text[wordStartI:]
+				continue outer
+			}
+
+			// Skip over any spaces after the word
+			for i < len(text) && text[i] == ' ' {
+				i++
+				x++
+			}
+		}
+
+		// If we get here, this is the last run (i.e. everything fits)
+		break
+	}
+
+	// Remove any trailing spaces on the last run
+	for len(text) > 0 && text[len(text)-1] == ' ' {
+		text = text[:len(text)-1]
+	}
+	runs = append(runs, text)
+	return runs
 }
 
 type MsgDetail struct {
-	Path    string
-	Line    int
-	Column  int
-	Message string
-
 	SourceBefore string
 	SourceMarked string
 	SourceAfter  string
@@ -1041,6 +1243,10 @@ type MsgDetail struct {
 	Suggestion string
 
 	ContentAfter string
+
+	Path   string
+	Line   int
+	Column int
 }
 
 // It's not common for large files to have many warnings. But when it happens,
@@ -1084,6 +1290,13 @@ func MakeLineColumnTracker(source *Source) LineColumnTracker {
 		prettyPath:   source.PrettyPath,
 		hasLineStart: true,
 		hasSource:    true,
+	}
+}
+
+func (tracker *LineColumnTracker) MsgData(r Range, text string) MsgData {
+	return MsgData{
+		Text:     text,
+		Location: tracker.MsgLocationOrNil(r),
 	}
 }
 
@@ -1187,7 +1400,7 @@ func (t *LineColumnTracker) computeLineAndColumn(offset int) (lineCount int, col
 	return int(t.line), offset - int(t.lineStart), int(t.lineStart), int(t.lineEnd)
 }
 
-func LocationOrNil(tracker *LineColumnTracker, r Range) *MsgLocation {
+func (tracker *LineColumnTracker) MsgLocationOrNil(r Range) *MsgLocation {
 	if tracker == nil || !tracker.hasSource {
 		return nil
 	}
@@ -1216,6 +1429,9 @@ func detailStruct(data MsgData, terminalInfo TerminalInfo, maxMargin int) MsgDet
 	}
 	firstLine := loc.LineText[:endOfFirstLine]
 	afterFirstLine := loc.LineText[endOfFirstLine:]
+	if afterFirstLine != "" && !strings.HasSuffix(afterFirstLine, "\n") {
+		afterFirstLine += "\n"
+	}
 
 	// Clamp values in range
 	if loc.Line < 0 {
@@ -1329,10 +1545,9 @@ func detailStruct(data MsgData, terminalInfo TerminalInfo, maxMargin int) MsgDet
 	margin := marginWithLineText(maxMargin, loc.Line)
 
 	return MsgDetail{
-		Path:    loc.File,
-		Line:    loc.Line,
-		Column:  loc.Column,
-		Message: data.Text,
+		Path:   loc.File,
+		Line:   loc.Line,
+		Column: loc.Column,
 
 		SourceBefore: margin + lineText[:markerStart],
 		SourceMarked: lineText[markerStart:markerEnd],
@@ -1387,106 +1602,57 @@ func renderTabStops(withTabs string, spacesPerTab int) string {
 	return withoutTabs.String()
 }
 
-func (log Log) AddError(tracker *LineColumnTracker, loc Loc, text string) {
+func (log Log) AddError(tracker *LineColumnTracker, r Range, text string) {
 	log.AddMsg(Msg{
 		Kind: Error,
-		Data: RangeData(tracker, Range{Loc: loc}, text),
+		Data: tracker.MsgData(r, text),
 	})
 }
 
-func (log Log) AddErrorWithNotes(tracker *LineColumnTracker, loc Loc, text string, notes []MsgData) {
-	log.AddMsg(Msg{
-		Kind:  Error,
-		Data:  RangeData(tracker, Range{Loc: loc}, text),
-		Notes: notes,
-	})
-}
-
-func (log Log) AddRangeError(tracker *LineColumnTracker, r Range, text string) {
-	log.AddMsg(Msg{
-		Kind: Error,
-		Data: RangeData(tracker, r, text),
-	})
-}
-
-func (log Log) AddRangeErrorWithNotes(tracker *LineColumnTracker, r Range, text string, notes []MsgData) {
-	log.AddMsg(Msg{
-		Kind:  Error,
-		Data:  RangeData(tracker, r, text),
-		Notes: notes,
-	})
-}
-
-func (log Log) AddWarning(tracker *LineColumnTracker, loc Loc, text string) {
-	log.AddMsg(Msg{
-		Kind: Warning,
-		Data: RangeData(tracker, Range{Loc: loc}, text),
-	})
-}
-
-func (log Log) AddRangeWarning(tracker *LineColumnTracker, r Range, text string) {
-	log.AddMsg(Msg{
-		Kind: Warning,
-		Data: RangeData(tracker, r, text),
-	})
-}
-
-func (log Log) AddRangeWarningWithNotes(tracker *LineColumnTracker, r Range, text string, notes []MsgData) {
-	log.AddMsg(Msg{
-		Kind:  Warning,
-		Data:  RangeData(tracker, r, text),
-		Notes: notes,
-	})
-}
-
-func (log Log) AddDebug(tracker *LineColumnTracker, loc Loc, text string) {
-	log.AddMsg(Msg{
-		Kind: Debug,
-		Data: RangeData(tracker, Range{Loc: loc}, text),
-	})
-}
-
-func (log Log) AddDebugWithNotes(tracker *LineColumnTracker, loc Loc, text string, notes []MsgData) {
-	log.AddMsg(Msg{
-		Kind:  Debug,
-		Data:  RangeData(tracker, Range{Loc: loc}, text),
-		Notes: notes,
-	})
-}
-
-func (log Log) AddRangeDebug(tracker *LineColumnTracker, r Range, text string) {
-	log.AddMsg(Msg{
-		Kind: Debug,
-		Data: RangeData(tracker, r, text),
-	})
-}
-
-func (log Log) AddRangeDebugWithNotes(tracker *LineColumnTracker, r Range, text string, notes []MsgData) {
-	log.AddMsg(Msg{
-		Kind:  Debug,
-		Data:  RangeData(tracker, r, text),
-		Notes: notes,
-	})
-}
-
-func (log Log) AddVerbose(tracker *LineColumnTracker, loc Loc, text string) {
-	log.AddMsg(Msg{
-		Kind: Verbose,
-		Data: RangeData(tracker, Range{Loc: loc}, text),
-	})
-}
-
-func (log Log) AddVerboseWithNotes(tracker *LineColumnTracker, loc Loc, text string, notes []MsgData) {
-	log.AddMsg(Msg{
-		Kind:  Verbose,
-		Data:  RangeData(tracker, Range{Loc: loc}, text),
-		Notes: notes,
-	})
-}
-
-func RangeData(tracker *LineColumnTracker, r Range, text string) MsgData {
-	return MsgData{
-		Text:     text,
-		Location: LocationOrNil(tracker, r),
+func (log Log) AddID(id MsgID, kind MsgKind, tracker *LineColumnTracker, r Range, text string) {
+	if override, ok := AllowOverride(log.Overrides, id, kind); ok {
+		log.AddMsg(Msg{
+			Kind: override,
+			Data: tracker.MsgData(r, text),
+		})
 	}
+}
+
+func (log Log) AddErrorWithNotes(tracker *LineColumnTracker, r Range, text string, notes []MsgData) {
+	log.AddMsg(Msg{
+		Kind:  Error,
+		Data:  tracker.MsgData(r, text),
+		Notes: notes,
+	})
+}
+
+func (log Log) AddIDWithNotes(id MsgID, kind MsgKind, tracker *LineColumnTracker, r Range, text string, notes []MsgData) {
+	if override, ok := AllowOverride(log.Overrides, id, kind); ok {
+		log.AddMsg(Msg{
+			Kind:  override,
+			Data:  tracker.MsgData(r, text),
+			Notes: notes,
+		})
+	}
+}
+
+func AllowOverride(overrides map[MsgID]LogLevel, id MsgID, kind MsgKind) (MsgKind, bool) {
+	if logLevel, ok := overrides[id]; ok {
+		switch logLevel {
+		case LevelVerbose:
+			return Verbose, true
+		case LevelDebug:
+			return Debug, true
+		case LevelInfo:
+			return Info, true
+		case LevelWarning:
+			return Warning, true
+		case LevelError:
+			return Error, true
+		default:
+			// Setting the log level to "silent" silences this log message
+			return MsgKind(0), false
+		}
+	}
+	return kind, true
 }
