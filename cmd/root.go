@@ -26,17 +26,14 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/manifoldco/promptui"
 	"github.com/nhost/cli/logger"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"github.com/spf13/viper"
+	"os"
+	"path/filepath"
 )
 
 var (
@@ -68,46 +65,6 @@ var (
 				WorkingDir: path,
 			})
 			nhost.Init()
-		},
-		Run: func(cmd *cobra.Command, args []string) {
-
-			//  check if project is already initialized
-			if !util.PathExists(nhost.NHOST_DIR) {
-
-				//  start the "init" command
-				initCmd.Run(cmd, args)
-
-				//  offer to clone templates
-				//  templatesCmd.Run(cmd, args)
-				for _, item := range entities {
-					if !item.Default {
-						prompt := promptui.Prompt{
-							Label:     fmt.Sprintf("Do you want to install %s templates", strings.ToLower(item.Name)),
-							IsConfirm: true,
-						}
-
-						_, err := prompt.Run()
-						if err != nil {
-							continue
-						}
-
-						selected = item
-
-						//  start the "templates" command
-						templatesCmd.Run(cmd, args)
-
-						//	reset selected template choice
-						choice = ""
-					}
-				}
-			}
-
-			//  start the "dev" command
-			if err := devCmd.PreRunE(cmd, args); err != nil {
-				log.Debug(err)
-			}
-
-			devCmd.Run(cmd, args)
 		},
 	}
 )
