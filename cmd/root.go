@@ -41,7 +41,7 @@ var (
 	//  rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
 		Use:   "nhost",
-		Short: "Open Source Firebase Alternative with GraphQL",
+		Short: "Nhost: The Open Source Firebase Alternative with GraphQL",
 		Long: fmt.Sprintf(`
       _   ____               __
      / | / / /_  ____  _____/ /_
@@ -50,7 +50,7 @@ var (
   /_/ |_/_/ /_/\____/____/\__/
 
 
-  Nhost.io is a full-fledged serverless backend for Jamstack and client-serverless applications.
+  Nhost: The Open Source Firebase Alternative with GraphQL.
   Version - %s
   Documentation - https://docs.nhost.io
   `, Version),
