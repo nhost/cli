@@ -5,13 +5,12 @@ Open Source Firebase Alternative with GraphQL
 ### Synopsis
 
 
-		_   ____               __ 
-		/ | / / /_  ____  _____/ /_
-	   /  |/ / __ \/ __ \/ ___/ __/
-	  / /|  / / / / /_/ (__  ) /_  
-	 /_/ |_/_/ /_/\____/____/\__/  
-								   
-	 
+        _   ____               __
+       / | / / /_  ____  _____/ /_
+      /  |/ / __ \/ __ \/ ___/ __/
+     / /|  / / / / /_/ (__  ) /_
+    /_/ |_/_/ /_/\____/____/\__/
+
   Nhost.io is a full-fledged serverless backend for Jamstack and client-serverless applications.
   Version - 
   Documentation - https://docs.nhost.io
