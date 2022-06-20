@@ -23,7 +23,7 @@ func ParseEnvVarsFromConfig(payload map[interface{}]interface{}, prefix string) 
 }
 
 func GetContainerName(name string) string {
-	return strings.Join([]string{PREFIX, name}, "_")
+	return fmt.Sprintf("%s_%s", PREFIX, name)
 }
 
 func GetCurrentBranch() string {
