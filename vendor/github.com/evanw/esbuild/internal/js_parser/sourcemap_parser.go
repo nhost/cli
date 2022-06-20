@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/evanw/esbuild/internal/helpers"
 	"github.com/evanw/esbuild/internal/js_ast"
-	"github.com/evanw/esbuild/internal/js_lexer"
 	"github.com/evanw/esbuild/internal/logger"
 	"github.com/evanw/esbuild/internal/sourcemap"
 )
@@ -20,7 +20,7 @@ func ParseSourceMap(log logger.Log, source logger.Source) *sourcemap.SourceMap {
 	obj, ok := expr.Data.(*js_ast.EObject)
 	tracker := logger.MakeLineColumnTracker(&source)
 	if !ok {
-		log.AddError(&tracker, expr.Loc, "Invalid source map")
+		log.AddError(&tracker, logger.Range{Loc: expr.Loc}, "Invalid source map")
 		return nil
 	}
 
@@ -33,9 +33,9 @@ func ParseSourceMap(log logger.Log, source logger.Source) *sourcemap.SourceMap {
 	for _, prop := range obj.Properties {
 		keyRange := source.RangeOfString(prop.Key.Loc)
 
-		switch js_lexer.UTF16ToString(prop.Key.Data.(*js_ast.EString).Value) {
+		switch helpers.UTF16ToString(prop.Key.Data.(*js_ast.EString).Value) {
 		case "sections":
-			log.AddRangeWarning(&tracker, keyRange, "Source maps with \"sections\" are not supported")
+			log.AddID(logger.MsgID_SourceMap_SectionsInSourceMap, logger.Warning, &tracker, keyRange, "Source maps with \"sections\" are not supported")
 			return nil
 
 		case "version":
@@ -54,7 +54,7 @@ func ParseSourceMap(log logger.Log, source logger.Source) *sourcemap.SourceMap {
 				sources = nil
 				for _, item := range value.Items {
 					if element, ok := item.Data.(*js_ast.EString); ok {
-						sources = append(sources, js_lexer.UTF16ToString(element.Value))
+						sources = append(sources, helpers.UTF16ToString(element.Value))
 					} else {
 						sources = append(sources, "")
 					}
@@ -201,7 +201,7 @@ func ParseSourceMap(log logger.Log, source logger.Source) *sourcemap.SourceMap {
 				current++
 			} else if c != ';' {
 				errorText = fmt.Sprintf("Invalid character after mapping: %q",
-					js_lexer.UTF16ToString(mappingsRaw[current:current+1]))
+					helpers.UTF16ToString(mappingsRaw[current:current+1]))
 				errorLen = 1
 				break
 			}
@@ -218,7 +218,7 @@ func ParseSourceMap(log logger.Log, source logger.Source) *sourcemap.SourceMap {
 
 	if errorText != "" {
 		r := logger.Range{Loc: logger.Loc{Start: mappingsStart + int32(current)}, Len: int32(errorLen)}
-		log.AddRangeWarning(&tracker, r,
+		log.AddID(logger.MsgID_SourceMap_InvalidSourceMappings, logger.Warning, &tracker, r,
 			fmt.Sprintf("Bad \"mappings\" data in source map at character %d: %s", current, errorText))
 		return nil
 	}
