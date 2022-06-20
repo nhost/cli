@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	client "github.com/docker/docker/client"
+	"github.com/docker/docker/client"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
 	"github.com/nhost/cli/watcher"
@@ -103,7 +103,10 @@ func (e *Environment) Init() error {
 	}
 
 	//	Initialize a new watcher for the environment
-	e.Watcher = watcher.New(e.Context)
+	e.Watcher, err = watcher.New(e.Context, log)
+	if err != nil {
+		return err
+	}
 
 	//  If there is a local git repository,
 	//  in the project root directory,
@@ -111,7 +114,6 @@ func (e *Environment) Init() error {
 	//  of HEAD changes on git checkout/pull/merge/fetch
 
 	if util.PathExists(nhost.GIT_DIR) {
-
 		//  Initialize watcher for post-checkout branch changes
 		e.Watcher.Register(filepath.Join(nhost.GIT_DIR, "HEAD"), e.restartAfterCheckout)
 

@@ -2,17 +2,16 @@ package watcher
 
 import (
 	"context"
-
 	"github.com/fsnotify/fsnotify"
-	"github.com/nhost/cli/logger"
 	"github.com/nhost/cli/util"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type Operation func() error
 
 type Watcher struct {
-	log *logrus.Logger
+	log logrus.FieldLogger
 
 	//	It's inherently an fsnotify Watcher under the hood.
 	*fsnotify.Watcher
@@ -26,10 +25,9 @@ type Watcher struct {
 	context context.Context
 }
 
-//	Add individial location to watcher.
-//	Along with associating it with respectiove operation function.
+//	Add individual location to watcher.
+//	Along with associating it with respective operation function.
 func (w *Watcher) Register(path string, op Operation) error {
-
 	w.log.WithField("component", "path").Debugln("Watching", util.Rel(path))
 
 	w.Map[path] = op
@@ -51,7 +49,7 @@ func (w *Watcher) Registered(key string) bool {
 }
 
 //	Initializes a new watcher
-func New(ctx context.Context) *Watcher {
+func New(ctx context.Context, logger logrus.FieldLogger) (*Watcher, error) {
 
 	//	If no context has been supplied,
 	//	initialize a new one
@@ -59,14 +57,17 @@ func New(ctx context.Context) *Watcher {
 		ctx = context.Background()
 	}
 
-	w, _ := fsnotify.NewWatcher()
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot initialize a watcher")
+	}
 
 	return &Watcher{
-		log:     &logger.Log,
+		log:     logger,
 		context: ctx,
 		Map:     make(map[string]Operation),
 		Watcher: w,
-	}
+	}, nil
 }
 
 //  Infinite function which listens for
