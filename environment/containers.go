@@ -26,7 +26,10 @@ func (e *Environment) WrapContainersAsServices(containers []types.Container) err
 	}
 
 	for _, container := range containers {
-		nameWithPrefix := strings.Split(container.Names[0], "/")[1]
+		if len(container.Names) < 1 || container.Names[0] == "" {
+			return fmt.Errorf("container %s has no name", container.ID)
+		}
+		nameWithPrefix := container.Names[0][1:]
 		name := strings.TrimPrefix(nameWithPrefix, nhost.PREFIX+"_")
 		if e.Config.Services[name] == nil {
 			e.Config.Services[name] = &nhost.Service{
