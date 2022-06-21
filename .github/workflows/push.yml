@@ -6,28 +6,25 @@ name: "push"
 jobs:
   # run golangci-lint to lint the golang source code.
   # the configuration is at /.golangci.yml.
-# disable for now
-#  linter:
-#    runs-on: ubuntu-latest
-#    steps:
-#      -
-#        uses: actions/checkout@v3
-#      -
-#        name: Get go.mod details
-#        uses: Eun/go-mod-details@v1.0.4
-#        id: go-mod-details
-#      -
-#        name: Install Go
-#        uses: actions/setup-go@v3
-#        with:
-#          go-version: ${{ steps.go-mod-details.outputs.go_version }}
-#      -
-#        name: lint
-#        uses: golangci/golangci-lint-action@v3.1.0
-#        with:
-#          version: latest
-#          # optional: show only new issues if it's a pull request. The default value is `false`.
-#          # only-new-issues: true
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@v3
+      -
+        name: Get go.mod details
+        uses: Eun/go-mod-details@v1.0.4
+        id: go-mod-details
+      -
+        name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ steps.go-mod-details.outputs.go_version }}
+      -
+        name: lint
+        uses: golangci/golangci-lint-action@v3.1.0
+        with:
+          version: 1.46.2
 
   # use nancy to scan for vulnerabilities.
   vulnerability_scanner:

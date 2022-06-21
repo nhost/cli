@@ -1,0 +1,76 @@
+---
+linters:
+    enable-all: true
+    disable:
+      - interfacer # deprecated
+      - scopelint # deprecated
+      - maligned # deprecated
+      - exhaustivestruct # deprecated
+      - golint # deprecated
+      - testpackage
+
+run:
+  skip-files:
+    - cmd/contact.go
+    - cmd/dev.go
+    - cmd/dev_test.go
+    - cmd/env.go
+    - cmd/execute.go
+    - cmd/functions.go
+    - cmd/functions_test.go
+    - cmd/hasura.go
+    - cmd/init.go
+    - cmd/init_test.go
+    - cmd/list.go
+    - cmd/link.go
+    - cmd/logs.go
+    - cmd/login.go
+    - cmd/logout.go
+    - cmd/pull.go
+    - cmd/purge.go
+    - cmd/root.go
+    - cmd/utils.go
+    - cmd/tests.go
+    - cmd/upgrade.go
+    - cmd/uninstall.go
+    - cmd/templates.go
+    - cmd/vars.go
+    - cmd/version.go
+
+    - environment/containers.go
+    - environment/environment.go
+    - environment/execution.go
+    - environment/git.go
+    - environment/types.go
+    - environment/vars.go
+
+    - functions/functions.go
+    - functions/server.go
+    - functions/types.go
+    - functions/utils.go
+    - functions/vars.go
+
+    - hasura/client.go
+    - hasura/commonmetadataops.go
+    - hasura/hasura.go
+    - hasura/migration.go
+    - hasura/pgdump.go
+    - hasura/metadata.go
+
+    - logger/formatter.go
+    - logger/logger.go
+
+    - nhost/nhost.go
+    - nhost/types.go
+    - nhost/utils.go
+    - nhost/vars.go
+
+    - proxy/proxy.go
+    - proxy/server.go
+    - proxy/server_test.go
+    - util/status.go
+    - util/system.go
+    - util/util.go
+    - util/system.go
+    - util/vars.go
+    - watcher/watcher.go
