@@ -18,29 +18,28 @@ import (
 )
 
 type InputFile struct {
-	Source         logger.Source
 	Repr           InputFileRepr
 	InputSourceMap *sourcemap.SourceMap
 
 	// If this file ends up being used in the bundle, these are additional files
-	// that must be written to the output directory. It's used by the "file"
-	// loader.
-	AdditionalFiles        []OutputFile
-	UniqueKeyForFileLoader string
+	// that must be written to the output directory. It's used by the "file" and
+	// "copy" loaders.
+	AdditionalFiles            []OutputFile
+	UniqueKeyForAdditionalFile string
 
 	SideEffects SideEffects
+	Source      logger.Source
 	Loader      config.Loader
 }
 
 type OutputFile struct {
-	AbsPath  string
-	Contents []byte
-
 	// If "AbsMetadataFile" is present, this will be filled out with information
 	// about this file in JSON format. This is a partial JSON file that will be
 	// fully assembled later.
 	JSONMetadataChunk string
 
+	AbsPath      string
+	Contents     []byte
 	IsExecutable bool
 }
 
@@ -61,6 +60,10 @@ const (
 	// file in one of our containing directories with a "sideEffects" field.
 	NoSideEffects_PackageJSON
 
+	// This file is considered to have no side effects because the AST was empty
+	// after parsing finished. This should be the case for ".d.ts" files.
+	NoSideEffects_EmptyAST
+
 	// This file was loaded using a data-oriented loader (e.g. "text") that is
 	// known to not have side effects.
 	NoSideEffects_PureData
@@ -76,8 +79,8 @@ type InputFileRepr interface {
 }
 
 type JSRepr struct {
-	AST  js_ast.AST
 	Meta JSReprMeta
+	AST  js_ast.AST
 
 	// If present, this is the CSS file that this JavaScript stub corresponds to.
 	// A JavaScript stub is automatically generated for a CSS file when it's
@@ -110,4 +113,13 @@ type CSSRepr struct {
 
 func (repr *CSSRepr) ImportRecords() *[]ast.ImportRecord {
 	return &repr.AST.ImportRecords
+}
+
+type CopyRepr struct {
+	// The URL that replaces the contents of any import record paths for this file
+	URLForCode string
+}
+
+func (repr *CopyRepr) ImportRecords() *[]ast.ImportRecord {
+	return nil
 }

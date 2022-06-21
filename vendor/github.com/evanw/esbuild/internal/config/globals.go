@@ -5,8 +5,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/evanw/esbuild/internal/ast"
+	"github.com/evanw/esbuild/internal/helpers"
 	"github.com/evanw/esbuild/internal/js_ast"
-	"github.com/evanw/esbuild/internal/logger"
 )
 
 var processedGlobalsMutex sync.Mutex
@@ -78,6 +79,22 @@ var knownGlobals = [][]string{
 	{"Object", "prototype", "valueOf"},
 	{"Object", "prototype", "watch"},
 
+	// Symbol: Static properties
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol#static_properties
+	{"Symbol", "asyncIterator"},
+	{"Symbol", "hasInstance"},
+	{"Symbol", "isConcatSpreadable"},
+	{"Symbol", "iterator"},
+	{"Symbol", "match"},
+	{"Symbol", "matchAll"},
+	{"Symbol", "replace"},
+	{"Symbol", "search"},
+	{"Symbol", "species"},
+	{"Symbol", "split"},
+	{"Symbol", "toPrimitive"},
+	{"Symbol", "toStringTag"},
+	{"Symbol", "unscopables"},
+
 	// Math: Static properties
 	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math#Static_properties
 	{"Math", "E"},
@@ -126,6 +143,22 @@ var knownGlobals = [][]string{
 	{"Math", "tan"},
 	{"Math", "tanh"},
 	{"Math", "trunc"},
+
+	// Reflect: Static methods
+	// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect#static_methods
+	{"Reflect", "apply"},
+	{"Reflect", "construct"},
+	{"Reflect", "defineProperty"},
+	{"Reflect", "deleteProperty"},
+	{"Reflect", "get"},
+	{"Reflect", "getOwnPropertyDescriptor"},
+	{"Reflect", "getPrototypeOf"},
+	{"Reflect", "has"},
+	{"Reflect", "isExtensible"},
+	{"Reflect", "ownKeys"},
+	{"Reflect", "preventExtensions"},
+	{"Reflect", "set"},
+	{"Reflect", "setPrototypeOf"},
 
 	// Other globals present in both the browser and node (except "eval" because
 	// it has special behavior)
@@ -809,16 +842,26 @@ var knownGlobals = [][]string{
 	{"window"},
 }
 
-type DefineArgs struct {
-	Loc             logger.Loc
-	FindSymbol      func(logger.Loc, string) js_ast.Ref
-	SymbolForDefine func(int) js_ast.Ref
+// We currently only support compile-time replacement with certain expressions:
+//
+//   - Primitive literals
+//   - Identifiers
+//   - "Entity names" which are identifiers followed by property accesses
+//
+// We don't support arbitrary expressions because arbitrary expressions may
+// require the full AST. For example, there could be "import()" or "require()"
+// expressions that need an import record. We also need to re-generate some
+// nodes such as identifiers within the injected context so that they can
+// bind to symbols in that context. Other expressions such as "this" may
+// also be contextual.
+type DefineExpr struct {
+	Constant            js_ast.E
+	Parts               []string
+	InjectedDefineIndex ast.Index32
 }
 
-type DefineFunc func(DefineArgs) js_ast.E
-
 type DefineData struct {
-	DefineFunc DefineFunc
+	DefineExpr *DefineExpr
 
 	// True if accessing this value is known to not have any side effects. For
 	// example, a bare reference to "Object.create" can be removed because it
@@ -829,6 +872,12 @@ type DefineData struct {
 	// example, a bare call to "Object()" can be removed because it does not
 	// have any observable side effects.
 	CallCanBeUnwrappedIfUnused bool
+
+	// If true, the user has indicated that every direct calls to a property on
+	// this object and all of that call's arguments are to be removed from the
+	// output, even when the arguments have side effects. This is used to
+	// implement the "--drop:console" flag.
+	MethodCallsMustBeReplacedWithUndefined bool
 }
 
 func mergeDefineData(old DefineData, new DefineData) DefineData {
@@ -842,8 +891,8 @@ func mergeDefineData(old DefineData, new DefineData) DefineData {
 }
 
 type DotDefine struct {
-	Parts []string
 	Data  DefineData
+	Parts []string
 }
 
 type ProcessedDefines struct {
@@ -889,13 +938,13 @@ func ProcessDefines(userDefines map[string]DefineData) ProcessedDefines {
 
 	// Swap in certain literal values because those can be constant folded
 	result.IdentifierDefines["undefined"] = DefineData{
-		DefineFunc: func(DefineArgs) js_ast.E { return js_ast.EUndefinedShared },
+		DefineExpr: &DefineExpr{Constant: js_ast.EUndefinedShared},
 	}
 	result.IdentifierDefines["NaN"] = DefineData{
-		DefineFunc: func(DefineArgs) js_ast.E { return &js_ast.ENumber{Value: math.NaN()} },
+		DefineExpr: &DefineExpr{Constant: &js_ast.ENumber{Value: math.NaN()}},
 	}
 	result.IdentifierDefines["Infinity"] = DefineData{
-		DefineFunc: func(DefineArgs) js_ast.E { return &js_ast.ENumber{Value: math.Inf(1)} },
+		DefineExpr: &DefineExpr{Constant: &js_ast.ENumber{Value: math.Inf(1)}},
 	}
 
 	// Then copy the user-specified defines in afterwards, which will overwrite
@@ -915,7 +964,7 @@ func ProcessDefines(userDefines map[string]DefineData) ProcessedDefines {
 
 		// Try to merge with existing dot defines first
 		for i, define := range dotDefines {
-			if arePartsEqual(parts, define.Parts) {
+			if helpers.StringArraysEqual(parts, define.Parts) {
 				define := &dotDefines[i]
 				define.Data = mergeDefineData(define.Data, data)
 				found = true
@@ -938,16 +987,4 @@ func ProcessDefines(userDefines map[string]DefineData) ProcessedDefines {
 		}
 	}
 	return result
-}
-
-func arePartsEqual(a []string, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }

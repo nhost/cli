@@ -125,24 +125,26 @@ const (
 	ES2019
 	ES2020
 	ES2021
+	ES2022
 )
 
 type Loader uint8
 
 const (
 	LoaderNone Loader = iota
+	LoaderBase64
+	LoaderBinary
+	LoaderCopy
+	LoaderCSS
+	LoaderDataURL
+	LoaderDefault
+	LoaderFile
 	LoaderJS
+	LoaderJSON
 	LoaderJSX
+	LoaderText
 	LoaderTS
 	LoaderTSX
-	LoaderJSON
-	LoaderText
-	LoaderBase64
-	LoaderDataURL
-	LoaderFile
-	LoaderBinary
-	LoaderCSS
-	LoaderDefault
 )
 
 type Platform uint8
@@ -168,8 +170,10 @@ const (
 	EngineChrome EngineName = iota
 	EngineEdge
 	EngineFirefox
+	EngineIE
 	EngineIOS
 	EngineNode
+	EngineOpera
 	EngineSafari
 )
 
@@ -189,6 +193,7 @@ type Location struct {
 }
 
 type Message struct {
+	ID         string
 	PluginName string
 	Text       string
 	Location   *Location
@@ -239,75 +244,96 @@ const (
 	TreeShakingTrue
 )
 
+type Drop uint8
+
+const (
+	DropConsole Drop = 1 << iota
+	DropDebugger
+)
+
+type MangleQuoted uint8
+
+const (
+	MangleQuotedFalse MangleQuoted = iota
+	MangleQuotedTrue
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // Build API
 
 type BuildOptions struct {
-	Color    StderrColor
-	LogLimit int
-	LogLevel LogLevel
+	Color       StderrColor         // Documentation: https://esbuild.github.io/api/#color
+	LogLevel    LogLevel            // Documentation: https://esbuild.github.io/api/#log-level
+	LogLimit    int                 // Documentation: https://esbuild.github.io/api/#log-limit
+	LogOverride map[string]LogLevel // Documentation: https://esbuild.github.io/api/#log-override
 
-	Sourcemap      SourceMap
-	SourceRoot     string
-	SourcesContent SourcesContent
+	Sourcemap      SourceMap      // Documentation: https://esbuild.github.io/api/#sourcemap
+	SourceRoot     string         // Documentation: https://esbuild.github.io/api/#source-root
+	SourcesContent SourcesContent // Documentation: https://esbuild.github.io/api/#sources-content
 
-	Target  Target
-	Engines []Engine
+	Target    Target          // Documentation: https://esbuild.github.io/api/#target
+	Engines   []Engine        // Documentation: https://esbuild.github.io/api/#target
+	Supported map[string]bool // Documentation: https://esbuild.github.io/api/#supported
 
-	MinifyWhitespace  bool
-	MinifyIdentifiers bool
-	MinifySyntax      bool
-	Charset           Charset
-	TreeShaking       TreeShaking
-	IgnoreAnnotations bool
-	LegalComments     LegalComments
+	MangleProps       string                 // Documentation: https://esbuild.github.io/api/#mangle-props
+	ReserveProps      string                 // Documentation: https://esbuild.github.io/api/#mangle-props
+	MangleQuoted      MangleQuoted           // Documentation: https://esbuild.github.io/api/#mangle-props
+	MangleCache       map[string]interface{} // Documentation: https://esbuild.github.io/api/#mangle-props
+	Drop              Drop                   // Documentation: https://esbuild.github.io/api/#drop
+	MinifyWhitespace  bool                   // Documentation: https://esbuild.github.io/api/#minify
+	MinifyIdentifiers bool                   // Documentation: https://esbuild.github.io/api/#minify
+	MinifySyntax      bool                   // Documentation: https://esbuild.github.io/api/#minify
+	Charset           Charset                // Documentation: https://esbuild.github.io/api/#charset
+	TreeShaking       TreeShaking            // Documentation: https://esbuild.github.io/api/#tree-shaking
+	IgnoreAnnotations bool                   // Documentation: https://esbuild.github.io/api/#ignore-annotations
+	LegalComments     LegalComments          // Documentation: https://esbuild.github.io/api/#legal-comments
 
-	JSXMode     JSXMode
-	JSXFactory  string
-	JSXFragment string
+	JSXMode     JSXMode // Documentation: https://esbuild.github.io/api/#jsx-mode
+	JSXFactory  string  // Documentation: https://esbuild.github.io/api/#jsx-factory
+	JSXFragment string  // Documentation: https://esbuild.github.io/api/#jsx-fragment
 
-	Define    map[string]string
-	Pure      []string
-	KeepNames bool
+	Define    map[string]string // Documentation: https://esbuild.github.io/api/#define
+	Pure      []string          // Documentation: https://esbuild.github.io/api/#pure
+	KeepNames bool              // Documentation: https://esbuild.github.io/api/#keep-names
 
-	GlobalName        string
-	Bundle            bool
-	PreserveSymlinks  bool
-	Splitting         bool
-	Outfile           string
-	Metafile          bool
-	Outdir            string
-	Outbase           string
-	AbsWorkingDir     string
-	Platform          Platform
-	Format            Format
-	External          []string
-	MainFields        []string
-	Conditions        []string // For the "exports" field in "package.json"
-	Loader            map[string]Loader
-	ResolveExtensions []string
-	Tsconfig          string
-	OutExtensions     map[string]string
-	PublicPath        string
-	Inject            []string
-	Banner            map[string]string
-	Footer            map[string]string
-	NodePaths         []string // The "NODE_PATH" variable from Node.js
+	GlobalName        string            // Documentation: https://esbuild.github.io/api/#global-name
+	Bundle            bool              // Documentation: https://esbuild.github.io/api/#bundle
+	PreserveSymlinks  bool              // Documentation: https://esbuild.github.io/api/#preserve-symlinks
+	Splitting         bool              // Documentation: https://esbuild.github.io/api/#splitting
+	Outfile           string            // Documentation: https://esbuild.github.io/api/#outfile
+	Metafile          bool              // Documentation: https://esbuild.github.io/api/#metafile
+	Outdir            string            // Documentation: https://esbuild.github.io/api/#outdir
+	Outbase           string            // Documentation: https://esbuild.github.io/api/#outbase
+	AbsWorkingDir     string            // Documentation: https://esbuild.github.io/api/#working-directory
+	Platform          Platform          // Documentation: https://esbuild.github.io/api/#platform
+	Format            Format            // Documentation: https://esbuild.github.io/api/#format
+	External          []string          // Documentation: https://esbuild.github.io/api/#external
+	MainFields        []string          // Documentation: https://esbuild.github.io/api/#main-fields
+	Conditions        []string          // Documentation: https://esbuild.github.io/api/#conditions
+	Loader            map[string]Loader // Documentation: https://esbuild.github.io/api/#loader
+	ResolveExtensions []string          // Documentation: https://esbuild.github.io/api/#resolve-extensions
+	Tsconfig          string            // Documentation: https://esbuild.github.io/api/#tsconfig
+	OutExtensions     map[string]string // Documentation: https://esbuild.github.io/api/#out-extension
+	PublicPath        string            // Documentation: https://esbuild.github.io/api/#public-path
+	Inject            []string          // Documentation: https://esbuild.github.io/api/#inject
+	Banner            map[string]string // Documentation: https://esbuild.github.io/api/#banner
+	Footer            map[string]string // Documentation: https://esbuild.github.io/api/#footer
+	NodePaths         []string          // Documentation: https://esbuild.github.io/api/#node-paths
 
-	EntryNames string
-	ChunkNames string
-	AssetNames string
+	EntryNames string // Documentation: https://esbuild.github.io/api/#entry-names
+	ChunkNames string // Documentation: https://esbuild.github.io/api/#chunk-names
+	AssetNames string // Documentation: https://esbuild.github.io/api/#asset-names
 
-	EntryPoints         []string
-	EntryPointsAdvanced []EntryPoint
+	EntryPoints         []string     // Documentation: https://esbuild.github.io/api/#entry-points
+	EntryPointsAdvanced []EntryPoint // Documentation: https://esbuild.github.io/api/#entry-points
 
-	Stdin          *StdinOptions
-	Write          bool
-	AllowOverwrite bool
-	Incremental    bool
-	Plugins        []Plugin
+	Stdin          *StdinOptions // Documentation: https://esbuild.github.io/api/#stdin
+	Write          bool          // Documentation: https://esbuild.github.io/api/#write
+	AllowOverwrite bool          // Documentation: https://esbuild.github.io/api/#allow-overwrite
+	Incremental    bool          // Documentation: https://esbuild.github.io/api/#incremental
+	Plugins        []Plugin      // Documentation: https://esbuild.github.io/plugins/
 
-	Watch *WatchMode
+	Watch *WatchMode // Documentation: https://esbuild.github.io/api/#watch
 }
 
 type EntryPoint struct {
@@ -332,6 +358,7 @@ type BuildResult struct {
 
 	OutputFiles []OutputFile
 	Metafile    string
+	MangleCache map[string]interface{}
 
 	Rebuild func() BuildResult // Only when "Incremental: true"
 	Stop    func()             // Only when "Watch: true"
@@ -342,6 +369,7 @@ type OutputFile struct {
 	Contents []byte
 }
 
+// Documentation: https://esbuild.github.io/api/#build-api
 func Build(options BuildOptions) BuildResult {
 	return buildImpl(options).result
 }
@@ -350,41 +378,49 @@ func Build(options BuildOptions) BuildResult {
 // Transform API
 
 type TransformOptions struct {
-	Color    StderrColor
-	LogLimit int
-	LogLevel LogLevel
+	Color       StderrColor         // Documentation: https://esbuild.github.io/api/#color
+	LogLevel    LogLevel            // Documentation: https://esbuild.github.io/api/#log-level
+	LogLimit    int                 // Documentation: https://esbuild.github.io/api/#log-limit
+	LogOverride map[string]LogLevel // Documentation: https://esbuild.github.io/api/#log-override
 
-	Sourcemap      SourceMap
-	SourceRoot     string
-	SourcesContent SourcesContent
+	Sourcemap      SourceMap      // Documentation: https://esbuild.github.io/api/#sourcemap
+	SourceRoot     string         // Documentation: https://esbuild.github.io/api/#source-root
+	SourcesContent SourcesContent // Documentation: https://esbuild.github.io/api/#sources-content
 
-	Target     Target
-	Format     Format
-	GlobalName string
-	Engines    []Engine
+	Target    Target          // Documentation: https://esbuild.github.io/api/#target
+	Engines   []Engine        // Documentation: https://esbuild.github.io/api/#target
+	Supported map[string]bool // Documentation: https://esbuild.github.io/api/#supported
 
-	MinifyWhitespace  bool
-	MinifyIdentifiers bool
-	MinifySyntax      bool
-	Charset           Charset
-	TreeShaking       TreeShaking
-	IgnoreAnnotations bool
-	LegalComments     LegalComments
+	Format     Format // Documentation: https://esbuild.github.io/api/#format
+	GlobalName string // Documentation: https://esbuild.github.io/api/#global-name
 
-	JSXMode     JSXMode
-	JSXFactory  string
-	JSXFragment string
+	MangleProps       string                 // Documentation: https://esbuild.github.io/api/#mangle-props
+	ReserveProps      string                 // Documentation: https://esbuild.github.io/api/#mangle-props
+	MangleQuoted      MangleQuoted           // Documentation: https://esbuild.github.io/api/#mangle-props
+	MangleCache       map[string]interface{} // Documentation: https://esbuild.github.io/api/#mangle-props
+	Drop              Drop                   // Documentation: https://esbuild.github.io/api/#drop
+	MinifyWhitespace  bool                   // Documentation: https://esbuild.github.io/api/#minify
+	MinifyIdentifiers bool                   // Documentation: https://esbuild.github.io/api/#minify
+	MinifySyntax      bool                   // Documentation: https://esbuild.github.io/api/#minify
+	Charset           Charset                // Documentation: https://esbuild.github.io/api/#charset
+	TreeShaking       TreeShaking            // Documentation: https://esbuild.github.io/api/#tree-shaking
+	IgnoreAnnotations bool                   // Documentation: https://esbuild.github.io/api/#ignore-annotations
+	LegalComments     LegalComments          // Documentation: https://esbuild.github.io/api/#legal-comments
 
-	TsconfigRaw string
-	Footer      string
-	Banner      string
+	JSXMode     JSXMode // Documentation: https://esbuild.github.io/api/#jsx
+	JSXFactory  string  // Documentation: https://esbuild.github.io/api/#jsx-factory
+	JSXFragment string  // Documentation: https://esbuild.github.io/api/#jsx-fragment
 
-	Define    map[string]string
-	Pure      []string
-	KeepNames bool
+	TsconfigRaw string // Documentation: https://esbuild.github.io/api/#tsconfig-raw
+	Banner      string // Documentation: https://esbuild.github.io/api/#banner
+	Footer      string // Documentation: https://esbuild.github.io/api/#footer
 
-	Sourcefile string
-	Loader     Loader
+	Define    map[string]string // Documentation: https://esbuild.github.io/api/#define
+	Pure      []string          // Documentation: https://esbuild.github.io/api/#pure
+	KeepNames bool              // Documentation: https://esbuild.github.io/api/#keep-names
+
+	Sourcefile string // Documentation: https://esbuild.github.io/api/#sourcefile
+	Loader     Loader // Documentation: https://esbuild.github.io/api/#loader
 }
 
 type TransformResult struct {
@@ -393,8 +429,11 @@ type TransformResult struct {
 
 	Code []byte
 	Map  []byte
+
+	MangleCache map[string]interface{}
 }
 
+// Documentation: https://esbuild.github.io/api/#transform-api
 func Transform(input string, options TransformOptions) TransformResult {
 	return transformImpl(input, options)
 }
@@ -402,6 +441,7 @@ func Transform(input string, options TransformOptions) TransformResult {
 ////////////////////////////////////////////////////////////////////////////////
 // Serve API
 
+// Documentation: https://esbuild.github.io/api/#serve-arguments
 type ServeOptions struct {
 	Port      uint16
 	Host      string
@@ -417,6 +457,7 @@ type ServeOnRequestArgs struct {
 	TimeInMS      int // The time to generate the response, not to send it
 }
 
+// Documentation: https://esbuild.github.io/api/#serve-return-values
 type ServeResult struct {
 	Port uint16
 	Host string
@@ -424,6 +465,7 @@ type ServeResult struct {
 	Stop func()
 }
 
+// Documentation: https://esbuild.github.io/api/#serve
 func Serve(serveOptions ServeOptions, buildOptions BuildOptions) (ServeResult, error) {
 	return serveImpl(serveOptions, buildOptions)
 }
@@ -445,10 +487,32 @@ type Plugin struct {
 
 type PluginBuild struct {
 	InitialOptions *BuildOptions
+	Resolve        func(path string, options ResolveOptions) ResolveResult
 	OnStart        func(callback func() (OnStartResult, error))
 	OnEnd          func(callback func(result *BuildResult))
 	OnResolve      func(options OnResolveOptions, callback func(OnResolveArgs) (OnResolveResult, error))
 	OnLoad         func(options OnLoadOptions, callback func(OnLoadArgs) (OnLoadResult, error))
+}
+
+type ResolveOptions struct {
+	PluginName string
+	Importer   string
+	Namespace  string
+	ResolveDir string
+	Kind       ResolveKind
+	PluginData interface{}
+}
+
+type ResolveResult struct {
+	Errors   []Message
+	Warnings []Message
+
+	Path        string
+	External    bool
+	SideEffects bool
+	Namespace   string
+	Suffix      string
+	PluginData  interface{}
 }
 
 type OnStartResult struct {
@@ -480,6 +544,7 @@ type OnResolveResult struct {
 	External    bool
 	SideEffects SideEffects
 	Namespace   string
+	Suffix      string
 	PluginData  interface{}
 
 	WatchFiles []string
@@ -494,6 +559,7 @@ type OnLoadOptions struct {
 type OnLoadArgs struct {
 	Path       string
 	Namespace  string
+	Suffix     string
 	PluginData interface{}
 }
 
@@ -552,6 +618,7 @@ type AnalyzeMetafileOptions struct {
 	Verbose bool
 }
 
+// Documentation: https://esbuild.github.io/api/#analyze
 func AnalyzeMetafile(metafile string, opts AnalyzeMetafileOptions) string {
 	return analyzeMetafileImpl(metafile, opts)
 }
