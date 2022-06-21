@@ -235,7 +235,7 @@ github.com/spf13/viper/internal/encoding/hcl
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/subosito/gotenv v1.2.0
+# github.com/subosito/gotenv v1.4.0
 ## explicit
 github.com/subosito/gotenv
 # github.com/ulikunitz/xz v0.5.8
