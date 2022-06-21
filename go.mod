@@ -18,7 +18,7 @@ require (
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/cobra v1.2.1
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.9.0
 	github.com/subosito/gotenv v1.2.0
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
