@@ -162,9 +162,6 @@ github.com/hashicorp/hcl/json/token
 github.com/inconshreveable/mousetrap
 # github.com/jmespath/go-jmespath v0.0.0-20160803190731-bd40a432e4c7
 github.com/jmespath/go-jmespath
-# github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a
-github.com/juju/ansiterm
-github.com/juju/ansiterm/tabwriter
 # github.com/klauspost/compress v1.11.13
 github.com/klauspost/compress/fse
 github.com/klauspost/compress/huff0
@@ -174,11 +171,9 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/koding/websocketproxy v0.0.0-20181220232114-7ed82d81a28c
 ## explicit
 github.com/koding/websocketproxy
-# github.com/lunixbochs/vtclean v0.0.0-20180621232353-2d01aacdc34a
-github.com/lunixbochs/vtclean
 # github.com/magiconair/properties v1.8.5
 github.com/magiconair/properties
-# github.com/manifoldco/promptui v0.8.0
+# github.com/manifoldco/promptui v0.9.0
 ## explicit
 github.com/manifoldco/promptui
 github.com/manifoldco/promptui/list
