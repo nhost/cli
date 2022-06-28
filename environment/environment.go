@@ -53,10 +53,10 @@ func (e *Environment) UpdateState(state State) {
 		status.Executing("Running quick health checks")
 	case Active:
 		status.Success(fmt.Sprintf("Your app is running at %shttp://localhost:%s%s %s(Ctrl+C to stop)%s", util.Blue, e.Port, util.Reset, util.Gray, util.Reset))
-		if !e.Config.Services["mailhog"].NoContainer {
-			fmt.Println()
-			status.Info(fmt.Sprintf("%sEmails will be sent to http://localhost:%d%s", util.Gray, e.Config.Services["mailhog"].Port, util.Reset))
-		}
+		//if !e.Config.Services["mailhog"].NoContainer {
+		//	fmt.Println()
+		//	status.Info(fmt.Sprintf("%sEmails will be sent to http://localhost:%d%s", util.Gray, e.Config.Services["mailhog"].Port, util.Reset))
+		//}
 		status.Reset()
 	case Inactive:
 		status.Success("See you later, grasshopper!")

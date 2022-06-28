@@ -90,7 +90,7 @@ var devCmd = &cobra.Command{
 
 		//  check if nhost/ exists
 		if !util.PathExists(nhost.NHOST_DIR) {
-			status.Info("Initialize new app by running 'nhost init'")
+			status.Infoln("Initialize new app by running 'nhost init'")
 			return errors.New("app not found in this directory")
 		}
 
@@ -140,7 +140,7 @@ var devCmd = &cobra.Command{
 		go func() {
 			<-stop
 
-			//  Cancel any ongoing excution
+			//  Cancel any ongoing execution
 			env.ExecutionCancel()
 
 			//  Cleanup the environment
@@ -232,6 +232,7 @@ var devCmd = &cobra.Command{
 		//spawn hasura console
 		consolePort := util.GetPort(9301, 9400)
 
+		// TODO: do we need a hasura console?
 		go func() {
 
 			//  Start the hasura console
