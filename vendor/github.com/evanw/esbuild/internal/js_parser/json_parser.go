@@ -24,7 +24,7 @@ func (p *jsonParser) parseMaybeTrailingComma(closeToken js_lexer.T) bool {
 
 	if p.lexer.Token == closeToken {
 		if !p.options.AllowTrailingCommas {
-			p.log.AddRangeError(&p.tracker, commaRange, "JSON does not support trailing commas")
+			p.log.AddError(&p.tracker, commaRange, "JSON does not support trailing commas")
 		}
 		return false
 	}
@@ -121,10 +121,11 @@ func (p *jsonParser) parseExpr() js_ast.Expr {
 
 			// Warn about duplicate keys
 			if !p.suppressWarningsAboutWeirdCode {
-				keyText := js_lexer.UTF16ToString(keyString)
+				keyText := helpers.UTF16ToString(keyString)
 				if prevRange, ok := duplicates[keyText]; ok {
-					p.log.AddRangeWarningWithNotes(&p.tracker, keyRange, fmt.Sprintf("Duplicate key %q in object literal", keyText),
-						[]logger.MsgData{logger.RangeData(&p.tracker, prevRange, fmt.Sprintf("The original %q is here", keyText))})
+					p.log.AddIDWithNotes(logger.MsgID_JS_DuplicateObjectKey, logger.Warning, &p.tracker, keyRange,
+						fmt.Sprintf("Duplicate key %q in object literal", keyText),
+						[]logger.MsgData{p.tracker.MsgData(prevRange, fmt.Sprintf("The original key %q is here:", keyText))})
 				} else {
 					duplicates[keyText] = keyRange
 				}
@@ -135,6 +136,7 @@ func (p *jsonParser) parseExpr() js_ast.Expr {
 
 			property := js_ast.Property{
 				Kind:       js_ast.PropertyNormal,
+				Loc:        keyRange.Loc,
 				Key:        key,
 				ValueOrNil: value,
 			}
