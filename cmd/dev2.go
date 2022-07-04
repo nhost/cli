@@ -29,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avast/retry-go/v4"
+	"github.com/nhost/cli/logger"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/nhost/service"
 	"github.com/nhost/cli/util"
@@ -36,7 +37,6 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -82,12 +82,6 @@ var dev2Cmd = &cobra.Command{
 			return errors.New("app not found in this directory")
 		}
 
-		//  create .nhost/ if it doesn't exist
-		if err := os.MkdirAll(filepath.Join(util.WORKING_DIR, ".nhost"), os.ModePerm); err != nil {
-			status.Errorln("Failed to initialize nhost data directory")
-			return err
-		}
-
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +89,13 @@ var dev2Cmd = &cobra.Command{
 		var mgr service.Manager
 
 		ctx := context.Background()
-		mgr = service.NewDockerComposeManager(nil, nhost.GetCurrentBranch(), log, status)
+
+		projectName, err := nhost.GetDockerComposeProjectName()
+		if err != nil {
+			return err
+		}
+
+		mgr = service.NewDockerComposeManager(nil, nhost.GetCurrentBranch(), projectName, log, status, logger.DEBUG)
 		gw := watcher.NewGitWatcher(status, log)
 
 		go gw.Watch(ctx, 700*time.Millisecond, func(branch, ref string) error {
@@ -152,7 +152,7 @@ var dev2Cmd = &cobra.Command{
 		}()
 
 		wg.Add(1)
-		err := mgr.SyncExec(ctx, func(ctx context.Context) error {
+		err = mgr.SyncExec(ctx, func(ctx context.Context) error {
 			return retry.Do(func() error {
 				return mgr.Start(ctx)
 			}, retry.Attempts(3))

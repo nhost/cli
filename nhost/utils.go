@@ -27,9 +27,20 @@ func GetContainerName(name string) string {
 	return fmt.Sprintf("%s_%s", PREFIX, name)
 }
 
-func GetCurrentBranch() string {
+func GetDockerComposeProjectName() (string, error) {
+	data, err := ioutil.ReadFile(filepath.Join(util.WORKING_DIR, ".nhost/project_name"))
+	if err != nil {
+		return "", err
+	}
 
-	log.Debug("Fetching local git branch")
+	return strings.TrimSpace(string(data)), nil
+}
+
+func SetDockerComposeProjectName(name string) error {
+	return ioutil.WriteFile(filepath.Join(util.WORKING_DIR, ".nhost/project_name"), []byte(name), 0644)
+}
+
+func GetCurrentBranch() string {
 	data, err := ioutil.ReadFile(filepath.Join(GIT_DIR, "HEAD"))
 	if err != nil {
 		return ""

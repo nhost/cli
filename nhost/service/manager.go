@@ -35,16 +35,19 @@ type Manager interface {
 	IsStackReady(ctx context.Context) (bool, error)
 }
 
-func NewDockerComposeManager(c *nhost.Configuration, gitBranch string, logger logrus.FieldLogger, status *util.Status) *dockerComposeManager {
+func NewDockerComposeManager(c *nhost.Configuration, gitBranch string, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) *dockerComposeManager {
 	if gitBranch == "" {
 		gitBranch = "main"
 	}
-	return &dockerComposeManager{branch: gitBranch, nhostConfig: c, composeConfig: compose.NewConfig(c, gitBranch), l: logger, status: status}
+
+	return &dockerComposeManager{debug: debug, branch: gitBranch, projectName: projectName, nhostConfig: c, composeConfig: compose.NewConfig(c, gitBranch, projectName), l: logger, status: status}
 }
 
 type dockerComposeManager struct {
 	sync.Mutex
+	debug         bool
 	branch        string
+	projectName   string
 	nhostConfig   *nhost.Configuration
 	composeConfig *compose.Config
 	status        *util.Status
@@ -64,12 +67,16 @@ func (m *dockerComposeManager) SetGitBranch(gitBranch string) {
 	}
 
 	m.branch = gitBranch
-	m.composeConfig = compose.NewConfig(m.nhostConfig, gitBranch)
+	m.composeConfig = compose.NewConfig(m.nhostConfig, gitBranch, m.projectName)
 }
 
 func (m *dockerComposeManager) Start(ctx context.Context) error {
 	ds := compose.DataStreams{}
-	//ds := compose.DataStreams{Stderr: os.Stderr, Stdout: os.Stdout}
+	if m.debug {
+		ds.Stdout = os.Stdout
+		ds.Stderr = os.Stderr
+	}
+
 	m.status.Executing("Starting nhost app...")
 	m.l.Debug("Starting docker compose")
 	cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d"}, m.composeConfig, ds)

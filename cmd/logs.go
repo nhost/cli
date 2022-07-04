@@ -25,6 +25,7 @@ SOFTWARE.
 package cmd
 
 import (
+	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/nhost/compose"
 	"github.com/spf13/cobra"
 	"os"
@@ -50,7 +51,12 @@ var logsCmd = &cobra.Command{
 			dcArgs = append(dcArgs, os.Args[2:]...)
 		}
 
-		conf := compose.NewConfig(nil, "")
+		projectName, err := nhost.GetDockerComposeProjectName()
+		if err != nil {
+			return err
+		}
+
+		conf := compose.NewConfig(nil, nhost.GetCurrentBranch(), projectName)
 		dc, err := compose.WrapperCmd(cmd.Context(), dcArgs, conf, compose.DataStreams{Stdout: os.Stdout, Stderr: os.Stderr})
 		if err != nil {
 			return err

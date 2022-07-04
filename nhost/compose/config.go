@@ -7,7 +7,6 @@ import (
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -15,13 +14,14 @@ import (
 const postgresDefaultPassword = "postgres"
 
 type Config struct {
-	nhostConfig   *nhost.Configuration // nhost configuration to read custom values from, not used atm
-	gitBranch     string               // git branch name, used as a namespace for data mounted from host, not used yet
-	composeConfig *types.Config
+	nhostConfig        *nhost.Configuration // nhost configuration to read custom values from, not used atm
+	gitBranch          string               // git branch name, used as a namespace for postgres data mounted from host
+	composeConfig      *types.Config
+	composeProjectName string
 }
 
-func NewConfig(conf *nhost.Configuration, gitBranch string) *Config {
-	return &Config{nhostConfig: conf, gitBranch: gitBranch} // TODO: pass a git branch name as a parameter
+func NewConfig(conf *nhost.Configuration, gitBranch, projectName string) *Config {
+	return &Config{nhostConfig: conf, gitBranch: gitBranch, composeProjectName: projectName}
 }
 
 func (c *Config) build() *types.Config {
@@ -48,37 +48,6 @@ func (c *Config) build() *types.Config {
 	c.composeConfig = config
 
 	return config
-}
-
-func (c Config) HostMountedDataPaths() ([]string, error) {
-	if c.composeConfig == nil {
-		return nil, fmt.Errorf("compose config is not built yet")
-	}
-
-	folders := []string{}
-
-	for _, service := range c.composeConfig.Services {
-		for _, volume := range service.Volumes {
-			if c.shouldCreateHostDataDirectory(volume) {
-				folders = append(folders, volume.Source)
-			}
-		}
-	}
-
-	return folders, nil
-}
-
-func (c Config) shouldCreateHostDataDirectory(volume types.ServiceVolumeConfig) bool {
-	if volume.Type != types.VolumeTypeBind {
-		return false
-	}
-
-	path := volume.Source
-	if path == "." || path == ".." || strings.HasSuffix(path, "docker.sock") {
-		return false
-	}
-
-	return true
 }
 
 func (c Config) hostDataDirectory(path string) string {

@@ -31,19 +31,20 @@ func WrapperCmd(ctx context.Context, args []string, conf *Config, streams DataSt
 	}
 
 	// check that data folders exist
-	hostDataFolders, err := conf.HostMountedDataPaths()
-	if err != nil {
-		return nil, err
+	paths := []string{
+		filepath.Join(util.WORKING_DIR, ".nhost/data/minio"),
+		filepath.Join(util.WORKING_DIR, ".nhost/data/mailhog"),
+		filepath.Join(util.WORKING_DIR, ".nhost/data/db", conf.gitBranch),
 	}
 
-	for _, folder := range hostDataFolders {
+	for _, folder := range paths {
 		err = os.MkdirAll(folder, os.ModePerm)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to create data folder '%s'", folder))
 		}
 	}
 
-	dc := exec.CommandContext(ctx, "docker", append([]string{"compose", "-f", composeConfigFilename}, args...)...)
+	dc := exec.CommandContext(ctx, "docker", append([]string{"compose", "-p", conf.composeProjectName, "-f", composeConfigFilename}, args...)...)
 
 	// set streams
 	dc.Stdout = streams.Stdout
