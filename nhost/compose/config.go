@@ -74,7 +74,7 @@ func (c Config) shouldCreateHostDataDirectory(volume types.ServiceVolumeConfig) 
 	}
 
 	path := volume.Source
-	if path == "." || strings.HasSuffix(path, "docker.sock") {
+	if path == "." || path == ".." || strings.HasSuffix(path, "docker.sock") {
 		return false
 	}
 
@@ -82,11 +82,11 @@ func (c Config) shouldCreateHostDataDirectory(volume types.ServiceVolumeConfig) 
 }
 
 func (c Config) hostDataDirectory(path string) string {
-	return filepath.Join(".nhost/data", path)
+	return filepath.Join("data", path)
 }
 
 func (c Config) hostDataDirectoryBranchScoped(path string) string {
-	return filepath.Join(".nhost/data", path, c.gitBranch)
+	return filepath.Join("data", path, c.gitBranch)
 }
 
 func (c *Config) BuildJSON() ([]byte, error) {
@@ -183,7 +183,7 @@ func (c Config) functionsService() types.ServiceConfig {
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
-				Source: ".",
+				Source: "..",
 				Target: "/opt/project",
 			},
 			{
@@ -355,10 +355,9 @@ func (c Config) hasuraConsoleService() types.ServiceConfig {
 
 	return types.ServiceConfig{
 		Name:        "hasura-console",
-		Image:       "nhost-hasura:v2.8.1",
+		Image:       "nhost/hasura:v2.8.1",
 		Environment: envs,
-		//Expose:      []string{"8080"},
-		Labels: labels,
+		Labels:      labels,
 		DependsOn: map[string]types.ServiceDependency{
 			"postgres": {
 				Condition: types.ServiceConditionHealthy,
@@ -384,7 +383,7 @@ func (c Config) hasuraConsoleService() types.ServiceConfig {
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
-				Source: "./nhost",
+				Source: "../nhost",
 				Target: "/usr/src/hasura",
 			},
 		},

@@ -3,10 +3,12 @@ package compose
 import (
 	"context"
 	"fmt"
+	"github.com/nhost/cli/util"
 	"github.com/pkg/errors"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 type DataStreams struct {
@@ -20,7 +22,7 @@ func WrapperCmd(ctx context.Context, args []string, conf *Config, streams DataSt
 		return nil, err
 	}
 
-	composeConfigFilename := "docker-compose.json"
+	composeConfigFilename := filepath.Join(util.WORKING_DIR, ".nhost/docker-compose.json")
 
 	// write data to a docker-compose.yml file
 	err = os.WriteFile(composeConfigFilename, dockerComposeConfig, 0644)
