@@ -50,7 +50,8 @@ var logsCmd = &cobra.Command{
 			dcArgs = append(dcArgs, os.Args[2:]...)
 		}
 
-		dc, err := compose.WrapperCmd(dcArgs, compose.DataStreams{Stdout: os.Stdout, Stderr: os.Stderr})
+		conf := compose.NewConfig(nil, "")
+		dc, err := compose.WrapperCmd(cmd.Context(), dcArgs, conf, compose.DataStreams{Stdout: os.Stdout, Stderr: os.Stderr})
 		if err != nil {
 			return err
 		}

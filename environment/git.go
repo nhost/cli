@@ -138,7 +138,7 @@ func (e *Environment) restartAfterCheckout() error {
 	if head != "" {
 
 		if !e.Watcher.Registered(head) {
-			e.Watcher.Register(head, e.restartMigrations)
+			//e.Watcher.Register(head, e.restartMigrations)
 		}
 	}
 

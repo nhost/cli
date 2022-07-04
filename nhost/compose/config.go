@@ -8,22 +8,23 @@ import (
 	"github.com/nhost/cli/util"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // TODO: allow to set custom postgres user/password
 const postgresDefaultPassword = "postgres"
 
-type dockerComposeConfig struct {
+type Config struct {
 	nhostConfig   *nhost.Configuration // nhost configuration to read custom values from, not used atm
 	gitBranch     string               // git branch name, used as a namespace for data mounted from host, not used yet
 	composeConfig *types.Config
 }
 
-func NewConfig(conf *nhost.Configuration) *dockerComposeConfig {
-	return &dockerComposeConfig{nhostConfig: conf, gitBranch: "main"} // TODO: pass a git branch name as a parameter
+func NewConfig(conf *nhost.Configuration, gitBranch string) *Config {
+	return &Config{nhostConfig: conf, gitBranch: gitBranch} // TODO: pass a git branch name as a parameter
 }
 
-func (c *dockerComposeConfig) build() *types.Config {
+func (c *Config) build() *types.Config {
 	config := &types.Config{}
 
 	// set services
@@ -49,7 +50,7 @@ func (c *dockerComposeConfig) build() *types.Config {
 	return config
 }
 
-func (c dockerComposeConfig) HostMountedDataPaths() ([]string, error) {
+func (c Config) HostMountedDataPaths() ([]string, error) {
 	if c.composeConfig == nil {
 		return nil, fmt.Errorf("compose config is not built yet")
 	}
@@ -67,7 +68,7 @@ func (c dockerComposeConfig) HostMountedDataPaths() ([]string, error) {
 	return folders, nil
 }
 
-func (c dockerComposeConfig) shouldCreateHostDataDirectory(volume types.ServiceVolumeConfig) bool {
+func (c Config) shouldCreateHostDataDirectory(volume types.ServiceVolumeConfig) bool {
 	if volume.Type != types.VolumeTypeBind {
 		return false
 	}
@@ -80,23 +81,27 @@ func (c dockerComposeConfig) shouldCreateHostDataDirectory(volume types.ServiceV
 	return true
 }
 
-func (c dockerComposeConfig) hostDataDirectory(path string) string {
-	return filepath.Join(".nhost/data", c.gitBranch, path)
+func (c Config) hostDataDirectory(path string) string {
+	return filepath.Join(".nhost/data", path)
 }
 
-func (c *dockerComposeConfig) BuildJSON() ([]byte, error) {
+func (c Config) hostDataDirectoryBranchScoped(path string) string {
+	return filepath.Join(".nhost/data", path, c.gitBranch)
+}
+
+func (c *Config) BuildJSON() ([]byte, error) {
 	return json.MarshalIndent(c.build(), "", "  ")
 }
 
-func (c dockerComposeConfig) postgresPasswordEnvValueWithDefaultValue() string {
+func (c Config) postgresPasswordEnvValueWithDefaultValue() string {
 	return fmt.Sprintf("${POSTGRES_PASSWORD:-%s}", postgresDefaultPassword)
 }
 
-func (c dockerComposeConfig) postgresConnectionString() string {
+func (c Config) postgresConnectionString() string {
 	return fmt.Sprintf("postgres://postgres:%s@postgres:5432/postgres", c.postgresPasswordEnvValueWithDefaultValue())
 }
 
-func (c dockerComposeConfig) mailhogService() types.ServiceConfig {
+func (c Config) mailhogService() types.ServiceConfig {
 	envs := types.NewMappingWithEquals([]string{
 		"SMTP_HOST=${AUTH_SMTP_HOST:-mailhog}",
 		"SMTP_PORT=${AUTH_SMTP_PORT:-1025}",
@@ -109,6 +114,7 @@ func (c dockerComposeConfig) mailhogService() types.ServiceConfig {
 	return types.ServiceConfig{
 		Name:        "mailhog",
 		Environment: envs,
+		Restart:     types.RestartPolicyAlways,
 		Image:       "mailhog/mailhog",
 		Ports: []types.ServicePortConfig{
 			{
@@ -128,22 +134,23 @@ func (c dockerComposeConfig) mailhogService() types.ServiceConfig {
 	}
 }
 
-func (c dockerComposeConfig) minioService() types.ServiceConfig {
+func (c Config) minioService() types.ServiceConfig {
 	envs := types.NewMappingWithEquals([]string{
-		"MINIO_ROOT_USER=${STORAGE_ACCESS_KEY}",
-		"MINIO_ROOT_PASSWORD=${STORAGE_SECRET_KEY}",
+		"MINIO_ROOT_USER=minioaccesskey123123", // TODO: creds
+		"MINIO_ROOT_PASSWORD=minioaccesskey123123",
 	})
 
 	return types.ServiceConfig{
 		Name:        "minio",
 		Environment: envs,
+		Restart:     types.RestartPolicyAlways,
 		Image:       "minio/minio:RELEASE.2021-09-24T00-24-24Z",
 		Entrypoint:  []string{"sh"},
-		Command:     []string{"-c", "mkdir -p /data/nhost && /opt/bin/minio server --address :8484 /data"},
+		Command:     []string{"-c", "mkdir -p /data/nhost && /opt/bin/minio server --address :8484 /data"}, // TODO: port
 		Ports: []types.ServicePortConfig{
 			{
 				Mode:      "ingress",
-				Target:    8484,
+				Target:    8484, // TODO: port
 				Published: "8484",
 				Protocol:  "tcp",
 			},
@@ -158,7 +165,7 @@ func (c dockerComposeConfig) minioService() types.ServiceConfig {
 	}
 }
 
-func (c dockerComposeConfig) functionsService() types.ServiceConfig {
+func (c Config) functionsService() types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
 		"traefik.http.middlewares.strip-functions.stripprefix.prefixes": "/v1/functions",
@@ -196,18 +203,20 @@ func (c dockerComposeConfig) functionsService() types.ServiceConfig {
 	}
 }
 
-func (c dockerComposeConfig) storageService() types.ServiceConfig {
+func (c Config) storageService() types.ServiceConfig {
 	envs := types.NewMappingWithEquals([]string{
-		"PUBLIC_URL=http://localhost:${PROXY_PORT:-1337}",
+		"BIND:8576",                        // TODO: randomize port
+		"PUBLIC_URL=http://localhost:8576", // TODO: port
+		"POSTGRES_MIGRATIONS=1",
 		"HASURA_METADATA=1",
 		"HASURA_ENDPOINT=http://graphql-engine:8080/v1",
-		//HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
-		"S3_ACCESS_KEY=${STORAGE_ACCESS_KEY}",
-		"S3_SECRET_KEY=${STORAGE_SECRET_KEY}",
+		fmt.Sprintf("HASURA_GRAPHQL_ADMIN_SECRET=%s", util.ADMIN_SECRET),
+		"S3_ACCESS_KEY=minioaccesskey123123",
+		"S3_SECRET_KEY=minioaccesskey123123",
 		"S3_ENDPOINT=http://minio:8484",
 		"S3_BUCKET=nhost",
 		"POSTGRES_MIGRATIONS=1",
-		fmt.Sprintf("POSTGRES_MIGRATIONS_SOURCE=%s", c.postgresConnectionString()),
+		fmt.Sprintf("POSTGRES_MIGRATIONS_SOURCE=%s?sslmode=disable", c.postgresConnectionString()),
 	})
 
 	labels := map[string]string{
@@ -222,6 +231,7 @@ func (c dockerComposeConfig) storageService() types.ServiceConfig {
 
 	return types.ServiceConfig{
 		Name:        "storage",
+		Restart:     types.RestartPolicyAlways,
 		Image:       "nhost/hasura-storage:0.2.1",
 		Environment: envs,
 		Labels:      labels,
@@ -230,7 +240,7 @@ func (c dockerComposeConfig) storageService() types.ServiceConfig {
 	}
 }
 
-func (c dockerComposeConfig) authService() types.ServiceConfig {
+func (c Config) authService() types.ServiceConfig {
 	envs := types.NewMappingWithEquals([]string{
 		"AUTH_HOST=0.0.0.0",
 		fmt.Sprintf("HASURA_GRAPHQL_DATABASE_URL=%s", c.postgresConnectionString()),
@@ -255,13 +265,13 @@ func (c dockerComposeConfig) authService() types.ServiceConfig {
 
 	return types.ServiceConfig{
 		Name:        "auth",
-		Image:       "nhost/hasura-auth:latest",
+		Image:       "nhost/hasura-auth:0.6.3",
 		Environment: envs,
 		Labels:      labels,
 		Expose:      []string{"4000"},
 		DependsOn: map[string]types.ServiceDependency{
 			"postgres": {
-				Condition: types.ServiceConditionStarted,
+				Condition: types.ServiceConditionHealthy,
 			},
 			"graphql-engine": {
 				Condition: types.ServiceConditionStarted,
@@ -271,7 +281,7 @@ func (c dockerComposeConfig) authService() types.ServiceConfig {
 	}
 }
 
-func (c dockerComposeConfig) hasuraService() types.ServiceConfig {
+func (c Config) hasuraService() types.ServiceConfig {
 	// TODO: add envs from .env.development
 	// TODO: check whether we need ALL envs from util.RuntimeVars
 	envs := types.NewMappingWithEquals([]string{
@@ -313,14 +323,14 @@ func (c dockerComposeConfig) hasuraService() types.ServiceConfig {
 		},
 		DependsOn: map[string]types.ServiceDependency{
 			"postgres": {
-				Condition: types.ServiceConditionStarted,
+				Condition: types.ServiceConditionHealthy,
 			},
 		},
 		Restart: types.RestartPolicyAlways,
 	}
 }
 
-func (c dockerComposeConfig) hasuraConsoleService() types.ServiceConfig {
+func (c Config) hasuraConsoleService() types.ServiceConfig {
 	envs := types.NewMappingWithEquals([]string{
 		fmt.Sprintf("HASURA_GRAPHQL_DATABASE_URL=%s", c.postgresConnectionString()),
 		fmt.Sprintf("HASURA_GRAPHQL_JWT_SECRET=%s", fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY)),
@@ -329,7 +339,8 @@ func (c dockerComposeConfig) hasuraConsoleService() types.ServiceConfig {
 		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE=public",
 		"HASURA_GRAPHQL_DEV_MODE=true",
 		"HASURA_GRAPHQL_LOG_LEVEL=debug",
-		"HASURA_GRAPHQL_ENABLE_CONSOLE=true",
+		"HASURA_GRAPHQL_ENABLE_CONSOLE=false",
+		"HASURA_RUN_CONSOLE=true",
 		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT=20",
 		"HASURA_GRAPHQL_NO_OF_RETRIES=20",
 		"HASURA_GRAPHQL_ENABLE_TELEMETRY=false",
@@ -350,6 +361,9 @@ func (c dockerComposeConfig) hasuraConsoleService() types.ServiceConfig {
 		Labels: labels,
 		DependsOn: map[string]types.ServiceDependency{
 			"postgres": {
+				Condition: types.ServiceConditionHealthy,
+			},
+			"graphql-engine": {
 				Condition: types.ServiceConditionStarted,
 			},
 		},
@@ -378,28 +392,33 @@ func (c dockerComposeConfig) hasuraConsoleService() types.ServiceConfig {
 	}
 }
 
-func (c dockerComposeConfig) postgresService() types.ServiceConfig {
+func (c Config) postgresService() types.ServiceConfig {
 	envs := types.NewMappingWithEquals([]string{
 		fmt.Sprintf("POSTGRES_PASSWORD=%s", c.postgresPasswordEnvValueWithDefaultValue()),
+		"POSTGRES_DB=postgres",
+		"PGDATA=/var/lib/postgresql/data/pgdata",
 	})
+
+	// healthcheck
+	interval := types.Duration(time.Second * 3)
+	startPeriod := types.Duration(time.Minute * 2)
 
 	return types.ServiceConfig{
 		Name:        "postgres",
-		Image:       "postgres:13.7",
+		Image:       "nhost/postgres:12-v0.0.6",
 		Restart:     types.RestartPolicyAlways,
 		Environment: envs,
+		HealthCheck: &types.HealthCheckConfig{
+			Test:        []string{"CMD-SHELL", "pg_isready -U postgres -d postgres -q"},
+			Interval:    &interval,
+			StartPeriod: &startPeriod,
+		},
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
-				Source: c.hostDataDirectory("db"),
-				Target: "/var/lib/postgresql/data",
+				Source: c.hostDataDirectoryBranchScoped("db"),
+				Target: "/var/lib/postgresql/data/pgdata",
 			},
-			//{
-			//	Type:     types.VolumeTypeBind,
-			//	Source:   ".nhost/initdb.d",
-			//	Target:   "/docker-entrypoint-initdb.d",
-			//	ReadOnly: true,
-			//},
 		},
 		Ports: []types.ServicePortConfig{
 			{
@@ -412,10 +431,11 @@ func (c dockerComposeConfig) postgresService() types.ServiceConfig {
 	}
 }
 
-func (c dockerComposeConfig) traefikService() types.ServiceConfig {
+func (c Config) traefikService() types.ServiceConfig {
 	return types.ServiceConfig{
-		Name:  "traefik",
-		Image: "traefik:v2.8",
+		Name:    "traefik",
+		Image:   "traefik:v2.8",
+		Restart: types.RestartPolicyAlways,
 		Ports: []types.ServicePortConfig{
 			{
 				Mode:      "ingress",

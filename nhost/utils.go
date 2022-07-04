@@ -2,6 +2,7 @@ package nhost
 
 import (
 	"fmt"
+	"github.com/nhost/cli/util"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -35,4 +36,25 @@ func GetCurrentBranch() string {
 	}
 	payload := strings.Split(string(data), " ")
 	return strings.TrimSpace(filepath.Base(payload[1]))
+}
+
+func GetHeadBranchRef(branch string) (string, error) {
+	refPath := filepath.Join(GIT_DIR, "refs/heads", branch)
+	if !util.PathExists(refPath) {
+		return "", fmt.Errorf("Branch '%s' not found", branch)
+	}
+
+	data, err := ioutil.ReadFile(refPath)
+	return strings.TrimSpace(string(data)), err
+}
+
+func GetRemoteBranchRef(branch string) (string, error) {
+	// TODO: the "origin" remote is hardcoded here, make it configurable
+	refPath := filepath.Join(GIT_DIR, "refs/remotes/origin", branch)
+	if !util.PathExists(refPath) {
+		return "", fmt.Errorf("Branch '%s' not found", branch)
+	}
+
+	data, err := ioutil.ReadFile(refPath)
+	return strings.TrimSpace(string(data)), err
 }

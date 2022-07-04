@@ -12,13 +12,24 @@ socat TCP-LISTEN:9693,fork,reuseaddr,bind=hasura-console TCP:127.0.0.1:9693 &
 #    hasura metadata apply || exit 1
 
     # Run console if specified
-#    if [[ -v HASURA_RUN_CONSOLE ]]; then
-#        echo "Starting console..."
-#        hasura console --log-level DEBUG --address "127.0.0.1" --no-browser || exit 1
-#    else
-#        echo "Started without console"
-#        tail -f /dev/null
-#    fi
+    if [[ -v HASURA_RUN_CONSOLE ]]; then
+        echo "Starting console..."
+        hasura console --skip-update-check --log-level DEBUG --address "127.0.0.1" --no-browser || exit 1
+    else
+        sleep infinity
+    fi
 #}
-sleep infinity
+
+
+## check if $@ is empty
+#if [ -z "$@" ]; then
+#    echo "sleeping"
+#    # if empty, sleep forever
+#    sleep infinity
+#else
+#    echo "running commands"
+#    # if not empty, run the command
+#    exec "$@"
+#fi
+
 #exec "$@"

@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
@@ -13,8 +14,7 @@ type DataStreams struct {
 	Stderr io.Writer
 }
 
-func WrapperCmd(args []string, streams DataStreams) (*exec.Cmd, error) {
-	conf := NewConfig(nil)
+func WrapperCmd(ctx context.Context, args []string, conf *Config, streams DataStreams) (*exec.Cmd, error) {
 	dockerComposeConfig, err := conf.BuildJSON()
 	if err != nil {
 		return nil, err
@@ -41,13 +41,13 @@ func WrapperCmd(args []string, streams DataStreams) (*exec.Cmd, error) {
 		}
 	}
 
-	dc := exec.Command("docker", append([]string{"compose", "-f", composeConfigFilename}, args...)...)
+	dc := exec.CommandContext(ctx, "docker", append([]string{"compose", "-f", composeConfigFilename}, args...)...)
 
 	// set streams
 	dc.Stdout = streams.Stdout
 	dc.Stderr = streams.Stderr
 	dc.Stdin = os.Stdin
-	//dc.Stdin = bytes.NewReader(dockerComposeConfig)
+	//dc.Stdin = bytes.NewReader(Config)
 
 	return dc, nil
 }
