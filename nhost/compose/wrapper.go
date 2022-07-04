@@ -50,7 +50,6 @@ func WrapperCmd(ctx context.Context, args []string, conf *Config, streams DataSt
 	dc.Stdout = streams.Stdout
 	dc.Stderr = streams.Stderr
 	dc.Stdin = os.Stdin
-	//dc.Stdin = bytes.NewReader(Config)
 
 	return dc, nil
 }

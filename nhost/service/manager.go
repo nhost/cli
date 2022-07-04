@@ -93,7 +93,7 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 		return err
 	}
 
-	err = m.waitForGraphqlEngine(time.Millisecond*100, time.Minute*2)
+	err = m.waitForGraphqlEngine(ctx, time.Millisecond*100, time.Minute*2)
 	if err != nil {
 		m.status.Error("Timed out waiting for graphql-engine service to be ready")
 		m.l.WithError(err).Debug("Timed out waiting for graphql-engine service to be ready")
@@ -119,6 +119,12 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 
 	// metadata
 	{
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		metaFiles, err := os.ReadDir(nhost.METADATA_DIR)
 		if err != nil {
 			return err
@@ -208,6 +214,12 @@ func (m *dockerComposeManager) IsStackReady(ctx context.Context) (bool, error) {
 }
 
 func (m *dockerComposeManager) restartAuthStorageContainers(ctx context.Context, ds compose.DataStreams) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	m.l.Debug("Restarting auth and storage containers")
 	c, err := compose.WrapperCmd(ctx, []string{"restart", "auth", "storage"}, m.composeConfig, ds)
 	if err != nil {
@@ -218,6 +230,12 @@ func (m *dockerComposeManager) restartAuthStorageContainers(ctx context.Context,
 }
 
 func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.DataStreams) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	m.status.Executing("Applying migrations...")
 	err := retry.Do(func() error {
 		m.l.Debug("Applying migrations")
@@ -245,6 +263,12 @@ func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.D
 }
 
 func (m *dockerComposeManager) exportMetadata(ctx context.Context, ds compose.DataStreams) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	m.status.Executing("Exporting metadata...")
 	err := retry.Do(func() error {
 		m.l.Debug("Exporting metadata")
@@ -308,7 +332,7 @@ func (m *dockerComposeManager) hasuraHealthcheck() (bool, error) {
 	return resp.StatusCode == 200, nil
 }
 
-func (m *dockerComposeManager) waitForGraphqlEngine(interval time.Duration, timeout time.Duration) error {
+func (m *dockerComposeManager) waitForGraphqlEngine(ctx context.Context, interval time.Duration, timeout time.Duration) error {
 	m.status.Executing("Waiting for graphql-engine service to be ready...")
 	m.l.Debug("Waiting for graphql-engine service to be ready")
 
@@ -318,6 +342,8 @@ func (m *dockerComposeManager) waitForGraphqlEngine(interval time.Duration, time
 
 	for range ticker.C {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-t:
 			return fmt.Errorf("timeout: graphql-engine not ready, please run the command again")
 		default:
