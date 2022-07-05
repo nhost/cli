@@ -236,6 +236,7 @@ func (m *dockerComposeManager) StopSvc(ctx context.Context, svc string) error {
 		return err
 	}
 
+	m.setProcessToStartInItsOwnProcessGroup(cmd)
 	return cmd.Run()
 }
 
@@ -300,7 +301,6 @@ func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.D
 			return fmt.Errorf("Failed to apply migrations: %w", err)
 		}
 
-		m.setProcessToStartInItsOwnProcessGroup(migrate)
 		err = migrate.Run()
 		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("Failed to apply migrations: %w", err)
@@ -333,7 +333,6 @@ func (m *dockerComposeManager) exportMetadata(ctx context.Context, ds compose.Da
 			return fmt.Errorf("failed to export metadata: %w", err)
 		}
 
-		m.setProcessToStartInItsOwnProcessGroup(export)
 		err = export.Run()
 		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("failed to export metadata: %w", err)
@@ -361,7 +360,6 @@ func (m *dockerComposeManager) applyMetadata(ctx context.Context, ds compose.Dat
 			return fmt.Errorf("failed to apply metadata: %w", err)
 		}
 
-		m.setProcessToStartInItsOwnProcessGroup(applyMetadata)
 		err = applyMetadata.Run()
 		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("failed to apply metadata: %w", err)

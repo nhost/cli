@@ -11,25 +11,91 @@ import (
 )
 
 // TODO: allow to set custom postgres user/password
-const postgresDefaultPassword = "postgres"
+const (
+	postgresDefaultPassword = "postgres"
+
+	// docker compose service names
+	svcPostgres      = "postgres"
+	svcAuth          = "auth"
+	svcStorage       = "storage"
+	svcFunctions     = "functions"
+	svcMinio         = "minio"
+	svcMailhog       = "mailhog"
+	svcHasura        = "hasura"
+	svcHasuraConsole = "hasura-console"
+	svcTraefik       = "traefik"
+	svcGraphqlEngine = "graphql-engine"
+
+	// default docker images
+	svcPostgresDefaultImage      = "nhost/postgres:12-v0.0.6"
+	svcAuthDefaultImage          = "nhost/hasura-auth:0.6.3"
+	svcStorageDefaultImage       = "nhost/hasura-storage:0.2.1"
+	svcFunctionsDefaultImage     = "nhost/functions"
+	svcMinioDefaultImage         = "minio/minio:RELEASE.2021-09-24T00-24-24Z"
+	svcMailhogDefaultImage       = "mailhog/mailhog"
+	svcHasuraDefaultImage        = "hasura/graphql-engine:v2.2.0"
+	svcHasuraConsoleDefaultImage = "nhost/hasura:v2.8.1"
+	svcTraefikDefaultImage       = "traefik:v2.8"
+
+	// environment variables
+
+	// envs prefixes
+	envPrefixAuth    = "AUTH"
+	envPrefixStorage = "STORAGE"
+
+	// postgres
+	envPostgresPassword = "POSTGRES_PASSWORD"
+	envPostgresDb       = "POSTGRES_DB"
+	envPostgresUser     = "POSTGRES_USER"
+	envPostgresData     = "PGDATA"
+
+	//
+
+	// default values for environment variables
+	envPostgresDbDefaultValue       = "postgres"
+	envPostgresUserDefaultValue     = "postgres"
+	envPostgresPasswordDefaultValue = "postgres"
+	envPostgresDataDefaultValue     = "/var/lib/postgresql/data/pgdata"
+)
 
 type Config struct {
 	nhostConfig        *nhost.Configuration // nhost configuration to read custom values from, not used atm
 	gitBranch          string               // git branch name, used as a namespace for postgres data mounted from host
 	composeConfig      *types.Config
 	composeProjectName string
-	env                []string // environment variables from .env file
+	dotenv             []string // environment variables from .env file
 }
 
 func NewConfig(conf *nhost.Configuration, env []string, gitBranch, projectName string) *Config {
-	return &Config{nhostConfig: conf, env: env, gitBranch: gitBranch, composeProjectName: projectName}
+	return &Config{nhostConfig: conf, dotenv: env, gitBranch: gitBranch, composeProjectName: projectName}
+}
+
+func (c Config) serviceDockerImage(svcName, dockerImageFallback string) string {
+	if svcConf, ok := c.nhostConfig.Services[svcName]; ok {
+		if svcConf.Image != "" {
+			return svcConf.Image
+		}
+	}
+
+	return dockerImageFallback
+}
+
+// serviceConfigEnvs returns environment variables from "services".$name."environment" section in yaml config
+func (c *Config) serviceConfigEnvs(svc string) env {
+	e := env{}
+
+	if svcConf, ok := c.nhostConfig.Services[svc]; ok {
+		e.mergeWithServiceEnv(svcConf.Environment)
+	}
+
+	return e
 }
 
 func (c *Config) build() *types.Config {
 	config := &types.Config{}
 
-	// set services
-	config.Services = []types.ServiceConfig{
+	// build services, they may be nil
+	services := []*types.ServiceConfig{
 		c.traefikService(),
 		c.postgresService(),
 		c.hasuraService(),
@@ -39,6 +105,13 @@ func (c *Config) build() *types.Config {
 		c.functionsService(),
 		c.minioService(),
 		c.mailhogService(),
+	}
+
+	// loop over services and filter out nils, i.e. services that are not enabled
+	for _, service := range services {
+		if service != nil {
+			config.Services = append(config.Services, *service)
+		}
 	}
 
 	// set volumes
@@ -71,21 +144,25 @@ func (c Config) postgresConnectionString() string {
 	return fmt.Sprintf("postgres://postgres:%s@postgres:5432/postgres", c.postgresPasswordEnvValueWithDefaultValue())
 }
 
-func (c Config) mailhogService() types.ServiceConfig {
-	envs := types.NewMappingWithEquals([]string{
-		"SMTP_HOST=${AUTH_SMTP_HOST:-mailhog}",
-		"SMTP_PORT=${AUTH_SMTP_PORT:-1025}",
-		"SMTP_PASS=${AUTH_SMTP_PASS:-password}",
-		"SMTP_USER=${AUTH_SMTP_USER:-user}",
-		"SMTP_SECURE=${AUTH_SMTP_SECURE:-false}",
-		"SMTP_SENDER=${AUTH_SMTP_SENDER:-hbp@hbp.com}",
-	})
+func (c Config) mailhogServiceEnvs() env {
+	e := env{
+		"SMTP_HOST":   "${AUTH_SMTP_HOST:-mailhog}",
+		"SMTP_PORT":   "${AUTH_SMTP_PORT:-1025}",
+		"SMTP_PASS":   "${AUTH_SMTP_PASS:-password}",
+		"SMTP_USER":   "${AUTH_SMTP_USER:-user}",
+		"SMTP_SECURE": "${AUTH_SMTP_SECURE:-false}",
+		"SMTP_SENDER": "${AUTH_SMTP_SENDER:-hbp@hbp.com}",
+	}
+	e.merge(c.serviceConfigEnvs(svcMailhog))
+	return e
+}
 
-	return types.ServiceConfig{
-		Name:        "mailhog",
-		Environment: envs,
+func (c Config) mailhogService() *types.ServiceConfig {
+	return &types.ServiceConfig{
+		Name:        svcMailhog,
+		Environment: c.mailhogServiceEnvs().dockerServiceConfigEnv(),
 		Restart:     types.RestartPolicyAlways,
-		Image:       "mailhog/mailhog",
+		Image:       c.serviceDockerImage(svcMailhog, svcMailhogDefaultImage),
 		Ports: []types.ServicePortConfig{
 			{
 				Mode:      "ingress",
@@ -104,17 +181,21 @@ func (c Config) mailhogService() types.ServiceConfig {
 	}
 }
 
-func (c Config) minioService() types.ServiceConfig {
-	envs := types.NewMappingWithEquals([]string{
-		"MINIO_ROOT_USER=minioaccesskey123123", // TODO: creds
-		"MINIO_ROOT_PASSWORD=minioaccesskey123123",
-	})
+func (c Config) minioServiceEnvs() env {
+	e := env{
+		"MINIO_ROOT_USER":     "minioaccesskey123123", // TODO: creds
+		"MINIO_ROOT_PASSWORD": "minioaccesskey123123",
+	}
+	e.merge(c.serviceConfigEnvs(svcMinio))
+	return e
+}
 
-	return types.ServiceConfig{
-		Name:        "minio",
-		Environment: envs,
+func (c Config) minioService() *types.ServiceConfig {
+	return &types.ServiceConfig{
+		Name:        svcMinio,
+		Environment: c.minioServiceEnvs().dockerServiceConfigEnv(),
 		Restart:     types.RestartPolicyAlways,
-		Image:       "minio/minio:RELEASE.2021-09-24T00-24-24Z",
+		Image:       c.serviceDockerImage(svcMinio, svcMinioDefaultImage),
 		Entrypoint:  []string{"sh"},
 		Command:     []string{"-c", "mkdir -p /data/nhost && /opt/bin/minio server --address :8484 /data"}, // TODO: port
 		Ports: []types.ServicePortConfig{
@@ -135,7 +216,13 @@ func (c Config) minioService() types.ServiceConfig {
 	}
 }
 
-func (c Config) functionsService() types.ServiceConfig {
+func (c Config) functionsServiceEnvs() env {
+	e := env{"NHOST_BACKEND_URL": "http://localhost:1337"}
+	e.mergeWithSlice(c.dotenv)
+	return e
+}
+
+func (c Config) functionsService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
 		"traefik.http.middlewares.strip-functions.stripprefix.prefixes": "/v1/functions",
@@ -144,18 +231,13 @@ func (c Config) functionsService() types.ServiceConfig {
 		"traefik.http.routers.functions.entrypoints":                    "web",
 	}
 
-	envs := []string{
-		"NHOST_BACKEND_URL=http://localhost:1337",
-	}
-	envs = append(envs, c.env...)
-
-	return types.ServiceConfig{
-		Name:        "functions",
-		Image:       "nhost/functions", // TODO: build, push & pin version
+	return &types.ServiceConfig{
+		Name:        svcFunctions,
+		Image:       c.serviceDockerImage(svcFunctions, svcFunctionsDefaultImage), // TODO: build, push & pin version
 		Labels:      labels,
 		Restart:     types.RestartPolicyAlways,
 		Expose:      []string{"3000"},
-		Environment: types.NewMappingWithEquals(envs),
+		Environment: c.functionsServiceEnvs().dockerServiceConfigEnv(),
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
@@ -179,22 +261,33 @@ func (c Config) functionsService() types.ServiceConfig {
 	}
 }
 
-func (c Config) storageService() types.ServiceConfig {
-	envs := types.NewMappingWithEquals([]string{
-		"BIND:8576",                        // TODO: randomize port
-		"PUBLIC_URL=http://localhost:8576", // TODO: port
-		"POSTGRES_MIGRATIONS=1",
-		"HASURA_METADATA=1",
-		"HASURA_ENDPOINT=http://graphql-engine:8080/v1",
-		fmt.Sprintf("HASURA_GRAPHQL_ADMIN_SECRET=%s", util.ADMIN_SECRET),
-		"S3_ACCESS_KEY=minioaccesskey123123",
-		"S3_SECRET_KEY=minioaccesskey123123",
-		"S3_ENDPOINT=http://minio:8484",
-		"S3_BUCKET=nhost",
-		"POSTGRES_MIGRATIONS=1",
-		fmt.Sprintf("POSTGRES_MIGRATIONS_SOURCE=%s?sslmode=disable", c.postgresConnectionString()),
-	})
+func (c Config) storageServiceEnvs() env {
+	e := env{
+		"BIND":                        "8576",                  // TODO: randomize port
+		"PUBLIC_URL":                  "http://localhost:8576", // TODO: port
+		"POSTGRES_MIGRATIONS":         "1",
+		"HASURA_METADATA":             "1",
+		"HASURA_ENDPOINT":             "http://graphql-engine:8080/v1",
+		"HASURA_GRAPHQL_ADMIN_SECRET": util.ADMIN_SECRET,
+		"S3_ACCESS_KEY":               "minioaccesskey123123",
+		"S3_SECRET_KEY":               "minioaccesskey123123",
+		"S3_ENDPOINT":                 "http://minio:8484",
+		"S3_BUCKET":                   "nhost",
+		"HASURA_GRAPHQL_JWT_SECRET":   fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
+		"NHOST_JWT_SECRET":            fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
+		"NHOST_ADMIN_SECRET":          util.ADMIN_SECRET,
+		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
+		"POSTGRES_MIGRATIONS_SOURCE":  fmt.Sprintf("%s?sslmode=disable", c.postgresConnectionString()),
+		"NHOST_BACKEND_URL":           "http://localhost:1337",
+	}
 
+	e.merge(c.serviceConfigEnvs(svcStorage))
+	e.mergeWithConfigEnv(c.nhostConfig.Storage, envPrefixStorage)
+
+	return e
+}
+
+func (c Config) storageService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable":                           "true",
 		"traefik.http.routers.storage.rule":        "Host(`localhost`) && PathPrefix(`/v1/storage`)",
@@ -205,32 +298,41 @@ func (c Config) storageService() types.ServiceConfig {
 		"traefik.http.routers.storage.middlewares":                           "strip-suffix@docker",
 	}
 
-	return types.ServiceConfig{
-		Name:        "storage",
+	return &types.ServiceConfig{
+		Name:        svcStorage,
 		Restart:     types.RestartPolicyAlways,
-		Image:       "nhost/hasura-storage:0.2.1",
-		Environment: envs,
+		Image:       c.serviceDockerImage(svcStorage, svcStorageDefaultImage),
+		Environment: c.storageServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
 		Command:     []string{"serve"},
 		Expose:      []string{"8000"},
 	}
 }
 
-func (c Config) authService() types.ServiceConfig {
-	envs := types.NewMappingWithEquals([]string{
-		"AUTH_HOST=0.0.0.0",
-		fmt.Sprintf("HASURA_GRAPHQL_DATABASE_URL=%s", c.postgresConnectionString()),
-		"HASURA_GRAPHQL_GRAPHQL_URL=http://graphql-engine:8080/v1/graphql",
-		fmt.Sprintf("HASURA_GRAPHQL_JWT_SECRET=%s", fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY)),
-		fmt.Sprintf("HASURA_GRAPHQL_ADMIN_SECRET=%s", util.ADMIN_SECRET),
-		"AUTH_CLIENT_URL=${AUTH_CLIENT_URL:-http://localhost:3000}",
-		"AUTH_SMTP_HOST=mailhog",
-		"AUTH_SMTP_PORT=1025",
-		"AUTH_SMTP_USER=user",
-		"AUTH_SMTP_PASS=password",
-		"AUTH_SMTP_SENDER=mail@example.com",
-	})
+func (c Config) authServiceEnvs() env {
+	e := env{
+		"AUTH_HOST":                   "0.0.0.0",
+		"HASURA_GRAPHQL_DATABASE_URL": c.postgresConnectionString(),
+		"HASURA_GRAPHQL_GRAPHQL_URL":  "http://graphql-engine:8080/v1/graphql",
+		"HASURA_GRAPHQL_JWT_SECRET":   fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
+		"HASURA_GRAPHQL_ADMIN_SECRET": util.ADMIN_SECRET,
+		"AUTH_CLIENT_URL":             "${AUTH_CLIENT_URL:-http://localhost:3000}",
+		"AUTH_SMTP_HOST":              "mailhog",
+		"AUTH_SMTP_PORT":              "1025",
+		"AUTH_SMTP_USER":              "user",
+		"AUTH_SMTP_PASS":              "password",
+		"AUTH_SMTP_SENDER":            "mail@example.com",
+		"NHOST_ADMIN_SECRET":          util.ADMIN_SECRET,
+		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
+	}
 
+	e.merge(c.serviceConfigEnvs(svcAuth))
+	e.mergeWithConfigEnv(c.nhostConfig.Auth, envPrefixAuth)
+
+	return e
+}
+
+func (c Config) authService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
 		"traefik.http.middlewares.strip-auth.stripprefix.prefixes": "/v1/auth",
@@ -239,67 +341,63 @@ func (c Config) authService() types.ServiceConfig {
 		"traefik.http.routers.auth.entrypoints":                    "web",
 	}
 
-	return types.ServiceConfig{
-		Name:        "auth",
-		Image:       "nhost/hasura-auth:0.6.3",
-		Environment: envs,
+	return &types.ServiceConfig{
+		Name:        svcAuth,
+		Image:       c.serviceDockerImage(svcAuth, svcAuthDefaultImage),
+		Environment: c.authServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
 		Expose:      []string{"4000"},
 		DependsOn: map[string]types.ServiceDependency{
-			"postgres": {
+			svcPostgres: {
 				Condition: types.ServiceConditionHealthy,
 			},
-			"graphql-engine": {
+			svcGraphqlEngine: {
 				Condition: types.ServiceConditionStarted,
 			},
 		},
 		Restart: types.RestartPolicyAlways,
+		Volumes: []types.ServiceVolumeConfig{
+			{
+				Type:   types.VolumeTypeBind,
+				Source: nhost.EMAILS_DIR,
+				Target: "/app/email-templates",
+			},
+		},
 	}
 }
 
-func (c Config) hasuraService() types.ServiceConfig {
-	// TODO: add envs from .env.development
-	// TODO: check whether we need ALL envs from util.RuntimeVars
-	envs := []string{
-		fmt.Sprintf("HASURA_GRAPHQL_DATABASE_URL=%s", c.postgresConnectionString()),
-		fmt.Sprintf("HASURA_GRAPHQL_JWT_SECRET=%s", fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY)),
-		fmt.Sprintf("HASURA_GRAPHQL_ADMIN_SECRET=%s", util.ADMIN_SECRET),
-		fmt.Sprintf("NHOST_ADMIN_SECRET=%s", util.ADMIN_SECRET),
-		"NHOST_BACKEND_URL=http://localhost:1337",
-		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE=public",
-		"HASURA_GRAPHQL_DEV_MODE=true",
-		"HASURA_GRAPHQL_LOG_LEVEL=debug",
-		"HASURA_GRAPHQL_ENABLE_CONSOLE=false",
-		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT=20",
-		"HASURA_GRAPHQL_NO_OF_RETRIES=20",
-		"HASURA_GRAPHQL_ENABLE_TELEMETRY=false",
-		fmt.Sprintf("NHOST_WEBHOOK_SECRET=%s", util.WEBHOOK_SECRET),
+func (c Config) hasuraServiceEnvs() env {
+	e := env{
+		"HASURA_GRAPHQL_DATABASE_URL":              c.postgresConnectionString(),
+		"HASURA_GRAPHQL_JWT_SECRET":                fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
+		"HASURA_GRAPHQL_ADMIN_SECRET":              util.ADMIN_SECRET,
+		"NHOST_ADMIN_SECRET":                       util.ADMIN_SECRET,
+		"NHOST_BACKEND_URL":                        "http://localhost:1337",
+		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE":         "public",
+		"HASURA_GRAPHQL_DEV_MODE":                  "true",
+		"HASURA_GRAPHQL_LOG_LEVEL":                 "debug",
+		"HASURA_GRAPHQL_ENABLE_CONSOLE":            "false",
+		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT": "20",
+		"HASURA_GRAPHQL_NO_OF_RETRIES":             "20",
+		"HASURA_GRAPHQL_ENABLE_TELEMETRY":          "false",
+		"NHOST_WEBHOOK_SECRET":                     util.WEBHOOK_SECRET,
 	}
 
-	// add envs from .env.development
-	envs = append(envs, c.env...)
+	e.mergeWithSlice(c.dotenv)
+	e.merge(c.serviceConfigEnvs(svcHasura))
 
-	// add envs from hasura config if present
-	if hasuraConf, ok := c.nhostConfig.Services["hasura"]; ok {
-		for k, v := range hasuraConf.Environment {
-			envs = append(envs, fmt.Sprintf("%s=%s", k, fmt.Sprint(v)))
-		}
-	}
+	return e
+}
 
-	//labels := map[string]string{
-	//	"traefik.enable":                          "true",
-	//	"traefik.http.routers.hasura.rule":        "Host(`localhost`) && PathPrefix(`/`)",
-	//	"traefik.http.routers.hasura.entrypoints": "web",
-	//}
-
+func (c Config) hasuraService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
 	}
 
-	return types.ServiceConfig{
-		Name:        "graphql-engine",
-		Image:       "hasura/graphql-engine:v2.2.0",
-		Environment: types.NewMappingWithEquals(envs),
+	return &types.ServiceConfig{
+		Name:        svcGraphqlEngine,
+		Image:       c.serviceDockerImage(svcHasura, svcHasuraDefaultImage),
+		Environment: c.hasuraServiceEnvs().dockerServiceConfigEnv(),
 		//Expose:      []string{"8080"},
 		Labels: labels,
 		Ports: []types.ServicePortConfig{
@@ -311,7 +409,7 @@ func (c Config) hasuraService() types.ServiceConfig {
 			},
 		},
 		DependsOn: map[string]types.ServiceDependency{
-			"postgres": {
+			svcPostgres: {
 				Condition: types.ServiceConditionHealthy,
 			},
 		},
@@ -319,22 +417,24 @@ func (c Config) hasuraService() types.ServiceConfig {
 	}
 }
 
-func (c Config) hasuraConsoleService() types.ServiceConfig {
-	envs := types.NewMappingWithEquals([]string{
-		fmt.Sprintf("HASURA_GRAPHQL_DATABASE_URL=%s", c.postgresConnectionString()),
-		fmt.Sprintf("HASURA_GRAPHQL_JWT_SECRET=%s", fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY)),
-		fmt.Sprintf("HASURA_GRAPHQL_ADMIN_SECRET=%s", util.ADMIN_SECRET),
-		"HASURA_GRAPHQL_ENDPOINT=http://127.0.0.1:8080",
-		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE=public",
-		"HASURA_GRAPHQL_DEV_MODE=true",
-		"HASURA_GRAPHQL_LOG_LEVEL=debug",
-		"HASURA_GRAPHQL_ENABLE_CONSOLE=false",
-		"HASURA_RUN_CONSOLE=true",
-		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT=20",
-		"HASURA_GRAPHQL_NO_OF_RETRIES=20",
-		"HASURA_GRAPHQL_ENABLE_TELEMETRY=false",
-	})
+func (c Config) hasuraConsoleServiceEnvs() env {
+	return env{
+		"HASURA_GRAPHQL_DATABASE_URL":              c.postgresConnectionString(),
+		"HASURA_GRAPHQL_JWT_SECRET":                fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
+		"HASURA_GRAPHQL_ADMIN_SECRET":              util.ADMIN_SECRET,
+		"HASURA_GRAPHQL_ENDPOINT":                  "http://127.0.0.1:8080",
+		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE":         "public",
+		"HASURA_GRAPHQL_DEV_MODE":                  "true",
+		"HASURA_GRAPHQL_LOG_LEVEL":                 "debug",
+		"HASURA_GRAPHQL_ENABLE_CONSOLE":            "false",
+		"HASURA_RUN_CONSOLE":                       "true",
+		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT": "20",
+		"HASURA_GRAPHQL_NO_OF_RETRIES":             "20",
+		"HASURA_GRAPHQL_ENABLE_TELEMETRY":          "false",
+	}
+}
 
+func (c Config) hasuraConsoleService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
 		"traefik.http.services.hasura-console.loadbalancer.server.port": "9695",
@@ -342,16 +442,16 @@ func (c Config) hasuraConsoleService() types.ServiceConfig {
 		"traefik.http.routers.hasura-console.entrypoints":               "web",
 	}
 
-	return types.ServiceConfig{
-		Name:        "hasura-console",
-		Image:       "nhost/hasura:v2.8.1",
-		Environment: envs,
+	return &types.ServiceConfig{
+		Name:        svcHasuraConsole,
+		Image:       c.serviceDockerImage(svcHasuraConsole, svcHasuraConsoleDefaultImage),
+		Environment: c.hasuraConsoleServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
 		DependsOn: map[string]types.ServiceDependency{
-			"postgres": {
+			svcPostgres: {
 				Condition: types.ServiceConditionHealthy,
 			},
-			"graphql-engine": {
+			svcGraphqlEngine: {
 				Condition: types.ServiceConditionStarted,
 			},
 		},
@@ -380,32 +480,50 @@ func (c Config) hasuraConsoleService() types.ServiceConfig {
 	}
 }
 
-func (c Config) postgresService() types.ServiceConfig {
-	envs := types.NewMappingWithEquals([]string{
-		fmt.Sprintf("POSTGRES_PASSWORD=%s", c.postgresPasswordEnvValueWithDefaultValue()),
-		"POSTGRES_DB=postgres",
-		"PGDATA=/var/lib/postgresql/data/pgdata",
-	})
+func (c Config) postgresServiceEnvs() env {
+	e := env{envPostgresData: envPostgresDataDefaultValue}
 
-	// healthcheck
-	interval := types.Duration(time.Second * 3)
-	startPeriod := types.Duration(time.Minute * 2)
+	e.merge(c.serviceConfigEnvs(svcPostgres))
 
-	return types.ServiceConfig{
-		Name:        "postgres",
-		Image:       "nhost/postgres:12-v0.0.6",
+	// set defaults
+	if e[envPostgresUser] == "" {
+		e[envPostgresUser] = envPostgresUserDefaultValue
+	}
+
+	if e[envPostgresPassword] == "" {
+		e[envPostgresPassword] = envPostgresPasswordDefaultValue
+	}
+
+	if e[envPostgresDb] == "" {
+		e[envPostgresDb] = envPostgresDbDefaultValue
+	}
+
+	return e
+}
+
+func (c Config) postgresServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
+	i := types.Duration(interval)
+	s := types.Duration(startPeriod)
+	return &types.HealthCheckConfig{
+		Test:        []string{"CMD-SHELL", "pg_isready -U postgres -d postgres -q"}, // TODO: don't hardcode postgres user and db name
+		Interval:    &i,
+		StartPeriod: &s,
+	}
+}
+
+func (c Config) postgresService() *types.ServiceConfig {
+	return &types.ServiceConfig{
+		Name: svcPostgres,
+		// keep in mind that the provided postgres image should create schemas and triggers like in https://github.com/nhost/postgres/blob/ea53451b6df9f4b10ce515a2cefbd9ddfdfadb25/v12/db/0001-create-schema.sql
+		Image:       c.serviceDockerImage(svcPostgres, svcPostgresDefaultImage),
 		Restart:     types.RestartPolicyAlways,
-		Environment: envs,
-		HealthCheck: &types.HealthCheckConfig{
-			Test:        []string{"CMD-SHELL", "pg_isready -U postgres -d postgres -q"},
-			Interval:    &interval,
-			StartPeriod: &startPeriod,
-		},
+		Environment: c.postgresServiceEnvs().dockerServiceConfigEnv(),
+		HealthCheck: c.postgresServiceHealthcheck(time.Second*3, time.Minute*2),
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
 				Source: c.hostDataDirectoryBranchScoped("db"),
-				Target: "/var/lib/postgresql/data/pgdata",
+				Target: envPostgresDataDefaultValue,
 			},
 		},
 		Ports: []types.ServicePortConfig{
@@ -419,10 +537,10 @@ func (c Config) postgresService() types.ServiceConfig {
 	}
 }
 
-func (c Config) traefikService() types.ServiceConfig {
-	return types.ServiceConfig{
-		Name:    "traefik",
-		Image:   "traefik:v2.8",
+func (c Config) traefikService() *types.ServiceConfig {
+	return &types.ServiceConfig{
+		Name:    svcTraefik,
+		Image:   c.serviceDockerImage(svcTraefik, svcTraefikDefaultImage),
 		Restart: types.RestartPolicyAlways,
 		Ports: []types.ServicePortConfig{
 			{
