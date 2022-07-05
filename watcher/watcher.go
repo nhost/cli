@@ -56,7 +56,7 @@ func (gw *GitWatcher) Watch(ctx context.Context, interval time.Duration, reloadF
 
 			if err := reloadFunc(gw.branch, gw.remoteRef); err != nil {
 				gw.log.WithError(err).Errorln("Failed to reload")
-				gw.status.Errorln(fmt.Sprintf("Failed to reload: %w", err))
+				gw.status.Errorln(fmt.Sprintf("Failed to reload: %v", err))
 			}
 		case ref := <-gw.refCh:
 			gw.status.Infoln(fmt.Sprintf("Detected remoteRef change: %s", ref))
@@ -64,7 +64,7 @@ func (gw *GitWatcher) Watch(ctx context.Context, interval time.Duration, reloadF
 
 			if err := reloadFunc(gw.branch, gw.remoteRef); err != nil {
 				gw.log.WithError(err).Errorln("Failed to reload")
-				gw.status.Errorln(fmt.Sprintf("Failed to reload: %w", err))
+				gw.status.Errorln(fmt.Sprintf("Failed to reload: %v", err))
 			}
 		}
 	}

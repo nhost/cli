@@ -51,7 +51,7 @@ var (
 	expose bool
 
 	//  signal interruption channel
-	stop = make(chan os.Signal)
+	stop = make(chan os.Signal, 1)
 )
 
 /*

@@ -10,7 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+	"os/exec"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -35,12 +37,21 @@ type Manager interface {
 	IsStackReady(ctx context.Context) (bool, error)
 }
 
-func NewDockerComposeManager(c *nhost.Configuration, gitBranch string, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) *dockerComposeManager {
+func NewDockerComposeManager(c *nhost.Configuration, env []string, gitBranch string, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) *dockerComposeManager {
 	if gitBranch == "" {
 		gitBranch = "main"
 	}
 
-	return &dockerComposeManager{debug: debug, branch: gitBranch, projectName: projectName, nhostConfig: c, composeConfig: compose.NewConfig(c, gitBranch, projectName), l: logger, status: status}
+	return &dockerComposeManager{
+		debug:         debug,
+		env:           env,
+		branch:        gitBranch,
+		projectName:   projectName,
+		nhostConfig:   c,
+		composeConfig: compose.NewConfig(c, env, gitBranch, projectName),
+		l:             logger,
+		status:        status,
+	}
 }
 
 type dockerComposeManager struct {
@@ -52,6 +63,7 @@ type dockerComposeManager struct {
 	composeConfig *compose.Config
 	status        *util.Status
 	l             logrus.FieldLogger
+	env           []string
 }
 
 func (m *dockerComposeManager) SyncExec(ctx context.Context, f func(ctx context.Context) error) error {
@@ -67,7 +79,7 @@ func (m *dockerComposeManager) SetGitBranch(gitBranch string) {
 	}
 
 	m.branch = gitBranch
-	m.composeConfig = compose.NewConfig(m.nhostConfig, gitBranch, m.projectName)
+	m.composeConfig = compose.NewConfig(m.nhostConfig, m.env, gitBranch, m.projectName)
 }
 
 func (m *dockerComposeManager) Start(ctx context.Context) error {
@@ -79,25 +91,56 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 
 	m.status.Executing("Starting nhost app...")
 	m.l.Debug("Starting docker compose")
-	cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d"}, m.composeConfig, ds)
-	if err != nil {
+	cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d", "postgres", "graphql-engine"}, m.composeConfig, ds)
+	if err != nil && ctx.Err() != context.Canceled {
 		m.status.Error("Failed to start nhost app")
 		m.l.WithError(err).Debug("Failed to start docker compose")
 		return err
 	}
 
+	m.setProcessToStartInItsOwnProcessGroup(cmd)
 	err = cmd.Run()
-	if err != nil {
+	if err != nil && ctx.Err() != context.Canceled {
 		m.status.Error("Failed to start nhost app")
 		m.l.WithError(err).Debug("Failed to start docker compose")
 		return err
+	}
+
+	if ctx.Err() == context.Canceled {
+		return nil
 	}
 
 	err = m.waitForGraphqlEngine(ctx, time.Millisecond*100, time.Minute*2)
-	if err != nil {
+	if err != nil && ctx.Err() != context.Canceled {
 		m.status.Error("Timed out waiting for graphql-engine service to be ready")
 		m.l.WithError(err).Debug("Timed out waiting for graphql-engine service to be ready")
 		return err
+	}
+
+	if ctx.Err() == context.Canceled {
+		return nil
+	}
+
+	// start all other services
+	{
+		cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d"}, m.composeConfig, ds)
+		if err != nil && ctx.Err() != context.Canceled {
+			m.status.Error("Failed to start other services")
+			m.l.WithError(err).Debug("Failed to start docker compose")
+			return err
+		}
+
+		m.setProcessToStartInItsOwnProcessGroup(cmd)
+		err = cmd.Run()
+		if err != nil && ctx.Err() != context.Canceled {
+			m.status.Error("Failed to start other services")
+			m.l.WithError(err).Debug("Failed to start docker compose")
+			return err
+		}
+	}
+
+	if ctx.Err() == context.Canceled {
+		return nil
 	}
 
 	// migrations
@@ -117,14 +160,12 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 		}
 	}
 
+	if ctx.Err() == context.Canceled {
+		return nil
+	}
+
 	// metadata
 	{
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
 		metaFiles, err := os.ReadDir(nhost.METADATA_DIR)
 		if err != nil {
 			return err
@@ -147,11 +188,24 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 		}
 	}
 
+	if ctx.Err() == context.Canceled {
+		return nil
+	}
+
 	err = m.restartAuthStorageContainers(ctx, ds)
+	if err != nil && ctx.Err() != context.Canceled {
+		m.status.Error("Failed to restart auth storage containers")
+		m.l.WithError(err).Debug("Failed to restart auth storage containers")
+		return err
+	}
+
+	if ctx.Err() == context.Canceled {
+		return nil
+	}
 
 	// export metadata again
 	err = m.exportMetadata(ctx, ds)
-	if err != nil {
+	if err != nil && ctx.Err() != context.Canceled {
 		m.status.Error("Failed to export metadata")
 		m.l.WithError(err).Debug("Failed to export metadata")
 		return err
@@ -169,6 +223,7 @@ func (m *dockerComposeManager) Stop(ctx context.Context) error {
 		return err
 	}
 
+	m.setProcessToStartInItsOwnProcessGroup(cmd)
 	return cmd.Run()
 }
 
@@ -186,11 +241,12 @@ func (m *dockerComposeManager) StopSvc(ctx context.Context, svc string) error {
 
 func (m *dockerComposeManager) Restart(ctx context.Context) error {
 	m.l.Debug("Stopping postgres service")
-	cmd, err := compose.WrapperCmd(ctx, []string{"stop", "postgres"}, m.composeConfig, compose.DataStreams{})
+	cmd, err := compose.WrapperCmd(ctx, []string{"stop"}, m.composeConfig, compose.DataStreams{})
 	if err != nil {
 		return fmt.Errorf("failed to stop postgres service: %w", err)
 	}
 
+	m.setProcessToStartInItsOwnProcessGroup(cmd)
 	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to stop postgres service: %w", err)
@@ -214,25 +270,20 @@ func (m *dockerComposeManager) IsStackReady(ctx context.Context) (bool, error) {
 }
 
 func (m *dockerComposeManager) restartAuthStorageContainers(ctx context.Context, ds compose.DataStreams) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
 	m.l.Debug("Restarting auth and storage containers")
 	c, err := compose.WrapperCmd(ctx, []string{"restart", "auth", "storage"}, m.composeConfig, ds)
-	if err != nil {
+	if err != nil && ctx.Err() != context.Canceled {
 		return fmt.Errorf("failed to restart auth and storage containers: %w", err)
 	}
 
+	m.setProcessToStartInItsOwnProcessGroup(c)
 	return c.Run()
 }
 
 func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.DataStreams) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return nil
 	default:
 	}
 
@@ -249,8 +300,9 @@ func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.D
 			return fmt.Errorf("Failed to apply migrations: %w", err)
 		}
 
+		m.setProcessToStartInItsOwnProcessGroup(migrate)
 		err = migrate.Run()
-		if err != nil {
+		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("Failed to apply migrations: %w", err)
 		}
 
@@ -262,13 +314,12 @@ func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.D
 	return err
 }
 
-func (m *dockerComposeManager) exportMetadata(ctx context.Context, ds compose.DataStreams) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
+func (m *dockerComposeManager) setProcessToStartInItsOwnProcessGroup(cmd *exec.Cmd) {
+	// Start a process in its own process group. This will prevent the process from being killed when the parent process is killed
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+}
 
+func (m *dockerComposeManager) exportMetadata(ctx context.Context, ds compose.DataStreams) error {
 	m.status.Executing("Exporting metadata...")
 	err := retry.Do(func() error {
 		m.l.Debug("Exporting metadata")
@@ -278,12 +329,13 @@ func (m *dockerComposeManager) exportMetadata(ctx context.Context, ds compose.Da
 			m.composeConfig,
 			ds,
 		)
-		if err != nil {
+		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("failed to export metadata: %w", err)
 		}
 
+		m.setProcessToStartInItsOwnProcessGroup(export)
 		err = export.Run()
-		if err != nil {
+		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("failed to export metadata: %w", err)
 		}
 
@@ -299,18 +351,19 @@ func (m *dockerComposeManager) applyMetadata(ctx context.Context, ds compose.Dat
 	m.status.Executing("Applying metadata...")
 	err := retry.Do(func() error {
 		m.l.Debug("Applying metadata")
-		export, err := compose.WrapperCmd(
+		applyMetadata, err := compose.WrapperCmd(
 			ctx,
 			[]string{"exec", "hasura-console", "hasura", "--skip-update-check", "metadata", "apply"},
 			m.composeConfig,
 			ds,
 		)
-		if err != nil {
+		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("failed to apply metadata: %w", err)
 		}
 
-		err = export.Run()
-		if err != nil {
+		m.setProcessToStartInItsOwnProcessGroup(applyMetadata)
+		err = applyMetadata.Run()
+		if err != nil && ctx.Err() != context.Canceled {
 			return fmt.Errorf("failed to apply metadata: %w", err)
 		}
 
@@ -343,7 +396,7 @@ func (m *dockerComposeManager) waitForGraphqlEngine(ctx context.Context, interva
 	for range ticker.C {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		case <-t:
 			return fmt.Errorf("timeout: graphql-engine not ready, please run the command again")
 		default:

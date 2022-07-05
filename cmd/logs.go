@@ -25,6 +25,7 @@ SOFTWARE.
 package cmd
 
 import (
+	"fmt"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/nhost/compose"
 	"github.com/spf13/cobra"
@@ -51,12 +52,22 @@ var logsCmd = &cobra.Command{
 			dcArgs = append(dcArgs, os.Args[2:]...)
 		}
 
+		config, err := nhost.GetConfiguration()
+		if err != nil {
+			return err
+		}
+
 		projectName, err := nhost.GetDockerComposeProjectName()
 		if err != nil {
 			return err
 		}
 
-		conf := compose.NewConfig(nil, nhost.GetCurrentBranch(), projectName)
+		env, err := nhost.Env()
+		if err != nil {
+			return fmt.Errorf("failed to read .env.development: %v", err)
+		}
+
+		conf := compose.NewConfig(config, env, nhost.GetCurrentBranch(), projectName)
 		dc, err := compose.WrapperCmd(cmd.Context(), dcArgs, conf, compose.DataStreams{Stdout: os.Stdout, Stderr: os.Stderr})
 		if err != nil {
 			return err

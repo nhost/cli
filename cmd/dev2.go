@@ -37,7 +37,6 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -85,17 +84,27 @@ var dev2Cmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var wg sync.WaitGroup
 		var mgr service.Manager
 
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(cmd.Context())
+		defer cancel()
+
+		config, err := nhost.GetConfiguration()
+		if err != nil {
+			return err
+		}
 
 		projectName, err := nhost.GetDockerComposeProjectName()
 		if err != nil {
 			return err
 		}
 
-		mgr = service.NewDockerComposeManager(nil, nhost.GetCurrentBranch(), projectName, log, status, logger.DEBUG)
+		env, err := nhost.Env()
+		if err != nil {
+			return fmt.Errorf("failed to read .env.development: %v", err)
+		}
+
+		mgr = service.NewDockerComposeManager(config, env, nhost.GetCurrentBranch(), projectName, log, status, logger.DEBUG)
 		gw := watcher.NewGitWatcher(status, log)
 
 		go gw.Watch(ctx, 700*time.Millisecond, func(branch, ref string) error {
@@ -137,39 +146,47 @@ var dev2Cmd = &cobra.Command{
 			return err
 		})
 
-		signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
 		go func() {
-			<-stop
-			ctx.Done()
-			status.Executing("Exiting...")
-			err := mgr.Stop(ctx)
-			if err != nil {
-				status.Errorln("Failed to stop services")
+			err = mgr.SyncExec(ctx, func(ctx context.Context) error {
+				startCtx, cancel := context.WithTimeout(ctx, time.Minute*3)
+				defer cancel()
+
+				return retry.Do(func() error {
+					return mgr.Start(startCtx)
+				}, retry.Attempts(3))
+			})
+
+			if ctx.Err() == context.Canceled {
+				return
 			}
 
-			wg.Done()
-			os.Exit(0)
+			if err != nil {
+				status.Errorln("Failed to start services")
+				log.WithError(err).Error("Failed to start services")
+				os.Exit(1)
+			}
+
+			openbrowser(fmt.Sprintf("http://localhost:%s", cmd.Flag("port").Value.String()))
 		}()
 
-		wg.Add(1)
-		err = mgr.SyncExec(ctx, func(ctx context.Context) error {
-			return retry.Do(func() error {
-				return mgr.Start(ctx)
-			}, retry.Attempts(3))
+		// wait for stop signal
+		<-stop
+		cancel()
+
+		exitCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+
+		status.Executing("Exiting...")
+		log.Debug("Exiting...")
+		err = mgr.SyncExec(exitCtx, func(ctx context.Context) error {
+			return mgr.Stop(exitCtx)
 		})
 		if err != nil {
-			status.Errorln("Failed to start services")
-			log.Errorln(err)
-			return err
+			status.Errorln("Failed to stop services")
 		}
 
-		go openbrowser(fmt.Sprintf("http://localhost:%s", cmd.Flag("port").Value.String()))
-
-		//  wait for Ctrl+C
-		wg.Wait()
-
-		//  Close the signal interruption channel
-		close(stop)
 		return nil
 	},
 }

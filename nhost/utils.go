@@ -3,6 +3,7 @@ package nhost
 import (
 	"fmt"
 	"github.com/nhost/cli/util"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -68,4 +69,16 @@ func GetRemoteBranchRef(branch string) (string, error) {
 
 	data, err := ioutil.ReadFile(refPath)
 	return strings.TrimSpace(string(data)), err
+}
+
+func GetConfiguration() (*Configuration, error) {
+	var c Configuration
+
+	data, err := ioutil.ReadFile(CONFIG_PATH)
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.Unmarshal(data, &c)
+	return &c, err
 }

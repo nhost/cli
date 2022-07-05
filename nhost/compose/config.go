@@ -18,10 +18,11 @@ type Config struct {
 	gitBranch          string               // git branch name, used as a namespace for postgres data mounted from host
 	composeConfig      *types.Config
 	composeProjectName string
+	env                []string // environment variables from .env file
 }
 
-func NewConfig(conf *nhost.Configuration, gitBranch, projectName string) *Config {
-	return &Config{nhostConfig: conf, gitBranch: gitBranch, composeProjectName: projectName}
+func NewConfig(conf *nhost.Configuration, env []string, gitBranch, projectName string) *Config {
+	return &Config{nhostConfig: conf, env: env, gitBranch: gitBranch, composeProjectName: projectName}
 }
 
 func (c *Config) build() *types.Config {
@@ -143,12 +144,18 @@ func (c Config) functionsService() types.ServiceConfig {
 		"traefik.http.routers.functions.entrypoints":                    "web",
 	}
 
+	envs := []string{
+		"NHOST_BACKEND_URL=http://localhost:1337",
+	}
+	envs = append(envs, c.env...)
+
 	return types.ServiceConfig{
-		Name:    "functions",
-		Image:   "nhost/functions", // TODO: build, push & pin version
-		Labels:  labels,
-		Restart: types.RestartPolicyAlways,
-		Expose:  []string{"3000"},
+		Name:        "functions",
+		Image:       "nhost/functions", // TODO: build, push & pin version
+		Labels:      labels,
+		Restart:     types.RestartPolicyAlways,
+		Expose:      []string{"3000"},
+		Environment: types.NewMappingWithEquals(envs),
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
@@ -253,10 +260,12 @@ func (c Config) authService() types.ServiceConfig {
 func (c Config) hasuraService() types.ServiceConfig {
 	// TODO: add envs from .env.development
 	// TODO: check whether we need ALL envs from util.RuntimeVars
-	envs := types.NewMappingWithEquals([]string{
+	envs := []string{
 		fmt.Sprintf("HASURA_GRAPHQL_DATABASE_URL=%s", c.postgresConnectionString()),
 		fmt.Sprintf("HASURA_GRAPHQL_JWT_SECRET=%s", fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY)),
 		fmt.Sprintf("HASURA_GRAPHQL_ADMIN_SECRET=%s", util.ADMIN_SECRET),
+		fmt.Sprintf("NHOST_ADMIN_SECRET=%s", util.ADMIN_SECRET),
+		"NHOST_BACKEND_URL=http://localhost:1337",
 		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE=public",
 		"HASURA_GRAPHQL_DEV_MODE=true",
 		"HASURA_GRAPHQL_LOG_LEVEL=debug",
@@ -264,7 +273,18 @@ func (c Config) hasuraService() types.ServiceConfig {
 		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT=20",
 		"HASURA_GRAPHQL_NO_OF_RETRIES=20",
 		"HASURA_GRAPHQL_ENABLE_TELEMETRY=false",
-	})
+		fmt.Sprintf("NHOST_WEBHOOK_SECRET=%s", util.WEBHOOK_SECRET),
+	}
+
+	// add envs from .env.development
+	envs = append(envs, c.env...)
+
+	// add envs from hasura config if present
+	if hasuraConf, ok := c.nhostConfig.Services["hasura"]; ok {
+		for k, v := range hasuraConf.Environment {
+			envs = append(envs, fmt.Sprintf("%s=%s", k, fmt.Sprint(v)))
+		}
+	}
 
 	//labels := map[string]string{
 	//	"traefik.enable":                          "true",
@@ -279,7 +299,7 @@ func (c Config) hasuraService() types.ServiceConfig {
 	return types.ServiceConfig{
 		Name:        "graphql-engine",
 		Image:       "hasura/graphql-engine:v2.2.0",
-		Environment: envs,
+		Environment: types.NewMappingWithEquals(envs),
 		//Expose:      []string{"8080"},
 		Labels: labels,
 		Ports: []types.ServicePortConfig{
