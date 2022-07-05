@@ -32,9 +32,6 @@ type Manager interface {
 	Stop(ctx context.Context) error
 	StopSvc(ctx context.Context, svc string) error
 	SetGitBranch(string)
-	Restart(ctx context.Context) error
-	IsServiceHealthy(ctx context.Context, svc string) (bool, error)
-	IsStackReady(ctx context.Context) (bool, error)
 }
 
 func NewDockerComposeManager(c *nhost.Configuration, env []string, gitBranch string, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) *dockerComposeManager {
@@ -238,36 +235,6 @@ func (m *dockerComposeManager) StopSvc(ctx context.Context, svc string) error {
 
 	m.setProcessToStartInItsOwnProcessGroup(cmd)
 	return cmd.Run()
-}
-
-func (m *dockerComposeManager) Restart(ctx context.Context) error {
-	m.l.Debug("Stopping postgres service")
-	cmd, err := compose.WrapperCmd(ctx, []string{"stop"}, m.composeConfig, compose.DataStreams{})
-	if err != nil {
-		return fmt.Errorf("failed to stop postgres service: %w", err)
-	}
-
-	m.setProcessToStartInItsOwnProcessGroup(cmd)
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to stop postgres service: %w", err)
-	}
-
-	err = m.Stop(ctx)
-	if err != nil {
-		m.l.WithError(err).Debug("Failed to restart docker compose")
-		return err
-	}
-
-	return m.Start(ctx)
-}
-
-func (m *dockerComposeManager) IsServiceHealthy(ctx context.Context, svc string) (bool, error) {
-	return true, nil
-}
-
-func (m *dockerComposeManager) IsStackReady(ctx context.Context) (bool, error) {
-	return true, nil
 }
 
 func (m *dockerComposeManager) restartAuthStorageContainers(ctx context.Context, ds compose.DataStreams) error {
