@@ -318,14 +318,6 @@ func (c Config) functionsService() *types.ServiceConfig {
 				Source: "functions_node_modules",
 				Target: "/opt/project/node_modules",
 			},
-			{
-				Type:   types.VolumeTypeVolume,
-				Target: "/opt/project/data/",
-			},
-			{
-				Type:   types.VolumeTypeVolume,
-				Target: "/opt/project/initdb.d/",
-			},
 		},
 	}
 }
