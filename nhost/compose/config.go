@@ -412,7 +412,7 @@ func (c Config) authService() *types.ServiceConfig {
 		Image:       c.serviceDockerImage(svcAuth, svcAuthDefaultImage),
 		Environment: c.authServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
-		//Expose:      []string{"4000"}, // TODO: is it needed?
+		Expose:      []string{"4000"}, // TODO: is it needed?
 		DependsOn: map[string]types.ServiceDependency{
 			svcPostgres: {
 				Condition: types.ServiceConditionHealthy,
@@ -476,6 +476,10 @@ func (c Config) hasuraServiceEnvs() env {
 func (c Config) hasuraService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
+		//"traefik.http.middlewares.strip-graphql.stripprefix.prefixes": "/v1/graphql",
+		"traefik.http.routers.hasura.rule": "Host(`localhost`) && PathPrefix(`/v1/graphql`, `/v2/query`, `/v1/metadata`, `/v1/config`)",
+		//"traefik.http.routers.hasura.middlewares":                     "strip-graphql@docker",
+		"traefik.http.routers.hasura.entrypoints": "web",
 	}
 
 	port := c.serviceDockerExposePort(svcHasura, svcHasuraDefaultPort)
@@ -484,9 +488,9 @@ func (c Config) hasuraService() *types.ServiceConfig {
 		Name:        svcGraphqlEngine,
 		Image:       c.serviceDockerImage(svcHasura, svcHasuraDefaultImage),
 		Environment: c.hasuraServiceEnvs().dockerServiceConfigEnv(),
-		//Expose:      []string{"8080"},
-		Labels: labels,
-		Ports: []types.ServicePortConfig{
+		Expose:      []string{"8080"}, // TODO: is it needed?
+		Labels:      labels,
+		Ports: []types.ServicePortConfig{ // TODO: is it needed?
 			{
 				Mode:      "ingress",
 				Target:    svcHasuraDefaultPort,
