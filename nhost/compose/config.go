@@ -286,18 +286,25 @@ func (c Config) minioService() *types.ServiceConfig {
 }
 
 func (c Config) functionsServiceEnvs() env {
-	e := env{"NHOST_BACKEND_URL": c.envValueNhostBackendUrl()}
+	e := env{}
 	e.mergeWithSlice(c.dotenv)
+	e.merge(env{
+		"NHOST_BACKEND_URL":  c.envValueNhostBackendUrl(),
+		"NHOST_ADMIN_SECRET": util.ADMIN_SECRET,
+	})
+
 	return e
 }
 
 func (c Config) functionsService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
-		"traefik.http.middlewares.strip-functions.stripprefix.prefixes": "/v1/functions",
-		"traefik.http.routers.functions.rule":                           "Host(`localhost`) && PathPrefix(`/v1/functions`)",
-		"traefik.http.routers.functions.middlewares":                    "strip-functions@docker",
-		"traefik.http.routers.functions.entrypoints":                    "web",
+		"traefik.http.middlewares.strip-functions.stripprefix.prefixes":                "/v1/functions",
+		"traefik.http.middlewares.functions-cors.headers.accessControlAllowOriginList": "*",
+		"traefik.http.middlewares.functions-cors.headers.accessControlAllowHeaders":    "origin,Accept,Authorization,Content-Type",
+		"traefik.http.routers.functions.rule":                                          "PathPrefix(`/v1/functions`)",
+		"traefik.http.routers.functions.middlewares":                                   "functions-cors@docker,strip-functions@docker",
+		"traefik.http.routers.functions.entrypoints":                                   "web",
 	}
 
 	return &types.ServiceConfig{
@@ -360,7 +367,7 @@ func (c Config) storageServiceEnvs() env {
 func (c Config) storageService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable":                           "true",
-		"traefik.http.routers.storage.rule":        "Host(`localhost`) && PathPrefix(`/v1/storage`)",
+		"traefik.http.routers.storage.rule":        "PathPrefix(`/v1/storage`)",
 		"traefik.http.routers.storage.entrypoints": "web",
 		// Rewrite the path so it matches with the new storage API path introduced in hasura-storage 0.2
 		"traefik.http.middlewares.strip-suffix.replacepathregex.regex":       "^/v1/storage/(.*)",
@@ -375,7 +382,7 @@ func (c Config) storageService() *types.ServiceConfig {
 		Environment: c.storageServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
 		Command:     []string{"serve"},
-		Expose:      []string{"8000"}, // TODO
+		Expose:      []string{"8000"},
 	}
 }
 
@@ -402,7 +409,7 @@ func (c Config) authService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
 		"traefik.http.middlewares.strip-auth.stripprefix.prefixes": "/v1/auth",
-		"traefik.http.routers.auth.rule":                           "Host(`localhost`) && PathPrefix(`/v1/auth`)",
+		"traefik.http.routers.auth.rule":                           "PathPrefix(`/v1/auth`)",
 		"traefik.http.routers.auth.middlewares":                    "strip-auth@docker",
 		"traefik.http.routers.auth.entrypoints":                    "web",
 	}
@@ -412,7 +419,7 @@ func (c Config) authService() *types.ServiceConfig {
 		Image:       c.serviceDockerImage(svcAuth, svcAuthDefaultImage),
 		Environment: c.authServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
-		Expose:      []string{"4000"}, // TODO: is it needed?
+		Expose:      []string{"4000"},
 		DependsOn: map[string]types.ServiceDependency{
 			svcPostgres: {
 				Condition: types.ServiceConditionHealthy,
@@ -438,7 +445,7 @@ func (c Config) authService() *types.ServiceConfig {
 }
 
 func (c Config) envValueNhostBackendUrl() string {
-	return "http://localhost:1337" // TODO: port
+	return "http://traefik:1337" // TODO: port
 }
 
 func (c Config) envValueHasuraGraphqlJwtSecret() string {
@@ -475,10 +482,8 @@ func (c Config) hasuraServiceEnvs() env {
 
 func (c Config) hasuraService() *types.ServiceConfig {
 	labels := map[string]string{
-		"traefik.enable": "true",
-		//"traefik.http.middlewares.strip-graphql.stripprefix.prefixes": "/v1/graphql",
-		"traefik.http.routers.hasura.rule": "Host(`localhost`) && PathPrefix(`/v1/graphql`, `/v2/query`, `/v1/metadata`, `/v1/config`)",
-		//"traefik.http.routers.hasura.middlewares":                     "strip-graphql@docker",
+		"traefik.enable":                          "true",
+		"traefik.http.routers.hasura.rule":        "PathPrefix(`/v1/graphql`, `/v2/query`, `/v1/metadata`, `/v1/config`)",
 		"traefik.http.routers.hasura.entrypoints": "web",
 	}
 
@@ -530,7 +535,7 @@ func (c Config) hasuraConsoleService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
 		"traefik.http.services.hasura-console.loadbalancer.server.port": "9695", // TODO: port
-		"traefik.http.routers.hasura-console.rule":                      "Host(`localhost`) && PathPrefix(`/`)",
+		"traefik.http.routers.hasura-console.rule":                      "PathPrefix(`/`)",
 		"traefik.http.routers.hasura-console.entrypoints":               "web",
 	}
 
