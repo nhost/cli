@@ -34,11 +34,11 @@ const (
 	svcPostgresDefaultImage      = "nhost/postgres:12-v0.0.6"
 	svcAuthDefaultImage          = "nhost/hasura-auth:0.6.3"
 	svcStorageDefaultImage       = "nhost/hasura-storage:0.2.1"
-	svcFunctionsDefaultImage     = "nhost/functions" // TODO: build docker image
+	svcFunctionsDefaultImage     = "nhost/functions:0.0.1"
 	svcMinioDefaultImage         = "minio/minio:RELEASE.2021-09-24T00-24-24Z"
 	svcMailhogDefaultImage       = "mailhog/mailhog"
 	svcHasuraDefaultImage        = "hasura/graphql-engine:v2.2.0"
-	svcHasuraConsoleDefaultImage = "nhost/hasura:v2.8.1"
+	svcHasuraConsoleDefaultImage = "nhost/hasura-cli-docker:2.2.0"
 	svcTraefikDefaultImage       = "traefik:v2.8"
 	// --
 
@@ -289,8 +289,10 @@ func (c Config) functionsServiceEnvs() env {
 	e := env{}
 	e.mergeWithSlice(c.dotenv)
 	e.merge(env{
-		"NHOST_BACKEND_URL":  c.envValueNhostBackendUrl(),
-		"NHOST_ADMIN_SECRET": util.ADMIN_SECRET,
+		"NHOST_BACKEND_URL":    c.envValueNhostBackendUrl(),
+		"NHOST_ADMIN_SECRET":   util.ADMIN_SECRET,
+		"NHOST_WEBHOOK_SECRET": util.WEBHOOK_SECRET,
+		"NHOST_JWT_SECRET":     c.envValueHasuraGraphqlJwtSecret(),
 	})
 
 	return e
