@@ -12,16 +12,16 @@ import (
 
 const (
 	// docker compose service names
-	svcPostgres      = "postgres"
-	svcAuth          = "auth"
-	svcStorage       = "storage"
-	svcFunctions     = "functions"
-	svcMinio         = "minio"
-	svcMailhog       = "mailhog"
-	svcHasura        = "hasura"
-	svcHasuraConsole = "hasura-console"
-	svcTraefik       = "traefik"
-	svcGraphqlEngine = "graphql-engine"
+	SvcPostgres      = "postgres"
+	SvcAuth          = "auth"
+	SvcStorage       = "storage"
+	SvcFunctions     = "functions"
+	SvcMinio         = "minio"
+	SvcMailhog       = "mailhog"
+	SvcHasura        = "hasura"
+	SvcHasuraConsole = "hasura-console"
+	SvcTraefik       = "traefik"
+	SvcGraphqlEngine = "graphql-engine"
 	// --
 
 	// data directory names
@@ -34,8 +34,8 @@ const (
 	svcPostgresDefaultImage      = "nhost/postgres:12-v0.0.6"
 	svcAuthDefaultImage          = "nhost/hasura-auth:0.6.3"
 	svcStorageDefaultImage       = "nhost/hasura-storage:0.2.1"
-	svcFunctionsDefaultImage     = "nhost/functions:0.0.1"
-	svcMinioDefaultImage         = "minio/minio:RELEASE.2021-09-24T00-24-24Z"
+	svcFunctionsDefaultImage     = "nhost/functions:0.0.2"
+	svcMinioDefaultImage         = "minio/minio:RELEASE.2022-07-08T00-05-23Z"
 	svcMailhogDefaultImage       = "mailhog/mailhog"
 	svcHasuraDefaultImage        = "hasura/graphql-engine:v2.2.0"
 	svcHasuraConsoleDefaultImage = "nhost/hasura-cli-docker:2.2.0"
@@ -192,12 +192,12 @@ func (c Config) mailhogServiceEnvs() env {
 		"SMTP_SENDER": authEnv[envAuthSmtpSender],
 	}
 
-	e.merge(c.serviceConfigEnvs(svcMailhog))
+	e.merge(c.serviceConfigEnvs(SvcMailhog))
 	return e
 }
 
 func (c Config) runMailhogService() bool {
-	if conf, ok := c.nhostConfig.Services[svcMailhog]; ok {
+	if conf, ok := c.nhostConfig.Services[SvcMailhog]; ok {
 		if conf.NoContainer {
 			return false
 		}
@@ -205,7 +205,7 @@ func (c Config) runMailhogService() bool {
 
 	authEnv := c.authServiceEnvs()
 
-	return authEnv[envAuthSmtpHost] == svcMailhog
+	return authEnv[envAuthSmtpHost] == SvcMailhog
 }
 
 func (c Config) mailhogService() *types.ServiceConfig {
@@ -214,10 +214,10 @@ func (c Config) mailhogService() *types.ServiceConfig {
 	}
 
 	return &types.ServiceConfig{
-		Name:        svcMailhog,
+		Name:        SvcMailhog,
 		Environment: c.mailhogServiceEnvs().dockerServiceConfigEnv(),
 		Restart:     types.RestartPolicyAlways,
-		Image:       c.serviceDockerImage(svcMailhog, svcMailhogDefaultImage),
+		Image:       c.serviceDockerImage(SvcMailhog, svcMailhogDefaultImage),
 		Ports: []types.ServicePortConfig{
 			{
 				Mode:      "ingress",
@@ -241,12 +241,12 @@ func (c Config) minioServiceEnvs() env {
 		envMinioRootUser:     envMinioRootUserDefaultValue,
 		envMinioRootPassword: envMinioRootPasswordDefaultValue,
 	}
-	e.merge(c.serviceConfigEnvs(svcMinio))
+	e.merge(c.serviceConfigEnvs(SvcMinio))
 	return e
 }
 
 func (c Config) runMinioService() bool {
-	if conf, ok := c.nhostConfig.Services[svcMinio]; ok {
+	if conf, ok := c.nhostConfig.Services[SvcMinio]; ok {
 		if conf.NoContainer {
 			return false
 		}
@@ -261,12 +261,11 @@ func (c Config) minioService() *types.ServiceConfig {
 	}
 
 	return &types.ServiceConfig{
-		Name:        svcMinio,
+		Name:        SvcMinio,
 		Environment: c.minioServiceEnvs().dockerServiceConfigEnv(),
 		Restart:     types.RestartPolicyAlways,
-		Image:       c.serviceDockerImage(svcMinio, svcMinioDefaultImage),
-		Entrypoint:  []string{"sh"},
-		Command:     []string{"-c", "mkdir -p /data/nhost && /opt/bin/minio server --address :8484 /data"}, // TODO: port
+		Image:       c.serviceDockerImage(SvcMinio, svcMinioDefaultImage),
+		Command:     []string{"server", "/data", "--console-address", ":8484"}, // TODO: port
 		Ports: []types.ServicePortConfig{
 			{
 				Mode:      "ingress",
@@ -298,6 +297,16 @@ func (c Config) functionsServiceEnvs() env {
 	return e
 }
 
+func (c Config) functionsServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
+	i := types.Duration(interval)
+	s := types.Duration(startPeriod)
+	return &types.HealthCheckConfig{
+		Test:        []string{"CMD-SHELL", "wget http://localhost:3000/healthz -q -O - > /dev/null 2>&1"},
+		Interval:    &i,
+		StartPeriod: &s,
+	}
+}
+
 func (c Config) functionsService() *types.ServiceConfig {
 	labels := map[string]string{
 		"traefik.enable": "true",
@@ -310,12 +319,13 @@ func (c Config) functionsService() *types.ServiceConfig {
 	}
 
 	return &types.ServiceConfig{
-		Name:        svcFunctions,
-		Image:       c.serviceDockerImage(svcFunctions, svcFunctionsDefaultImage), // TODO: build, push & pin version
+		Name:        SvcFunctions,
+		Image:       c.serviceDockerImage(SvcFunctions, svcFunctionsDefaultImage), // TODO: build, push & pin version
 		Labels:      labels,
 		Restart:     types.RestartPolicyAlways,
 		Expose:      []string{"3000"},
 		Environment: c.functionsServiceEnvs().dockerServiceConfigEnv(),
+		HealthCheck: c.functionsServiceHealthcheck(time.Second*3, time.Minute*5),
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
@@ -335,7 +345,7 @@ func (c Config) storageServiceEnvs() env {
 	minioEnv := c.minioServiceEnvs()
 	s3Endpoint := "http://minio:8484" // TODO: port
 
-	if minioConf, ok := c.nhostConfig.Services[svcMinio]; ok {
+	if minioConf, ok := c.nhostConfig.Services[SvcMinio]; ok {
 		if minioConf.NoContainer {
 			s3Endpoint = minioConf.Address
 		}
@@ -360,7 +370,7 @@ func (c Config) storageServiceEnvs() env {
 		"NHOST_BACKEND_URL":           c.envValueNhostBackendUrl(),
 	}
 
-	e.merge(c.serviceConfigEnvs(svcStorage))
+	e.merge(c.serviceConfigEnvs(SvcStorage))
 	e.mergeWithConfigEnv(c.nhostConfig.Storage, envPrefixStorage)
 
 	return e
@@ -378,9 +388,9 @@ func (c Config) storageService() *types.ServiceConfig {
 	}
 
 	return &types.ServiceConfig{
-		Name:        svcStorage,
+		Name:        SvcStorage,
 		Restart:     types.RestartPolicyAlways,
-		Image:       c.serviceDockerImage(svcStorage, svcStorageDefaultImage),
+		Image:       c.serviceDockerImage(SvcStorage, svcStorageDefaultImage),
 		Environment: c.storageServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
 		Command:     []string{"serve"},
@@ -389,7 +399,7 @@ func (c Config) storageService() *types.ServiceConfig {
 }
 
 func (c Config) authServiceEnvs() env {
-	hasuraPort := c.serviceDockerExposePort(svcHasura, svcHasuraDefaultPort)
+	hasuraPort := c.serviceDockerExposePort(SvcHasura, svcHasuraDefaultPort)
 
 	e := env{
 		"AUTH_HOST":                   "0.0.0.0",
@@ -401,10 +411,20 @@ func (c Config) authServiceEnvs() env {
 		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
 	}
 
-	e.merge(c.serviceConfigEnvs(svcAuth))
+	e.merge(c.serviceConfigEnvs(SvcAuth))
 	e.mergeWithConfigEnv(c.nhostConfig.Auth, envPrefixAuth)
 
 	return e
+}
+
+func (c Config) authServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
+	i := types.Duration(interval)
+	s := types.Duration(startPeriod)
+	return &types.HealthCheckConfig{
+		Test:        []string{"CMD-SHELL", "wget http://localhost:4000/healthz -q -O - > /dev/null 2>&1"},
+		Interval:    &i,
+		StartPeriod: &s,
+	}
 }
 
 func (c Config) authService() *types.ServiceConfig {
@@ -417,20 +437,21 @@ func (c Config) authService() *types.ServiceConfig {
 	}
 
 	return &types.ServiceConfig{
-		Name:        svcAuth,
-		Image:       c.serviceDockerImage(svcAuth, svcAuthDefaultImage),
+		Name:        SvcAuth,
+		Image:       c.serviceDockerImage(SvcAuth, svcAuthDefaultImage),
 		Environment: c.authServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
 		Expose:      []string{"4000"},
 		DependsOn: map[string]types.ServiceDependency{
-			svcPostgres: {
+			SvcPostgres: {
 				Condition: types.ServiceConditionHealthy,
 			},
-			svcGraphqlEngine: {
+			SvcGraphqlEngine: {
 				Condition: types.ServiceConditionStarted,
 			},
 		},
-		Restart: types.RestartPolicyAlways,
+		Restart:     types.RestartPolicyAlways,
+		HealthCheck: c.authServiceHealthcheck(time.Second*3, time.Minute*5),
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
@@ -455,7 +476,7 @@ func (c Config) envValueHasuraGraphqlJwtSecret() string {
 }
 
 func (c Config) envValueHasuraEndpoint() string {
-	hasuraPort := c.serviceDockerExposePort(svcHasura, svcHasuraDefaultPort)
+	hasuraPort := c.serviceDockerExposePort(SvcHasura, svcHasuraDefaultPort)
 	return fmt.Sprintf("http://graphql-engine:%d/v1", hasuraPort)
 }
 
@@ -477,7 +498,7 @@ func (c Config) hasuraServiceEnvs() env {
 	}
 
 	e.mergeWithSlice(c.dotenv)
-	e.merge(c.serviceConfigEnvs(svcHasura))
+	e.merge(c.serviceConfigEnvs(SvcHasura))
 
 	return e
 }
@@ -489,11 +510,11 @@ func (c Config) hasuraService() *types.ServiceConfig {
 		"traefik.http.routers.hasura.entrypoints": "web",
 	}
 
-	port := c.serviceDockerExposePort(svcHasura, svcHasuraDefaultPort)
+	port := c.serviceDockerExposePort(SvcHasura, svcHasuraDefaultPort)
 
 	return &types.ServiceConfig{
-		Name:        svcGraphqlEngine,
-		Image:       c.serviceDockerImage(svcHasura, svcHasuraDefaultImage),
+		Name:        SvcGraphqlEngine,
+		Image:       c.serviceDockerImage(SvcHasura, svcHasuraDefaultImage),
 		Environment: c.hasuraServiceEnvs().dockerServiceConfigEnv(),
 		Expose:      []string{"8080"}, // TODO: is it needed?
 		Labels:      labels,
@@ -506,7 +527,10 @@ func (c Config) hasuraService() *types.ServiceConfig {
 			},
 		},
 		DependsOn: map[string]types.ServiceDependency{
-			svcPostgres: {
+			SvcPostgres: {
+				Condition: types.ServiceConditionHealthy,
+			},
+			SvcFunctions: {
 				Condition: types.ServiceConditionHealthy,
 			},
 		},
@@ -515,7 +539,7 @@ func (c Config) hasuraService() *types.ServiceConfig {
 }
 
 func (c Config) hasuraConsoleServiceEnvs() env {
-	hasuraPort := c.serviceDockerExposePort(svcHasura, svcHasuraDefaultPort)
+	hasuraPort := c.serviceDockerExposePort(SvcHasura, svcHasuraDefaultPort)
 
 	return env{
 		"HASURA_GRAPHQL_DATABASE_URL":              c.postgresConnectionString(),
@@ -542,16 +566,19 @@ func (c Config) hasuraConsoleService() *types.ServiceConfig {
 	}
 
 	return &types.ServiceConfig{
-		Name:        svcHasuraConsole,
-		Image:       c.serviceDockerImage(svcHasuraConsole, svcHasuraConsoleDefaultImage),
+		Name:        SvcHasuraConsole,
+		Image:       c.serviceDockerImage(SvcHasuraConsole, svcHasuraConsoleDefaultImage),
 		Environment: c.hasuraConsoleServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
 		DependsOn: map[string]types.ServiceDependency{
-			svcPostgres: {
+			SvcPostgres: {
 				Condition: types.ServiceConditionHealthy,
 			},
-			svcGraphqlEngine: {
+			SvcGraphqlEngine: {
 				Condition: types.ServiceConditionStarted,
+			},
+			SvcFunctions: {
+				Condition: types.ServiceConditionHealthy,
 			},
 		},
 		Ports: []types.ServicePortConfig{
@@ -587,7 +614,7 @@ func (c Config) postgresServiceEnvs() env {
 		envPostgresDb:       envPostgresDbDefaultValue,
 	}
 
-	e.merge(c.serviceConfigEnvs(svcPostgres))
+	e.merge(c.serviceConfigEnvs(SvcPostgres))
 
 	return e
 }
@@ -603,12 +630,12 @@ func (c Config) postgresServiceHealthcheck(interval, startPeriod time.Duration) 
 }
 
 func (c Config) postgresService() *types.ServiceConfig {
-	port := c.serviceDockerExposePort(svcPostgres, svcPostgresDefaultPort)
+	port := c.serviceDockerExposePort(SvcPostgres, svcPostgresDefaultPort)
 
 	return &types.ServiceConfig{
-		Name: svcPostgres,
+		Name: SvcPostgres,
 		// keep in mind that the provided postgres image should create schemas and triggers like in https://github.com/nhost/postgres/blob/ea53451b6df9f4b10ce515a2cefbd9ddfdfadb25/v12/db/0001-create-schema.sql
-		Image:       c.serviceDockerImage(svcPostgres, svcPostgresDefaultImage),
+		Image:       c.serviceDockerImage(SvcPostgres, svcPostgresDefaultImage),
 		Restart:     types.RestartPolicyAlways,
 		Environment: c.postgresServiceEnvs().dockerServiceConfigEnv(),
 		HealthCheck: c.postgresServiceHealthcheck(time.Second*3, time.Minute*2),
@@ -637,8 +664,8 @@ func (c Config) serverPort() uint32 {
 func (c Config) traefikService() *types.ServiceConfig {
 	port := c.serverPort()
 	return &types.ServiceConfig{
-		Name:    svcTraefik,
-		Image:   c.serviceDockerImage(svcTraefik, svcTraefikDefaultImage),
+		Name:    SvcTraefik,
+		Image:   c.serviceDockerImage(SvcTraefik, svcTraefikDefaultImage),
 		Restart: types.RestartPolicyAlways,
 		Ports: []types.ServicePortConfig{
 			{

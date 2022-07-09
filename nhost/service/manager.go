@@ -8,9 +8,11 @@ import (
 	"github.com/nhost/cli/nhost/compose"
 	"github.com/nhost/cli/util"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -88,7 +90,7 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 
 	m.status.Executing("Starting nhost app...")
 	m.l.Debug("Starting docker compose")
-	cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d", "postgres", "graphql-engine"}, m.composeConfig, ds)
+	cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d", "--wait", compose.SvcPostgres, compose.SvcGraphqlEngine, compose.SvcFunctions, compose.SvcHasuraConsole}, m.composeConfig, ds)
 	if err != nil && ctx.Err() != context.Canceled {
 		m.status.Error("Failed to start nhost app")
 		m.l.WithError(err).Debug("Failed to start docker compose")
@@ -118,22 +120,14 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 		return nil
 	}
 
-	// start all other services
-	{
-		cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d"}, m.composeConfig, ds)
-		if err != nil && ctx.Err() != context.Canceled {
-			m.status.Error("Failed to start other services")
-			m.l.WithError(err).Debug("Failed to start docker compose")
-			return err
-		}
-
-		m.setProcessToStartInItsOwnProcessGroup(cmd)
-		err = cmd.Run()
-		if err != nil && ctx.Err() != context.Canceled {
-			m.status.Error("Failed to start other services")
-			m.l.WithError(err).Debug("Failed to start docker compose")
-			return err
-		}
+	m.status.Executing("Waiting for all containers to be up and running...")
+	m.l.Debug("Waiting for all containers to be up and running")
+	// run all & wait for healthy/running services
+	err = m.waitForServicesToBeRunningHealthy(ctx, ds)
+	if err != nil && ctx.Err() != context.Canceled {
+		m.status.Error(err.Error())
+		m.l.WithError(err).Debug("Failed to wait for services")
+		return err
 	}
 
 	if ctx.Err() == context.Canceled {
@@ -189,22 +183,19 @@ func (m *dockerComposeManager) Start(ctx context.Context) error {
 		return nil
 	}
 
-	err = m.restartAuthStorageContainers(ctx, ds)
+	// seeds
+	err = m.applySeeds(ctx, ds)
 	if err != nil && ctx.Err() != context.Canceled {
-		m.status.Error("Failed to restart auth storage containers")
-		m.l.WithError(err).Debug("Failed to restart auth storage containers")
+		m.status.Error("Failed to apply seeds")
+		m.l.WithError(err).Debug("Failed to apply seeds")
 		return err
 	}
 
-	if ctx.Err() == context.Canceled {
-		return nil
-	}
-
-	// export metadata again
-	err = m.exportMetadata(ctx, ds)
+	// wait for healthy/running services
+	err = m.waitForServicesToBeRunningHealthy(ctx, ds)
 	if err != nil && ctx.Err() != context.Canceled {
-		m.status.Error("Failed to export metadata")
-		m.l.WithError(err).Debug("Failed to export metadata")
+		m.status.Error(err.Error())
+		m.l.WithError(err).Debug("Failed to wait for services")
 		return err
 	}
 
@@ -237,15 +228,76 @@ func (m *dockerComposeManager) StopSvc(ctx context.Context, svc string) error {
 	return cmd.Run()
 }
 
-func (m *dockerComposeManager) restartAuthStorageContainers(ctx context.Context, ds compose.DataStreams) error {
-	m.l.Debug("Restarting auth and storage containers")
-	c, err := compose.WrapperCmd(ctx, []string{"restart", "auth", "storage"}, m.composeConfig, ds)
-	if err != nil && ctx.Err() != context.Canceled {
-		return fmt.Errorf("failed to restart auth and storage containers: %w", err)
+func (m *dockerComposeManager) waitForServicesToBeRunningHealthy(ctx context.Context, ds compose.DataStreams) error {
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
 	}
 
-	m.setProcessToStartInItsOwnProcessGroup(c)
-	return c.Run()
+	cmd, err := compose.WrapperCmd(ctx, []string{"up", "-d", "--wait"}, m.composeConfig, ds)
+	if err != nil && ctx.Err() != context.Canceled {
+		m.status.Error("Failed to wait for running/healthy services")
+		m.l.WithError(err).Debug("Failed to wait for running/healthy services")
+		return err
+	}
+
+	m.setProcessToStartInItsOwnProcessGroup(cmd)
+	err = cmd.Run()
+	if err != nil && ctx.Err() != context.Canceled {
+		m.status.Error("Failed to wait for running/healthy services")
+		m.l.WithError(err).Debug("Failed to wait for running/healthy services")
+		return err
+	}
+
+	return nil
+}
+
+//func (m *dockerComposeManager) restartAuthStorageContainers(ctx context.Context, ds compose.DataStreams) error {
+//	m.l.Debug("Restarting auth and storage containers")
+//	c, err := compose.WrapperCmd(ctx, []string{"restart", "auth", "storage"}, m.composeConfig, ds)
+//	if err != nil && ctx.Err() != context.Canceled {
+//		return fmt.Errorf("failed to restart auth and storage containers: %w", err)
+//	}
+//
+//	m.setProcessToStartInItsOwnProcessGroup(c)
+//	return c.Run()
+//}
+
+// applySeeds applies seeds if they were not applied
+func (m *dockerComposeManager) applySeeds(ctx context.Context, ds compose.DataStreams) error {
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
+	seedsFlagFile := filepath.Join(util.WORKING_DIR, ".nhost/seeds.applied")
+
+	if util.PathExists(seedsFlagFile) {
+		// seeds already applied
+		return nil
+	}
+
+	m.status.Executing("Applying seeds")
+	m.l.Debug("Applying seeds")
+
+	seeds, err := compose.WrapperCmd(
+		ctx,
+		[]string{"exec", compose.SvcHasuraConsole, "hasura", "seeds", "apply", "--database-name", "default", "--disable-interactive", "--skip-update-check"},
+		m.composeConfig,
+		ds,
+	)
+	if err != nil {
+		return fmt.Errorf("Failed to apply migrations: %w", err)
+	}
+
+	err = seeds.Run()
+	if err != nil && ctx.Err() != context.Canceled {
+		return fmt.Errorf("Failed to apply migrations: %w", err)
+	}
+
+	return ioutil.WriteFile(seedsFlagFile, []byte{}, 0644)
 }
 
 func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.DataStreams) error {
@@ -260,7 +312,7 @@ func (m *dockerComposeManager) applyMigrations(ctx context.Context, ds compose.D
 		m.l.Debug("Applying migrations")
 		migrate, err := compose.WrapperCmd(
 			ctx,
-			[]string{"exec", "hasura-console", "hasura", "migrate", "apply", "--database-name", "default", "--disable-interactive", "--skip-update-check"},
+			[]string{"exec", compose.SvcHasuraConsole, "hasura", "migrate", "apply", "--database-name", "default", "--disable-interactive", "--skip-update-check"},
 			m.composeConfig,
 			ds,
 		)
@@ -292,7 +344,7 @@ func (m *dockerComposeManager) exportMetadata(ctx context.Context, ds compose.Da
 		m.l.Debug("Exporting metadata")
 		export, err := compose.WrapperCmd(
 			ctx,
-			[]string{"exec", "hasura-console", "hasura", "--skip-update-check", "metadata", "export"},
+			[]string{"exec", compose.SvcHasuraConsole, "hasura", "--skip-update-check", "metadata", "export"},
 			m.composeConfig,
 			ds,
 		)
@@ -319,7 +371,7 @@ func (m *dockerComposeManager) applyMetadata(ctx context.Context, ds compose.Dat
 		m.l.Debug("Applying metadata")
 		applyMetadata, err := compose.WrapperCmd(
 			ctx,
-			[]string{"exec", "hasura-console", "hasura", "--skip-update-check", "metadata", "apply"},
+			[]string{"exec", compose.SvcHasuraConsole, "hasura", "--skip-update-check", "metadata", "apply"},
 			m.composeConfig,
 			ds,
 		)

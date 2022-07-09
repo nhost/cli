@@ -168,7 +168,9 @@ var dev2Cmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			openbrowser(fmt.Sprintf("http://localhost:%s", cmd.Flag("port").Value.String()))
+			if !noBrowser {
+				openbrowser(fmt.Sprintf("http://localhost:%s", cmd.Flag("port").Value.String()))
+			}
 		}()
 
 		// wait for stop signal
