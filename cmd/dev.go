@@ -31,6 +31,7 @@ import (
 	"github.com/nhost/cli/hasura"
 	"github.com/nhost/cli/logger"
 	"github.com/nhost/cli/nhost/service"
+	"github.com/nhost/cli/watcher"
 	flag "github.com/spf13/pflag"
 	"net/http"
 	"os"
@@ -131,6 +132,42 @@ var devCmd = &cobra.Command{
 		hc, err := hasura.InitClient(fmt.Sprintf("http://localhost:%d", ports.GraphQL()), util.ADMIN_SECRET, nil)
 		debug := logger.DEBUG
 		mgr = service.NewDockerComposeManager(config, hc, ports, env, nhost.GetCurrentBranch(), projectName, log, status, debug)
+		gw := watcher.NewGitWatcher(status, log)
+
+		go gw.Watch(ctx, 700*time.Millisecond, func(branch, ref string) error {
+			err := mgr.SyncExec(ctx, func(ctx context.Context) error {
+				branchWithRef := fmt.Sprintf("Using branch %s", branch)
+				if ref != "" {
+					branchWithRef = fmt.Sprintf("Using branch %s [#%s]", branch, ref[:7])
+				}
+
+				status.Executingln(branchWithRef)
+				mgr.SetGitBranch(branch)
+				err := mgr.Stop(ctx)
+				if err != nil {
+					status.Errorln("Failed to stop postgres")
+					return err
+				}
+
+				err = mgr.Start(ctx)
+				if err != nil {
+					status.Errorln("Failed to start services")
+					return err
+				}
+
+				if err != nil {
+					status.Errorln("Failed to restart services")
+					return err
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 
 		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
