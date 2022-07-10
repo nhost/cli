@@ -20,10 +20,12 @@ const (
 	SvcMinio         = "minio"
 	SvcMailhog       = "mailhog"
 	SvcHasura        = "hasura"
-	SvcHasuraConsole = "hasura-console"
 	SvcTraefik       = "traefik"
 	SvcGraphqlEngine = "graphql-engine"
 	// --
+
+	HasuraConsole        = "hasura-console"
+	HasuraConsoleApiPort = "hasura-console-api-port"
 
 	// data directory names
 	dataDirDb      = "db"
@@ -195,7 +197,7 @@ func (c Config) PublicFunctionsConnectionString() string {
 }
 
 func (c Config) PublicHasuraConsole() string {
-	return fmt.Sprintf("http://localhost:%d", c.ports[SvcHasuraConsole])
+	return fmt.Sprintf("http://localhost:%d", c.ports[HasuraConsole])
 }
 
 func (c Config) PublicPostgresConnectionString() string {

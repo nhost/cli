@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -97,8 +98,8 @@ func (c *Client) Init(endpoint, adminSecret string, client HttpDoer) error {
 	return nil
 }
 
-func (c *Client) RunConsoleCmd(ctx context.Context, debug bool) *exec.Cmd {
-	args := append([]string{"console", "--no-browser"}, c.CommonOptionsWithoutDB...)
+func (c *Client) RunConsoleCmd(ctx context.Context, consolePort, apiPort uint32, debug bool) *exec.Cmd {
+	args := append([]string{"console", "--no-browser", "--api-port", fmt.Sprint(apiPort), "--console-port", fmt.Sprint(consolePort)}, c.CommonOptionsWithoutDB...)
 	cmd := exec.CommandContext(ctx, c.CLI, args...)
 	cmd.Dir = nhost.NHOST_DIR
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

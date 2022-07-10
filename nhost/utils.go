@@ -3,6 +3,7 @@ package nhost
 import (
 	"fmt"
 	"github.com/nhost/cli/util"
+	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"path/filepath"
 	"strings"

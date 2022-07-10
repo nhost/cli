@@ -4,42 +4,10 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"runtime"
-	"strconv"
 	"time"
 )
 
-//
-//	Returns preferred local address value
-//	for accessing resources throughout docker containers,
-//	depending on the Operating System.
-//
-//	For Mac and Windows, the address value is "host.docker.internal".
-//	And for Linux, we are using the Outbound IP of host machine.
-//
-func GetLocalhost() string {
-	switch runtime.GOOS {
-	case "darwin", "windows":
-		return "host.docker.internal"
-	default:
-		return fmt.Sprint(getOutboundIP())
-	}
-}
-
-//  Get preferred outbound IP of host machine
-func getOutboundIP() net.IP {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		return nil
-	}
-	defer conn.Close()
-
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddr.IP
-}
-
-func GetPort(low, hi int) int {
+func GetPort(low, hi int) uint32 {
 
 	//
 	//  Initialize the seed
@@ -48,7 +16,7 @@ func GetPort(low, hi int) int {
 	rand.Seed(time.Now().UnixNano())
 
 	//  generate a random port value
-	port := strconv.Itoa(low + rand.Intn(hi-low))
+	port := uint32(low + rand.Intn(hi-low))
 
 	//  validate whether the port is available
 	if !PortAvailable(port) {
@@ -56,14 +24,18 @@ func GetPort(low, hi int) int {
 	}
 
 	//  return the value, if it's available
-	response, _ := strconv.Atoi(port)
-	return response
+	return port
 }
 
-func PortAvailable(port string) bool {
+func PortAvailable(port uint32) bool {
+	ln, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		return false
+	}
 
-	ln, err := net.Listen("tcp", ":"+port)
+	ln.Close()
 
+	ln, err = net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return false
 	}

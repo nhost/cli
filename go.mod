@@ -6,7 +6,6 @@ require (
 	github.com/avast/retry-go/v4 v4.1.0
 	github.com/compose-spec/compose-go v1.2.7
 	github.com/docker/docker v20.10.16+incompatible
-	github.com/fsnotify/fsnotify v1.5.4
 	github.com/hashicorp/go-getter v1.6.1
 	github.com/hashicorp/go-version v1.5.0
 	github.com/manifoldco/promptui v0.9.0
@@ -19,6 +18,7 @@ require (
 	github.com/subosito/gotenv v1.3.0
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -34,6 +34,7 @@ require (
 	github.com/distribution/distribution/v3 v3.0.0-20210316161203-a01c71e2477e // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
@@ -75,5 +76,4 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

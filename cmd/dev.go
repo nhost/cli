@@ -29,9 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/avast/retry-go/v4"
-	"github.com/nhost/cli/hasura"
 	"github.com/nhost/cli/logger"
-	"github.com/nhost/cli/nhost/compose"
 	"github.com/nhost/cli/nhost/service"
 	"github.com/nhost/cli/watcher"
 	"net/http"
@@ -78,7 +76,7 @@ var devCmd = &cobra.Command{
 		pidFile := filepath.Join(nhost.DOT_NHOST_DIR, "pid")
 		if util.PathExists(pidFile) {
 			status.Infoln("Another instance of nhost seems to be running. Please stop it first with 'nhost down'")
-			return fmt.Errorf("another instance of nhost seems to be running")
+			return fmt.Errorf("another instance of nhost seems to be running, please stop it first with 'nhost down'")
 		}
 
 		// write pid file
@@ -125,11 +123,12 @@ var devCmd = &cobra.Command{
 			return fmt.Errorf("failed to parse port: %v", err)
 		}
 
-		ports := compose.NewPorts(uint32(proxyPort))
-		graphqlEndpoint := fmt.Sprintf("http://localhost:%d", ports[compose.SvcGraphqlEngine])
-		hc, err := hasura.InitClient(graphqlEndpoint, util.ADMIN_SECRET, nil)
 		debug := logger.DEBUG
-		mgr = service.NewDockerComposeManager(config, hc, ports, env, nhost.GetCurrentBranch(), projectName, log, status, debug)
+		mgr, err = service.NewDockerComposeManager(ctx, config, uint32(proxyPort), env, nhost.GetCurrentBranch(), projectName, log, status, debug)
+		if err != nil {
+			return err
+		}
+
 		gw := watcher.NewGitWatcher(status, log)
 
 		go gw.Watch(ctx, 700*time.Millisecond, func(branch, ref string) error {
@@ -185,14 +184,14 @@ var devCmd = &cobra.Command{
 					}
 
 					// start the console
-					consoleCmd = hc.RunConsoleCmd(ctx, debug)
+					consoleCmd = mgr.HasuraConsoleCmd(ctx)
 					consoleP = consoleCmd.Process
 					err = consoleCmd.Start()
 					if err != nil && ctx.Err() != context.Canceled {
 						return err
 					}
 
-					err = consoleWaiter(ctx, fmt.Sprintf("http://localhost:%d", ports[compose.SvcHasuraConsole]), 1*time.Minute)
+					err = consoleWaiter(ctx, mgr.HasuraConsoleURL(), 1*time.Minute)
 					if err != nil {
 						// if console isn't reachable return the error which will cause another retry
 						if consoleP != nil {
