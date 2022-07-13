@@ -704,13 +704,19 @@ func (config *Configuration) Init(port string) error {
 	//  create mount point if it doesn't exist
 	sourceDir := filepath.Join(DOT_NHOST, "db_data")
 	targetDir := "/var/lib/postgresql/data"
+	volumeName := postgresConfig.VolumeName
 
 	if err := os.MkdirAll(sourceDir, os.ModePerm); err != nil {
 		return err
 	}
 
 	postgresConfig.Config.Cmd = []string{"-p", fmt.Sprint(config.Services["postgres"].Port)}
-	postgresConfig.HostConfig.Binds = []string{fmt.Sprintf("%s:%s:Z", sourceDir, targetDir)}
+	
+	if volumeName != "" {
+		postgresConfig.HostConfig.Binds = []string{fmt.Sprintf("%s:%s:Z", volumeName, targetDir)}
+	} else {
+		postgresConfig.HostConfig.Binds = []string{fmt.Sprintf("%s:%s:Z", sourceDir, targetDir)}
+	}
 
 	var pgUser, pgPass string
 

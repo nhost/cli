@@ -146,6 +146,11 @@ type (
 		//	do not launch the container
 		NoContainer bool `yaml:",omitempty"`
 
+		//  If VolumeName is specified for the postgres service,
+		//  a docker volume with the given name is used instead
+		//  of a bind mount.
+		VolumeName  string      `yaml:"volume_name,omitempty"`
+
 		//  Channels are best thought of as queues (FIFO).
 		//  Therefore you can't really skip around.
 		//  We need a mutex to lock the service
