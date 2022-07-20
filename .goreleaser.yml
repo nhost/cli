@@ -13,9 +13,9 @@ builds:
       - "amd64"
     ldflags:
       - -s -w -X "github.com/nhost/cli/cmd.Version=v{{.Version}}"
-ignore:
-  - goos: windows
-    goarch: arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
 archives:
   - name_template: "{{ .ProjectName }}-v{{.Version}}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     replacements:
