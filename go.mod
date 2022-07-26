@@ -7,7 +7,7 @@ require (
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/docker/docker v20.10.10+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/evanw/esbuild v0.13.9
+	github.com/evanw/esbuild v0.14.50
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2
