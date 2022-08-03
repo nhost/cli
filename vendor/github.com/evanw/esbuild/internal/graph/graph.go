@@ -33,8 +33,6 @@ const (
 )
 
 type LinkerFile struct {
-	InputFile InputFile
-
 	// This holds all entry points that can reach this file. It will be used to
 	// assign the parts in this file to a chunk.
 	EntryBits helpers.BitSet
@@ -42,6 +40,8 @@ type LinkerFile struct {
 	// This is lazily-allocated because it's only needed if there are warnings
 	// logged, which should be relatively rare.
 	lazyLineColumnTracker *logger.LineColumnTracker
+
+	InputFile InputFile
 
 	// The minimum number of links in the module graph to get from an entry point
 	// to this file
@@ -101,6 +101,12 @@ type LinkerGraph struct {
 	Files       []LinkerFile
 	entryPoints []EntryPoint
 	Symbols     js_ast.SymbolMap
+
+	// This is for cross-module inlining of TypeScript enum constants
+	TSEnums map[js_ast.Ref]map[string]js_ast.TSEnumValue
+
+	// This is for cross-module inlining of detected inlinable constants
+	ConstValues map[js_ast.Ref]js_ast.ConstValue
 
 	// We should avoid traversing all files in the bundle, because the linker
 	// should be able to run a linking operation on a large bundle where only
@@ -171,7 +177,6 @@ func CloneLinkerGraph(
 						clone[ref] = uses
 					}
 					part.SymbolUses = clone
-					part.Dependencies = append([]js_ast.Dependency{}, part.Dependencies...)
 				}
 
 				// Clone the import records
@@ -252,14 +257,43 @@ func CloneLinkerGraph(
 		entryPoints = append(entryPoints, EntryPoint{SourceIndex: reachableFiles[stableIndex]})
 	}
 
-	// Allocate the entry bit set now that the number of entry points is known
+	// Do a final quick pass over all files
+	var tsEnums map[js_ast.Ref]map[string]js_ast.TSEnumValue
+	var constValues map[js_ast.Ref]js_ast.ConstValue
 	bitCount := uint(len(entryPoints))
 	for _, sourceIndex := range reachableFiles {
-		files[sourceIndex].EntryBits = helpers.NewBitSet(bitCount)
+		file := &files[sourceIndex]
+
+		// Allocate the entry bit set now that the number of entry points is known
+		file.EntryBits = helpers.NewBitSet(bitCount)
+
+		// Merge TypeScript enums together into one big map. There likely aren't
+		// too many enum definitions relative to the overall size of the code so
+		// it should be fine to just merge them together in serial.
+		if repr, ok := file.InputFile.Repr.(*JSRepr); ok && repr.AST.TSEnums != nil {
+			if tsEnums == nil {
+				tsEnums = make(map[js_ast.Ref]map[string]js_ast.TSEnumValue)
+			}
+			for ref, enum := range repr.AST.TSEnums {
+				tsEnums[ref] = enum
+			}
+		}
+
+		// Also merge const values into one big map as well
+		if repr, ok := file.InputFile.Repr.(*JSRepr); ok && repr.AST.ConstValues != nil {
+			if constValues == nil {
+				constValues = make(map[js_ast.Ref]js_ast.ConstValue)
+			}
+			for ref, value := range repr.AST.ConstValues {
+				constValues[ref] = value
+			}
+		}
 	}
 
 	return LinkerGraph{
 		Symbols:             symbols,
+		TSEnums:             tsEnums,
+		ConstValues:         constValues,
 		entryPoints:         entryPoints,
 		Files:               files,
 		ReachableFiles:      reachableFiles,
