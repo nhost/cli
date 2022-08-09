@@ -16,7 +16,7 @@ import (
 const SourceIndex = uint32(0)
 
 func CanUseES6(unsupportedFeatures compat.JSFeature) bool {
-	return !unsupportedFeatures.Has(compat.Let) && !unsupportedFeatures.Has(compat.ForOf)
+	return !unsupportedFeatures.Has(compat.ConstAndLet) && !unsupportedFeatures.Has(compat.ForOf)
 }
 
 func code(isES6 bool) string {
@@ -76,6 +76,8 @@ func code(isES6 bool) string {
 		var __getProtoOf = Object.getPrototypeOf
 		var __hasOwnProp = Object.prototype.hasOwnProperty
 		var __propIsEnum = Object.prototype.propertyIsEnumerable
+		var __reflectGet = Reflect.get
+		var __reflectSet = Reflect.set
 
 		export var __pow = Math.pow
 
@@ -110,10 +112,7 @@ func code(isES6 bool) string {
 		}
 		export var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b))
 
-		// Tells importing modules that this can be considered an ES6 module
-		var __markAsModule = target => __defProp(target, '__esModule', { value: true })
-
-		// Tells importing modules that this can be considered an ES6 module
+		// Update the "name" property on the function or class for "--keep-names"
 		export var __name = (target, value) => __defProp(target, 'name', { value, configurable: true })
 
 		// This fallback "require" function exists so that "typeof require" can
@@ -166,7 +165,7 @@ func code(isES6 bool) string {
 		// compact one for minified code and a verbose one that generates friendly
 		// names in V8's profiler and in stack traces.
 		export var __esm = (fn, res) => function __init() {
-			return fn && (res = (0, fn[Object.keys(fn)[0]])(fn = 0)), res
+			return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res
 		}
 		export var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res)
 
@@ -174,58 +173,72 @@ func code(isES6 bool) string {
 		// implementations, a compact one for minified code and a verbose one that
 		// generates friendly names in V8's profiler and in stack traces.
 		export var __commonJS = (cb, mod) => function __require() {
-			return mod || (0, cb[Object.keys(cb)[0]])((mod = {exports: {}}).exports, mod), mod.exports
+			return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = {exports: {}}).exports, mod), mod.exports
 		}
 		export var __commonJSMin = (cb, mod) => () => (mod || cb((mod = {exports: {}}).exports, mod), mod.exports)
 
-		// Used to implement ES6 exports to CommonJS
+		// Used to implement ESM exports both for "require()" and "import * as"
 		export var __export = (target, all) => {
-			__markAsModule(target)
 			for (var name in all)
 				__defProp(target, name, { get: all[name], enumerable: true })
 		}
-		export var __reExport = (target, module, desc) => {
-			if (module && typeof module === 'object' || typeof module === 'function')
+
+		var __copyProps = (to, from, except, desc) => {
+			if (from && typeof from === 'object' || typeof from === 'function')
 	`
 
 	// Avoid "let" when not using ES6
 	if isES6 {
 		text += `
-				for (let key of __getOwnPropNames(module))
-					if (!__hasOwnProp.call(target, key) && key !== 'default')
-						__defProp(target, key, { get: () => module[key], enumerable: !(desc = __getOwnPropDesc(module, key)) || desc.enumerable })
+				for (let key of __getOwnPropNames(from))
+					if (!__hasOwnProp.call(to, key) && key !== except)
+						__defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable })
 		`
 	} else {
 		text += `
-				for (var keys = __getOwnPropNames(module), i = 0, n = keys.length, key; i < n; i++) {
+				for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
 					key = keys[i]
-					if (!__hasOwnProp.call(target, key) && key !== 'default')
-						__defProp(target, key, { get: (k => module[k]).bind(null, key), enumerable: !(desc = __getOwnPropDesc(module, key)) || desc.enumerable })
+					if (!__hasOwnProp.call(to, key) && key !== except)
+						__defProp(to, key, { get: (k => from[k]).bind(null, key), enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable })
 				}
 		`
 	}
 
 	text += `
-			return target
+			return to
 		}
 
-		// Converts the module from CommonJS to ES6 if necessary
-		export var __toModule = module => {
-			return __reExport(__markAsModule(
-				__defProp(
-					module != null ? __create(__getProtoOf(module)) : {},
-					'default',
+		// This is used to implement "export * from" statements. It copies properties
+		// from the imported module to the current module's ESM export object. If the
+		// current module is an entry point and the target format is CommonJS, we
+		// also copy the properties to "module.exports" in addition to our module's
+		// internal ESM export object.
+		export var __reExport = (target, mod, secondTarget) => (
+			__copyProps(target, mod, 'default'),
+			secondTarget && __copyProps(secondTarget, mod, 'default')
+		)
 
-					// If this is an ESM file that has been converted to a CommonJS file
-					// using a Babel-compatible transform (i.e. "__esModule" has been set)
-					// and there is already a "default" property, then forward "default"
-					// to that property. Otherwise set "default" to "module.exports" for
-					// node compatibility.
-					module && module.__esModule && 'default' in module
-						? { get: () => module.default, enumerable: true }
-						: { value: module, enumerable: true })
-			), module)
-		}
+		// Converts the module from CommonJS to ESM. When in node mode (i.e. in an
+		// ".mjs" file, package.json has "type: module", or the "__esModule" export
+		// in the CommonJS file is falsy or missing), the "default" property is
+		// overridden to point to the original CommonJS exports object instead.
+		export var __toESM = (mod, isNodeMode, target) => (
+			target = mod != null ? __create(__getProtoOf(mod)) : {},
+			__copyProps(
+				// If the importer is in node compatibility mode or this is not an ESM
+				// file that has been converted to a CommonJS file using a Babel-
+				// compatible transform (i.e. "__esModule" has not been set), then set
+				// "default" to the CommonJS "module.exports" for node compatibility.
+				isNodeMode || !mod || !mod.__esModule
+					? __defProp(target, 'default', { value: mod, enumerable: true })
+					: target,
+				mod)
+		)
+
+		// Converts the module from ESM to CommonJS. This clones the input module
+		// object with the addition of a non-enumerable "__esModule" property set
+		// to "true", which overwrites any existing export named "__esModule".
+		export var __toCommonJS = mod => __copyProps(__defProp({}, '__esModule', { value: true }), mod)
 
 		// For TypeScript decorators
 		// - kind === undefined: class
@@ -277,6 +290,14 @@ func code(isES6 bool) string {
 			__accessCheck(obj, member, 'access private method')
 			return method
 		}
+
+		// For "super" property accesses
+		export var __superGet = (cls, obj, key) => __reflectGet(__getProtoOf(cls), key, obj)
+		export var __superSet = (cls, obj, key, val) => (__reflectSet(__getProtoOf(cls), key, val, obj), val)
+		export var __superWrapper = (cls, obj, key) => ({
+			get _() { return __superGet(cls, obj, key) },
+			set _(val) { __superSet(cls, obj, key, val) },
+		})
 
 		// For lowering tagged template literals
 		export var __template = (cooked, raw) => __freeze(__defProp(cooked, 'raw', { value: __freeze(raw || cooked.slice()) }))
