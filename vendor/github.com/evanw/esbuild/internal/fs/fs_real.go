@@ -2,6 +2,7 @@ package fs
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -12,27 +13,28 @@ import (
 
 type realFS struct {
 	// Stores the file entries for directories we've listed before
-	entriesMutex sync.Mutex
-	entries      map[string]entriesOrErr
-
-	// If true, do not use the "entries" cache
-	doNotCacheEntries bool
+	entries map[string]entriesOrErr
 
 	// This stores data that will end up being returned by "WatchData()"
-	watchMutex sync.Mutex
-	watchData  map[string]privateWatchData
+	watchData map[string]privateWatchData
 
 	// When building with WebAssembly, the Go compiler doesn't correctly handle
 	// platform-specific path behavior. Hack around these bugs by compiling
 	// support for both Unix and Windows paths into all executables and switch
 	// between them at run-time instead.
 	fp goFilepath
+
+	entriesMutex sync.Mutex
+	watchMutex   sync.Mutex
+
+	// If true, do not use the "entries" cache
+	doNotCacheEntries bool
 }
 
 type entriesOrErr struct {
-	entries        DirEntries
 	canonicalError error
 	originalError  error
+	entries        DirEntries
 }
 
 type watchState uint8
@@ -55,8 +57,8 @@ type privateWatchData struct {
 }
 
 type RealFSOptions struct {
-	WantWatchData bool
 	AbsWorkingDir string
+	WantWatchData bool
 	DoNotCache    bool
 }
 
@@ -108,12 +110,21 @@ func RealFS(options RealFSOptions) (FS, error) {
 		watchData = make(map[string]privateWatchData)
 	}
 
-	return &realFS{
+	var result FS = &realFS{
 		entries:           make(map[string]entriesOrErr),
 		fp:                fp,
 		watchData:         watchData,
 		doNotCacheEntries: options.DoNotCache,
-	}, nil
+	}
+
+	// Add a wrapper that lets us traverse into ".zip" files. This is what yarn
+	// uses as a package format when in yarn is in its "PnP" mode.
+	result = &zipFS{
+		inner:    result,
+		zipFiles: make(map[string]*zipFile),
+	}
+
+	return result, nil
 }
 
 func (fs *realFS) ReadDirectory(dir string) (entries DirEntries, canonicalError error, originalError error) {
@@ -133,7 +144,7 @@ func (fs *realFS) ReadDirectory(dir string) (entries DirEntries, canonicalError 
 
 	// Cache miss: read the directory entries
 	names, canonicalError, originalError := fs.readdir(dir)
-	entries = DirEntries{dir, make(map[string]*Entry), nil}
+	entries = DirEntries{dir: dir, data: make(map[string]*Entry)}
 
 	// Unwrap to get the underlying error
 	if pathErr, ok := canonicalError.(*os.PathError); ok {
@@ -224,7 +235,7 @@ func (f *realOpenedFile) Read(start int, end int) ([]byte, error) {
 	bytes := make([]byte, end-start)
 	remaining := bytes
 
-	_, err := f.handle.Seek(int64(start), os.SEEK_SET)
+	_, err := f.handle.Seek(int64(start), io.SeekStart)
 	if err != nil {
 		return nil, err
 	}
@@ -338,11 +349,12 @@ func (fs *realFS) readdir(dirname string) (entries []string, canonicalError erro
 	}
 
 	defer f.Close()
-	entries, err := f.Readdirnames(-1)
+	entries, originalError = f.Readdirnames(-1)
+	canonicalError = originalError
 
 	// Unwrap to get the underlying error
-	if syscallErr, ok := err.(*os.SyscallError); ok {
-		err = syscallErr.Unwrap()
+	if syscallErr, ok := canonicalError.(*os.SyscallError); ok {
+		canonicalError = syscallErr.Unwrap()
 	}
 
 	// Don't convert ENOTDIR to ENOENT here. ENOTDIR is a legitimate error
@@ -483,13 +495,13 @@ func (fs *realFS) WatchData() WatchData {
 					}
 				} else {
 					// Check individual entries
-					isPresent := make(map[string]bool, len(names))
+					lookup := make(map[string]string, len(names))
 					for _, name := range names {
-						isPresent[strings.ToLower(name)] = true
+						lookup[strings.ToLower(name)] = name
 					}
 					for name, wasPresent := range data.accessedEntries.wasPresent {
-						if wasPresent != isPresent[name] {
-							return fs.Join(path, name)
+						if originalName, isPresent := lookup[name]; wasPresent != isPresent {
+							return fs.Join(path, originalName)
 						}
 					}
 				}

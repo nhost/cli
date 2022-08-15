@@ -27,15 +27,15 @@ import (
 // CSS
 
 type CSSCache struct {
-	mutex   sync.Mutex
 	entries map[logger.Path]*cssCacheEntry
+	mutex   sync.Mutex
 }
 
 type cssCacheEntry struct {
 	source  logger.Source
-	options css_parser.Options
-	ast     css_ast.AST
 	msgs    []logger.Msg
+	ast     css_ast.AST
+	options css_parser.Options
 }
 
 func (c *CSSCache) Parse(log logger.Log, source logger.Source, options css_parser.Options) css_ast.AST {
@@ -55,7 +55,7 @@ func (c *CSSCache) Parse(log logger.Log, source logger.Source, options css_parse
 	}
 
 	// Cache miss
-	tempLog := logger.NewDeferLog(logger.DeferLogAll)
+	tempLog := logger.NewDeferLog(logger.DeferLogAll, log.Overrides)
 	ast := css_parser.Parse(tempLog, source, options)
 	msgs := tempLog.Done()
 	for _, msg := range msgs {
@@ -81,16 +81,16 @@ func (c *CSSCache) Parse(log logger.Log, source logger.Source, options css_parse
 // JSON
 
 type JSONCache struct {
-	mutex   sync.Mutex
 	entries map[logger.Path]*jsonCacheEntry
+	mutex   sync.Mutex
 }
 
 type jsonCacheEntry struct {
+	expr    js_ast.Expr
+	msgs    []logger.Msg
 	source  logger.Source
 	options js_parser.JSONOptions
-	expr    js_ast.Expr
 	ok      bool
-	msgs    []logger.Msg
 }
 
 func (c *JSONCache) Parse(log logger.Log, source logger.Source, options js_parser.JSONOptions) (js_ast.Expr, bool) {
@@ -110,7 +110,7 @@ func (c *JSONCache) Parse(log logger.Log, source logger.Source, options js_parse
 	}
 
 	// Cache miss
-	tempLog := logger.NewDeferLog(logger.DeferLogAll)
+	tempLog := logger.NewDeferLog(logger.DeferLogAll, log.Overrides)
 	expr, ok := js_parser.ParseJSON(tempLog, source, options)
 	msgs := tempLog.Done()
 	for _, msg := range msgs {
@@ -137,16 +137,16 @@ func (c *JSONCache) Parse(log logger.Log, source logger.Source, options js_parse
 // JS
 
 type JSCache struct {
-	mutex   sync.Mutex
 	entries map[logger.Path]*jsCacheEntry
+	mutex   sync.Mutex
 }
 
 type jsCacheEntry struct {
 	source  logger.Source
+	msgs    []logger.Msg
 	options js_parser.Options
 	ast     js_ast.AST
 	ok      bool
-	msgs    []logger.Msg
 }
 
 func (c *JSCache) Parse(log logger.Log, source logger.Source, options js_parser.Options) (js_ast.AST, bool) {
@@ -166,7 +166,7 @@ func (c *JSCache) Parse(log logger.Log, source logger.Source, options js_parser.
 	}
 
 	// Cache miss
-	tempLog := logger.NewDeferLog(logger.DeferLogAll)
+	tempLog := logger.NewDeferLog(logger.DeferLogAll, log.Overrides)
 	ast, ok := js_parser.Parse(tempLog, source, options)
 	msgs := tempLog.Done()
 	for _, msg := range msgs {
