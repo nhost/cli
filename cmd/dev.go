@@ -83,6 +83,10 @@ var devCmd = &cobra.Command{
 			return errors.New("app not found in this directory")
 		}
 
+		if err := nhost.EnsureProjectNameFileExists(); err != nil {
+			return err
+		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
