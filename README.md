@@ -61,7 +61,7 @@ nhost up
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- [crl](https://curl.se/)
+- [curl](https://curl.se/)
 - [Git](https://git-scm.com/downloads)
 
 ## Supported Platforms:
