@@ -16,17 +16,17 @@
 
 The Nhost CLI is used to get a local development environment. The local development environment will automatically track database migrations and hasura metadata.
 
-The CLI creates a local Nhost development environment:
+It's recommended to use the Nhost CLI and the [Nhost GitHub Integration](https://docs.nhost.io/platform/github-integration) to develop locally and automatically deploy changes to production with a git-based workflow (similar to Netlify & Vercel).
+
+## Services:
 
 - [Postgres Database](https://www.postgresql.org/)
 - [Hasura's GraphQL Engine](https://github.com/hasura/graphql-engine)
 - [Hasura Auth](https://github.com/nhost/hasura-auth)
 - [Hasura Storage](https://github.com/nhost/hasura-storage)
-- [Minio S3](https://github.com/minio/minio)
 - [Nhost Serverless Functions](https://github.com/nhost/functions)
+- [Minio S3](https://github.com/minio/minio)
 - [Mailhog](https://github.com/mailhog/MailHog)
-
-It's recommended to use the Nhost CLI and the [Nhost GitHub Integration](https://docs.nhost.io/platform/github-integration) to develop locally and automatically deploy changes to production with a git-based workflow (similar to Netlify & Vercel).
 
 ## Get Started
 
