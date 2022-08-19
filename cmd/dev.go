@@ -256,7 +256,7 @@ func init() {
 	devCmd.PersistentFlags().Uint32(nhost.PortMinioS3, defaultS3MinioPort, "S3 port for minio")
 	devCmd.PersistentFlags().Uint32(nhost.PortMailhog, defaultMailhogPort, "Port for mailhog UI")
 	devCmd.PersistentFlags().BoolVar(&noBrowser, "no-browser", false, "Don't open browser windows automatically")
-	devCmd.PersistentFlags().StringVar(&userDefinedHasuraCli, "hasuracli", "", "User-defined path for hasura-cli binary")
+	devCmd.PersistentFlags().StringVar(&userDefinedHasuraCli, "hasura-cli", "", "User-defined path for hasura-cli binary")
 }
 
 func configurationWarnings(c *nhost.Configuration) {
