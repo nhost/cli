@@ -40,6 +40,7 @@ import (
 	"github.com/nhost/cli/logger"
 	"github.com/nhost/cli/nhost/service"
 	flag "github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
@@ -53,6 +54,8 @@ var (
 )
 
 var userDefinedHasuraCli string
+
+const userDefinedHasuraCliFlag = "hasuracli"
 
 const (
 	// default ports
@@ -110,7 +113,7 @@ var devCmd = &cobra.Command{
 		}
 
 		debug := logger.DEBUG
-		hc, err := hasura.InitClient(fmt.Sprintf("http://localhost:%d", ports.GraphQL()), util.ADMIN_SECRET, userDefinedHasuraCli, nil)
+		hc, err := hasura.InitClient(fmt.Sprintf("http://localhost:%d", ports.GraphQL()), util.ADMIN_SECRET, viper.GetString(userDefinedHasuraCliFlag), nil)
 		if err != nil {
 			return fmt.Errorf("failed to init hasura client: %v", err)
 		}
@@ -256,7 +259,9 @@ func init() {
 	devCmd.PersistentFlags().Uint32(nhost.PortMinioS3, defaultS3MinioPort, "S3 port for minio")
 	devCmd.PersistentFlags().Uint32(nhost.PortMailhog, defaultMailhogPort, "Port for mailhog UI")
 	devCmd.PersistentFlags().BoolVar(&noBrowser, "no-browser", false, "Don't open browser windows automatically")
-	devCmd.PersistentFlags().StringVar(&userDefinedHasuraCli, "hasura-cli", "", "User-defined path for hasura-cli binary")
+
+	devCmd.PersistentFlags().StringVar(&userDefinedHasuraCli, userDefinedHasuraCliFlag, viper.GetString(userDefinedHasuraCliFlag), "User-defined path for hasura-cli binary")
+	viper.BindPFlag(userDefinedHasuraCliFlag, devCmd.PersistentFlags().Lookup(userDefinedHasuraCliFlag))
 }
 
 func configurationWarnings(c *nhost.Configuration) {
