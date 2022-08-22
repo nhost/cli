@@ -82,6 +82,11 @@ func (m *dockerComposeManager) SetGitBranch(gitBranch string) {
 }
 
 func (m *dockerComposeManager) Start(ctx context.Context) error {
+	startTime := time.Now()
+	defer func() {
+		m.l.Debugf("Start took %s", time.Since(startTime).String())
+	}()
+
 	ds := &compose.DataStreams{}
 
 	m.status.Executing("Starting local Nhost project...")
