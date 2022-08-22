@@ -39,9 +39,6 @@ func WrapperCmd(ctx context.Context, args []string, conf *Config, streams *DataS
 		filepath.Join(util.WORKING_DIR, ".nhost/data/db", conf.gitBranch),
 	}
 
-	// check that functions/node_modules exist
-	paths = append(paths, filepath.Join(util.WORKING_DIR, "functions/node_modules"))
-
 	for _, folder := range paths {
 		err = os.MkdirAll(folder, os.ModePerm)
 		if err != nil {

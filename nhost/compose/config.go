@@ -365,11 +365,6 @@ func (c Config) functionsService() *types.ServiceConfig {
 				Source: "..",
 				Target: "/opt/project",
 			},
-			{
-				Type:   types.VolumeTypeBind,
-				Source: "../functions/node_modules",
-				Target: "/opt/project/functions/node_modules",
-			},
 		},
 	}
 }
