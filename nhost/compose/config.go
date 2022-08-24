@@ -334,6 +334,7 @@ func (c Config) functionsServiceEnvs() env {
 		"NHOST_ADMIN_SECRET":   util.ADMIN_SECRET,
 		"NHOST_WEBHOOK_SECRET": util.WEBHOOK_SECRET,
 		"NHOST_JWT_SECRET":     c.envValueHasuraGraphqlJwtSecret(),
+    "HASURA_ENDPOINT":      c.hasuraEndpoint(),
 	})
 	e.mergeWithSlice(c.dotenv)
 	return e
