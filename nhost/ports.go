@@ -14,11 +14,12 @@ const (
 	PortSMTP             = "smtp-port"
 	PortMinioS3          = "minio-s3-port"
 	PortMailhog          = "mailhog-port"
+	PortStorage          = "storage-port"
 )
 
 type Ports map[string]uint32
 
-func NewPorts(proxyPort, dbPort, graphqlPort, consolePort, consoleAPIPort, smtpPort, minioS3Port, mailhogPort uint32) Ports {
+func NewPorts(proxyPort, dbPort, graphqlPort, consolePort, consoleAPIPort, smtpPort, minioS3Port, mailhogPort, storagePort uint32) Ports {
 	return Ports{
 		PortProxy:            proxyPort,
 		PortDB:               dbPort,
@@ -28,6 +29,7 @@ func NewPorts(proxyPort, dbPort, graphqlPort, consolePort, consoleAPIPort, smtpP
 		PortSMTP:             smtpPort,
 		PortMinioS3:          minioS3Port,
 		PortMailhog:          mailhogPort,
+		PortStorage:          storagePort,
 	}
 }
 
@@ -71,6 +73,10 @@ func (p Ports) MinioS3() uint32 {
 
 func (p Ports) Mailhog() uint32 {
 	return p.get(PortMailhog)
+}
+
+func (p Ports) Storage() uint32 {
+	return p.get(PortStorage)
 }
 
 func (p Ports) get(name string) uint32 {

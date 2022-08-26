@@ -29,6 +29,7 @@ const (
 	graphqlPort = 8080
 	dbPort      = 5432
 	proxyPort   = 1337
+	storagePort = 8576
 	// --
 
 	// data directory names
@@ -404,7 +405,7 @@ func (c Config) storageServiceEnvs() env {
 	e := env{
 		"DEBUG":                       "true",
 		"BIND":                        ":8576",
-		"PUBLIC_URL":                  "http://localhost:8576",
+		"PUBLIC_URL":                  fmt.Sprintf("http://localhost:%d", c.ports.Storage()),
 		"POSTGRES_MIGRATIONS":         "1",
 		"HASURA_METADATA":             "1",
 		"HASURA_ENDPOINT":             c.hasuraEndpoint(),
@@ -444,9 +445,16 @@ func (c Config) storageService() *types.ServiceConfig {
 		Restart:     types.RestartPolicyAlways,
 		Image:       c.serviceDockerImage(SvcStorage, svcStorageDefaultImage),
 		Environment: c.storageServiceEnvs().dockerServiceConfigEnv(),
-		Labels:      labels,
-		Command:     []string{"serve"},
-		Expose:      []string{"8576"},
+		Ports: []types.ServicePortConfig{
+			{
+				Mode:      "ingress",
+				Target:    storagePort,
+				Published: fmt.Sprint(c.ports.Storage()),
+				Protocol:  "tcp",
+			},
+		},
+		Labels:  labels,
+		Command: []string{"serve"},
 	}
 }
 
