@@ -36,7 +36,7 @@ func WrapperCmd(ctx context.Context, args []string, conf *Config, streams *DataS
 		filepath.Join(util.WORKING_DIR, ".nhost/data/minio"),
 		filepath.Join(util.WORKING_DIR, ".nhost/data/mailhog"),
 		filepath.Join(util.WORKING_DIR, ".nhost/custom/keys"),
-		filepath.Join(util.WORKING_DIR, ".nhost/data/db", conf.gitBranch),
+		filepath.Join(util.WORKING_DIR, ".nhost/data/db", conf.gitBranch, "pgdata"),
 	}
 
 	for _, folder := range paths {

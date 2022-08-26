@@ -612,6 +612,10 @@ func (c Config) postgresServiceHealthcheck(interval, startPeriod time.Duration) 
 	}
 }
 
+func (c Config) postgresPgDataFolder() string {
+	return c.hostDataDirectoryBranchScoped(dataDirDb) + "/pgdata"
+}
+
 func (c Config) postgresService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name: SvcPostgres,
@@ -623,7 +627,7 @@ func (c Config) postgresService() *types.ServiceConfig {
 		Volumes: []types.ServiceVolumeConfig{
 			{
 				Type:   types.VolumeTypeBind,
-				Source: c.hostDataDirectoryBranchScoped(dataDirDb),
+				Source: c.postgresPgDataFolder(),
 				Target: envPostgresDataDefaultValue,
 			},
 		},
