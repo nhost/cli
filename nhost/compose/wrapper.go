@@ -3,13 +3,14 @@ package compose
 import (
 	"context"
 	"fmt"
-	"github.com/nhost/cli/nhost"
-	"github.com/nhost/cli/util"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/nhost/cli/nhost"
+	"github.com/nhost/cli/util"
+	"github.com/pkg/errors"
 )
 
 type DataStreams struct {
@@ -47,6 +48,7 @@ func (w Wrapper) init(workdir, gitBranch string, conf *Config) error {
 	if err != nil {
 		return errors.Wrap(err, "could not write docker-compose.yml file")
 	}
+
 	return nil
 }
 
@@ -68,6 +70,18 @@ func (w Wrapper) ensureFoldersExistForDockerVolumes(workdir, gitBranch string) e
 		if err := os.MkdirAll(folder, os.ModePerm); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("failed to create data folder '%s'", folder))
 		}
+	}
+
+	// write pg_hba_local.conf
+	hbaFile := filepath.Join(dotNhostFolder, DbDataDirGitBranchScopedPath(gitBranch, "pg_hba_local.conf"))
+	hbaFileContent := `
+  local all all trust
+	host all all all trust
+	`
+
+	err := os.WriteFile(hbaFile, []byte(hbaFileContent), 0777)
+	if err != nil {
+		return errors.Wrap(err, "could not write pg_hba_local.conf")
 	}
 
 	return nil
