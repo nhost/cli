@@ -162,34 +162,11 @@ func (c *Config) BuildJSON() ([]byte, error) {
 	return json.MarshalIndent(c.build(), "", "  ")
 }
 
-func (c Config) postgresConnectionString() string {
-	postgresEnv := c.postgresServiceEnvs()
-	user := postgresEnv[envPostgresUser]
-	password := postgresEnv[envPostgresPassword]
-	db := postgresEnv[envPostgresDb]
-
-	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s", user, password, SvcPostgres, dbPort, db)
-}
-
-func (c Config) hasuraConnectionString() string {
+func (c Config) connectionStringForUser(user string) string {
 	postgresEnv := c.postgresServiceEnvs()
 	db := postgresEnv[envPostgresDb]
 
-	return fmt.Sprintf("postgres://nhost_hasura@%s:%d/%s", SvcPostgres, dbPort, db)
-}
-
-func (c Config) hasuraAuthConnectionString() string {
-	postgresEnv := c.postgresServiceEnvs()
-	db := postgresEnv[envPostgresDb]
-
-	return fmt.Sprintf("postgres://nhost_auth_admin@%s:%d/%s", SvcPostgres, dbPort, db)
-}
-
-func (c Config) hasuraStorageConnectionString() string {
-	postgresEnv := c.postgresServiceEnvs()
-	db := postgresEnv[envPostgresDb]
-
-	return fmt.Sprintf("postgres://nhost_storage_admin@%s:%d/%s", SvcPostgres, dbPort, db)
+	return fmt.Sprintf("postgres://%s@%s:%d/%s", user, SvcPostgres, dbPort, db)
 }
 
 func (c Config) PublicHasuraConnectionString() string {
@@ -425,7 +402,7 @@ func (c Config) storageServiceEnvs() env {
 		"NHOST_JWT_SECRET":            c.envValueHasuraGraphqlJwtSecret(),
 		"NHOST_ADMIN_SECRET":          util.ADMIN_SECRET,
 		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
-		"POSTGRES_MIGRATIONS_SOURCE":  fmt.Sprintf("%s?sslmode=disable", c.hasuraStorageConnectionString()),
+		"POSTGRES_MIGRATIONS_SOURCE":  fmt.Sprintf("%s?sslmode=disable", c.connectionStringForUser("nhost_storage_admin")),
 		"NHOST_BACKEND_URL":           c.envValueNhostBackendUrl(),
 	}
 
@@ -457,7 +434,7 @@ func (c Config) storageService() *types.ServiceConfig {
 func (c Config) authServiceEnvs() env {
 	e := env{
 		"AUTH_HOST":                   "0.0.0.0",
-		"HASURA_GRAPHQL_DATABASE_URL": c.hasuraAuthConnectionString(),
+		"HASURA_GRAPHQL_DATABASE_URL": c.connectionStringForUser("nhost_auth_admin"),
 		"HASURA_GRAPHQL_GRAPHQL_URL":  fmt.Sprintf("%s/graphql", c.hasuraEndpoint()),
 		"AUTH_SERVER_URL":             c.PublicAuthConnectionString(),
 		"HASURA_GRAPHQL_JWT_SECRET":   c.envValueHasuraGraphqlJwtSecret(),
@@ -537,7 +514,7 @@ func (c Config) hasuraEndpoint() string {
 
 func (c Config) hasuraServiceEnvs() env {
 	e := env{
-		"HASURA_GRAPHQL_DATABASE_URL":              c.hasuraConnectionString(),
+		"HASURA_GRAPHQL_DATABASE_URL":              c.connectionStringForUser("nhost_hasura"),
 		"HASURA_GRAPHQL_JWT_SECRET":                c.envValueHasuraGraphqlJwtSecret(),
 		"HASURA_GRAPHQL_ADMIN_SECRET":              util.ADMIN_SECRET,
 		"NHOST_ADMIN_SECRET":                       util.ADMIN_SECRET,

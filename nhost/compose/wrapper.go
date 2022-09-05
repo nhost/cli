@@ -74,12 +74,8 @@ func (w Wrapper) ensureFoldersExistForDockerVolumes(workdir, gitBranch string) e
 
 	// write pg_hba_local.conf
 	hbaFile := filepath.Join(dotNhostFolder, DbDataDirGitBranchScopedPath(gitBranch, "pg_hba_local.conf"))
-	hbaFileContent := `
-  local all all trust
-	host all all all trust
-	`
 
-	err := os.WriteFile(hbaFile, []byte(hbaFileContent), 0777)
+	err := os.WriteFile(hbaFile, []byte("local all all trust\nhost all all all trust"), 0777)
 	if err != nil {
 		return errors.Wrap(err, "could not write pg_hba_local.conf")
 	}
