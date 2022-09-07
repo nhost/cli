@@ -35,7 +35,7 @@ const (
 	svcPostgresDefaultImage  = "nhost/postgres:14.5-20220831-1"
 	svcAuthDefaultImage      = "nhost/hasura-auth:0.10.0"
 	svcStorageDefaultImage   = "nhost/hasura-storage:0.2.4"
-	svcFunctionsDefaultImage = "nhost/functions:0.1.2"
+	svcFunctionsDefaultImage = "nhost/functions:0.1.3"
 	svcMinioDefaultImage     = "minio/minio:RELEASE.2022-07-08T00-05-23Z"
 	svcMailhogDefaultImage   = "mailhog/mailhog"
 	svcHasuraDefaultImage    = "hasura/graphql-engine:v2.10.1"
@@ -267,7 +267,7 @@ func (c Config) minioServiceEnvs() env {
 	return e
 }
 
-func (c Config) runMinioService() bool {
+func (c Config) RunMinioService() bool {
 	if conf, ok := c.nhostConfig.Services[SvcMinio]; ok && conf != nil {
 		if conf.NoContainer {
 			return false
@@ -278,7 +278,7 @@ func (c Config) runMinioService() bool {
 }
 
 func (c Config) minioService() *types.ServiceConfig {
-	if !c.runMinioService() {
+	if !c.RunMinioService() {
 		return nil
 	}
 
