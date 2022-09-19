@@ -53,8 +53,6 @@ func cliIsOutdated(existingCliPath, expectedVersion string) (bool, error) {
 		return false, err
 	}
 
-    fmt.Println(666, string(out))
-
 	var hv hasuraVersion
 	if err = json.Unmarshal(out, &hv); err != nil {
 		return false, err
@@ -79,10 +77,18 @@ func Binary(customBinary string) (string, error) {
 		return "", err
 	}
 
-	binaryPath := customBinary
-    if binaryPath == "" {
-        binaryPath = getBinary()
+    if customBinary != "" {
+		outdated, err := cliIsOutdated(customBinary, cliVersion)
+        if err != nil {
+            return "", err
+        }
+        if outdated {
+            return "", fmt.Errorf("specified %s is outdated", customBinary)
+        }
+        return customBinary, nil
     }
+
+    binaryPath := getBinary()
 
 	//  search for installed binary
 	if pathExists(binaryPath) {
