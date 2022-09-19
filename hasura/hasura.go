@@ -48,7 +48,7 @@ func cliIsOutdated(existingCliPath, expectedVersion string) (bool, error) {
 
 	// get a version of the existing CLI
 	cmd := exec.Command(existingCliPath, "version", "--skip-update-check")
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	if err != nil {
 		return false, err
 	}
