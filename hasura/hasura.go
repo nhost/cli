@@ -53,6 +53,8 @@ func cliIsOutdated(existingCliPath, expectedVersion string) (bool, error) {
 		return false, err
 	}
 
+    fmt.Println(666, string(out))
+
 	var hv hasuraVersion
 	if err = json.Unmarshal(out, &hv); err != nil {
 		return false, err
