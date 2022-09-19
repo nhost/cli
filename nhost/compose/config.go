@@ -315,6 +315,8 @@ func (c Config) functionsServiceEnvs() env {
 	e := env{}
 	e.merge(env{
 		"NHOST_BACKEND_URL":    c.envValueNhostBackendUrl(),
+		"NHOST_SUBDOMAIN":      "localhost",
+		"NHOST_REGION":         "",
 		"NHOST_ADMIN_SECRET":   util.ADMIN_SECRET,
 		"NHOST_WEBHOOK_SECRET": util.WEBHOOK_SECRET,
 		"NHOST_JWT_SECRET":     c.envValueHasuraGraphqlJwtSecret(),
@@ -404,6 +406,8 @@ func (c Config) storageServiceEnvs() env {
 		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
 		"POSTGRES_MIGRATIONS_SOURCE":  fmt.Sprintf("%s?sslmode=disable", c.connectionStringForUser("nhost_storage_admin")),
 		"NHOST_BACKEND_URL":           c.envValueNhostBackendUrl(),
+		"NHOST_SUBDOMAIN":             "localhost",
+		"NHOST_REGION":                "",
 	}
 
 	e.merge(c.serviceConfigEnvs(SvcStorage))
@@ -519,6 +523,8 @@ func (c Config) hasuraServiceEnvs() env {
 		"HASURA_GRAPHQL_ADMIN_SECRET":              util.ADMIN_SECRET,
 		"NHOST_ADMIN_SECRET":                       util.ADMIN_SECRET,
 		"NHOST_BACKEND_URL":                        c.envValueNhostBackendUrl(),
+		"NHOST_SUBDOMAIN":                          "localhost",
+		"NHOST_REGION":                             "",
 		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE":         "public",
 		"HASURA_GRAPHQL_DEV_MODE":                  "true",
 		"HASURA_GRAPHQL_LOG_LEVEL":                 "debug",
