@@ -317,6 +317,11 @@ func (c Config) functionsServiceEnvs() env {
 		"NHOST_BACKEND_URL":    c.envValueNhostBackendUrl(),
 		"NHOST_SUBDOMAIN":      "localhost",
 		"NHOST_REGION":         "",
+		"NHOST_HASURA_URL":     fmt.Sprintf("http://localhost:%d", proxyPort),
+		"NHOST_GRAPHQL_URL":    fmt.Sprintf("http://localhost:%d/v1/graphql", proxyPort),
+		"NHOST_AUTH_URL":       fmt.Sprintf("http://localhost:%d/v1/auth", proxyPort),
+		"NHOST_STORAGE_URL":    fmt.Sprintf("http://localhost:%d/v1/storage", proxyPort),
+		"NHOST_FUNCTIONS_URL":  fmt.Sprintf("http://localhost:%d/v1/functions", proxyPort),
 		"NHOST_ADMIN_SECRET":   util.ADMIN_SECRET,
 		"NHOST_WEBHOOK_SECRET": util.WEBHOOK_SECRET,
 		"NHOST_JWT_SECRET":     c.envValueHasuraGraphqlJwtSecret(),
@@ -405,9 +410,6 @@ func (c Config) storageServiceEnvs() env {
 		"NHOST_ADMIN_SECRET":          util.ADMIN_SECRET,
 		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
 		"POSTGRES_MIGRATIONS_SOURCE":  fmt.Sprintf("%s?sslmode=disable", c.connectionStringForUser("nhost_storage_admin")),
-		"NHOST_BACKEND_URL":           c.envValueNhostBackendUrl(),
-		"NHOST_SUBDOMAIN":             "localhost",
-		"NHOST_REGION":                "",
 	}
 
 	e.merge(c.serviceConfigEnvs(SvcStorage))
@@ -525,6 +527,11 @@ func (c Config) hasuraServiceEnvs() env {
 		"NHOST_BACKEND_URL":                        c.envValueNhostBackendUrl(),
 		"NHOST_SUBDOMAIN":                          "localhost",
 		"NHOST_REGION":                             "",
+		"NHOST_HASURA_URL":                         fmt.Sprintf("http://localhost:%d", proxyPort),
+		"NHOST_GRAPHQL_URL":                        fmt.Sprintf("http://localhost:%d/v1/graphql", proxyPort),
+		"NHOST_AUTH_URL":                           fmt.Sprintf("http://localhost:%d/v1/auth", proxyPort),
+		"NHOST_STORAGE_URL":                        fmt.Sprintf("http://localhost:%d/v1/storage", proxyPort),
+		"NHOST_FUNCTIONS_URL":                      fmt.Sprintf("http://localhost:%d/v1/functions", proxyPort),
 		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE":         "public",
 		"HASURA_GRAPHQL_DEV_MODE":                  "true",
 		"HASURA_GRAPHQL_LOG_LEVEL":                 "debug",
