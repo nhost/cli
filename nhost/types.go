@@ -30,13 +30,18 @@ type (
 		Apps []App  `json:"apps,omitempty"`
 	}
 
+	githubRepository struct {
+		Fullname string `json:"fullName"`
+	}
+
 	App struct {
-		ID                 string   `json:"id,omitempty"`
-		Name               string   `json:"name,omitempty"`
-		GraphQLAdminSecret string   `json:"hasuraGraphqlAdminSecret,omitempty"`
-		Subdomain          string   `json:"subdomain,omitempty"`
-		EnvVars            []EnvVar `json:"environmentVariables,omitempty"`
-		Workspace          string   `json:"workspace,omitempty"`
+		ID                 string           `json:"id,omitempty"`
+		Name               string           `json:"name,omitempty"`
+		GithubRepository   githubRepository `json:"githubRepository,omitempty"`
+		GraphQLAdminSecret string           `json:"hasuraGraphqlAdminSecret,omitempty"`
+		Subdomain          string           `json:"subdomain,omitempty"`
+		EnvVars            []EnvVar         `json:"environmentVariables,omitempty"`
+		Workspace          string           `json:"workspace,omitempty"`
 	}
 
 	EnvVar struct {

@@ -49,13 +49,6 @@ var loginCmd = &cobra.Command{
 	Use:        "login",
 	SuggestFor: []string{"logout"},
 	Short:      "Log in to your Nhost account",
-	PreRun: func(cmd *cobra.Command, args []string) {
-
-		//  if user is already logged in, ask to logout
-		if _, err := getUser(nhost.AUTH_PATH); err == nil {
-			status.Fatal(ErrLoggedIn)
-		}
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if email == "" {
@@ -163,8 +156,17 @@ func getUser(authFile string) (nhost.User, error) {
 	}
 
 	//  read our opened xmlFile as a byte array.
-	body, _ := ioutil.ReadAll(resp.Body)
-	json.Unmarshal(body, &response)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.WithError(err).Error("couldn't read the response body")
+		return response, err
+	}
+
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		log.WithField("body", string(body)).WithError(err).Error("unmarshal failed")
+		return response, err
+	}
 
 	defer resp.Body.Close()
 
@@ -191,26 +193,20 @@ func login(url, email, password string) (nhost.Credentials, error) {
 
 	//	Leverage Go's HTTP Post function to make request
 	resp, err := http.Post(url+"/custom/cli/login", "application/json", responseBody)
-	if err != nil {
+	if err != nil || resp.StatusCode != 200 {
+		log.Error("Failed to login")
 		return response, err
 	}
 
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
-	json.Unmarshal(body, &response)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.WithError(err).Error("couldn't read the response body")
+		return response, err
+	}
 
-	//Handle Error
-	/*
-		if response.Error.Code == "not_found" {
-			return response.VerificationToken, errors.New("we couldn't find an account registered with this email, please register at https://nhost.io/register")
-		} else if response.Error.Code == "unknown" {
-			return response.VerificationToken, errors.New("error while trying to create a login token")
-		} else if response.Error.Code == "server_not_available" {
-			return response.VerificationToken, errors.New("service unavailable")
-		}
-	*/
-
+	err = json.Unmarshal(body, &response)
 	return response, err
 }
 

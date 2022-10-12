@@ -169,6 +169,11 @@ in the following manner:
 				}
 
 				selectedProject = projects[index]
+
+				if selectedProject.GithubRepository.Fullname != "" {
+					status.Fatal("Selected project is already connected to a GitHub repository. Please use `nhost up` inside this git project instead.")
+					return
+				}
 			}
 
 			location = strings.ReplaceAll(selectedProject.Name, " ", "_")
