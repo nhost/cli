@@ -28,12 +28,13 @@ var status = &util.Writer
 var log = &logger.Log
 
 func getBinary() string {
-	switch runtime.GOOS {
-	case "windows":
-		return filepath.Join(nhost.ROOT, "hasura.exe")
-	default:
-		return filepath.Join(nhost.ROOT, "hasura")
+	hasuraExecName := "hasura"
+	if runtime.GOOS == "windows" {
+		hasuraExecName += ".exe"
 	}
+
+	// TODO: this is temporary, we should properly refactor paths calculation and avoid using global vars as well as usage of nhost.UpdateLocations() func
+	return filepath.Join(nhost.HOME, ".nhost", hasuraExecName)
 }
 
 func cliIsOutdated(existingCliPath, expectedVersion string) (bool, error) {
@@ -113,9 +114,6 @@ func Binary(customBinary string) (string, error) {
 
 	//	Use AMD architecture instead of ARM
 	architecture := runtime.GOARCH
-	if strings.Contains(architecture, "arm") {
-		architecture = strings.ReplaceAll(architecture, "arm", "amd")
-	}
 
 	url = fmt.Sprintf("https://github.com/hasura/graphql-engine/releases/download/%v/cli-hasura-%v-%v", cliVersion, runtime.GOOS, architecture)
 

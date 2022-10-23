@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nhost/cli/internal/ports"
+
 	"github.com/compose-spec/compose-go/types"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
@@ -32,10 +34,10 @@ const (
 	// --
 
 	// default docker images
-	svcPostgresDefaultImage  = "nhost/postgres:14.5-20220831-1"
-	svcAuthDefaultImage      = "nhost/hasura-auth:0.13.0"
-	svcStorageDefaultImage   = "nhost/hasura-storage:0.2.4"
-	svcFunctionsDefaultImage = "nhost/functions:0.1.5"
+	svcPostgresDefaultImage  = "nhost/postgres:14.5-20221009-1"
+	svcAuthDefaultImage      = "nhost/hasura-auth:0.15.0"
+	svcStorageDefaultImage   = "nhost/hasura-storage:0.2.5"
+	svcFunctionsDefaultImage = "nhost/functions:0.1.7"
 	svcMinioDefaultImage     = "minio/minio:RELEASE.2022-07-08T00-05-23Z"
 	svcMailhogDefaultImage   = "mailhog/mailhog"
 	svcHasuraDefaultImage    = "hasura/graphql-engine:v2.10.1"
@@ -86,7 +88,7 @@ type Config struct {
 	composeConfig      *types.Config
 	composeProjectName string
 	dotenv             []string // environment variables from .env file
-	ports              nhost.Ports
+	ports              *ports.Ports
 }
 
 // HasuraCliVersion extracts version from Hasura CLI docker image. That allows us to keep the same version of Hasura CLI
@@ -100,7 +102,7 @@ func HasuraCliVersion() (string, error) {
 	return s[1], nil
 }
 
-func NewConfig(conf *nhost.Configuration, p nhost.Ports, env []string, gitBranch, projectName string) *Config {
+func NewConfig(conf *nhost.Configuration, p *ports.Ports, env []string, gitBranch, projectName string) *Config {
 	return &Config{nhostConfig: conf, ports: p, dotenv: env, gitBranch: gitBranch, composeProjectName: projectName}
 }
 
