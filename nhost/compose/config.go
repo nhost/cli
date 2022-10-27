@@ -40,7 +40,7 @@ const (
 	svcFunctionsDefaultImage = "nhost/functions:0.1.7"
 	svcMinioDefaultImage     = "minio/minio:RELEASE.2022-07-08T00-05-23Z"
 	svcMailhogDefaultImage   = "mailhog/mailhog"
-	svcHasuraDefaultImage    = "hasura/graphql-engine:v2.10.1"
+	svcHasuraDefaultImage    = "hasura/graphql-engine:v2.13.0"
 	svcTraefikDefaultImage   = "traefik:v2.8"
 	// --
 
