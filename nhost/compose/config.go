@@ -521,7 +521,7 @@ func (c Config) envValueHasuraGraphqlJwtSecret() string {
 }
 
 func (c Config) hasuraEndpoint() string {
-	return fmt.Sprintf("http://graphql-engine:%d/v1", graphqlPort)
+	return fmt.Sprintf("http://%s:%d/v1", SvcGraphql, graphqlPort)
 }
 
 func (c Config) hasuraServiceEnvs() env {
