@@ -268,7 +268,7 @@ func (c Config) dashboardService() *types.ServiceConfig {
 			{
 				Mode:      "ingress",
 				Target:    3000,
-				Published: fmt.Sprint(c.ports.Dashboard()),
+				Published: c.ports.Dashboard(),
 				Protocol:  "tcp",
 			},
 		},
@@ -290,13 +290,13 @@ func (c Config) mailhogService() *types.ServiceConfig {
 			{
 				Mode:      "ingress",
 				Target:    1025,
-				Published: fmt.Sprint(c.ports.SMTP()),
+				Published: c.ports.SMTP(),
 				Protocol:  "tcp",
 			},
 			{
 				Mode:      "ingress",
 				Target:    8025,
-				Published: fmt.Sprint(c.ports.Mailhog()),
+				Published: c.ports.Mailhog(),
 				Protocol:  "tcp",
 			},
 		},
@@ -345,7 +345,7 @@ func (c Config) minioService() *types.ServiceConfig {
 			{
 				Mode:      "ingress",
 				Target:    9000,
-				Published: fmt.Sprint(c.ports.MinioS3()),
+				Published: c.ports.MinioS3(),
 				Protocol:  "tcp",
 			},
 			{
@@ -621,7 +621,7 @@ func (c Config) hasuraService() *types.ServiceConfig {
 			{
 				Mode:      "ingress",
 				Target:    graphqlPort,
-				Published: fmt.Sprint(c.ports.GraphQL()),
+				Published: c.ports.GraphQL(),
 				Protocol:  "tcp",
 			},
 		},
@@ -692,7 +692,7 @@ func (c Config) postgresService() *types.ServiceConfig {
 			{
 				Mode:      "ingress",
 				Target:    dbPort,
-				Published: fmt.Sprint(c.ports.DB()),
+				Published: c.ports.DB(),
 				Protocol:  "tcp",
 			},
 		},
@@ -708,7 +708,7 @@ func (c Config) traefikService() *types.ServiceConfig {
 			{
 				Mode:      "ingress",
 				Target:    proxyPort,
-				Published: fmt.Sprint(c.ports.Proxy()),
+				Published: c.ports.Proxy(),
 				Protocol:  "tcp",
 			},
 			{

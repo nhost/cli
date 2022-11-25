@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -630,7 +631,7 @@ type ServicePortConfig struct {
 	Mode      string `yaml:",omitempty" json:"mode,omitempty"`
 	HostIP    string `mapstructure:"host_ip" yaml:"host_ip,omitempty" json:"host_ip,omitempty"`
 	Target    uint32 `yaml:",omitempty" json:"target,omitempty"`
-	Published string `yaml:",omitempty" json:"published,omitempty"`
+	Published uint32 `yaml:",omitempty" json:"published,omitempty"`
 	Protocol  string `yaml:",omitempty" json:"protocol,omitempty"`
 
 	Extensions map[string]interface{} `yaml:",inline" json:"-"`
@@ -661,6 +662,15 @@ func ParsePortConfig(value string) ([]ServicePortConfig, error) {
 	return portConfigs, nil
 }
 
+func convertPortRangeToPort(portRange string) uint32 {
+	var dashPosition = strings.Index(portRange, "-")
+	if dashPosition >= 0 {
+		portRange = portRange[0:dashPosition]
+	}
+	port, _ := strconv.ParseInt(portRange, 10, 0)
+	return uint32(port)
+}
+
 func convertPortToPortConfig(port nat.Port, portBindings map[nat.Port][]nat.PortBinding) ([]ServicePortConfig, error) {
 	var portConfigs []ServicePortConfig
 	for _, binding := range portBindings[port] {
@@ -668,7 +678,7 @@ func convertPortToPortConfig(port nat.Port, portBindings map[nat.Port][]nat.Port
 			HostIP:    binding.HostIP,
 			Protocol:  strings.ToLower(port.Proto()),
 			Target:    uint32(port.Int()),
-			Published: binding.HostPort,
+			Published: convertPortRangeToPort(binding.HostPort),
 			Mode:      "ingress",
 		})
 	}
