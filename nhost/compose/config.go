@@ -24,7 +24,7 @@ const (
 	SvcMailhog   = "mailhog"
 	SvcHasura    = "hasura"
 	SvcTraefik   = "traefik"
-	SvcGraphql   = "graphql"
+	SvcGraphql   = "hasura"
 	SvcDashboard = "dashboard"
 	// --
 
