@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/aws/aws-sdk-go v1.44.152
-	github.com/compose-spec/compose-go v1.8.0
+	github.com/compose-spec/compose-go v1.8.1
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/go-git/go-git/v5 v5.4.2

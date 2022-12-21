@@ -99,7 +99,7 @@ github.com/bgentry/go-netrc/netrc
 # github.com/chzyer/readline v1.5.0
 ## explicit; go 1.15
 github.com/chzyer/readline
-# github.com/compose-spec/compose-go v1.8.0
+# github.com/compose-spec/compose-go v1.8.1
 ## explicit; go 1.18
 github.com/compose-spec/compose-go/types
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
