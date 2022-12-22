@@ -190,8 +190,8 @@ func (m *dockerComposeManager) startFunctions(ctx context.Context, ds *compose.D
 }
 
 func (m *dockerComposeManager) startPostgresGraphql(ctx context.Context, ds *compose.DataStreams) error {
-	m.l.Debugf("Starting %s containers...", strings.Join([]string{compose.SvcPostgres, compose.SvcGraphql}, ", "))
-	cmd, err := m.dcWrapper.Command(ctx, []string{"up", "-d", "--wait", compose.SvcPostgres, compose.SvcGraphql}, ds)
+	m.l.Debugf("Starting %s containers...", strings.Join([]string{compose.SvcPostgres, compose.SvcHasura}, ", "))
+	cmd, err := m.dcWrapper.Command(ctx, []string{"up", "-d", "--wait", compose.SvcPostgres, compose.SvcHasura}, ds)
 	if err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -248,7 +248,6 @@ func (m *dockerComposeManager) Stop(ctx context.Context) error {
 		ctx,
 		[]string{"kill",
 			compose.SvcFunctions,
-			compose.SvcGraphql,
 			compose.SvcTraefik,
 			compose.SvcAuth,
 			compose.SvcMailhog,

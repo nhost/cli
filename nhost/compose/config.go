@@ -24,7 +24,6 @@ const (
 	SvcMailhog   = "mailhog"
 	SvcHasura    = "hasura"
 	SvcTraefik   = "traefik"
-	SvcGraphql   = "graphql"
 	SvcDashboard = "dashboard"
 	// --
 
@@ -375,7 +374,7 @@ func (c Config) functionsServiceEnvs() env {
 		"NHOST_SUBDOMAIN":      "localhost",
 		"NHOST_REGION":         "",
 		"NHOST_HASURA_URL":     fmt.Sprintf("http://%s:%d", SvcTraefik, proxyPort),
-		"NHOST_GRAPHQL_URL":    c.traefikServiceUrl(SvcGraphql),
+		"NHOST_GRAPHQL_URL":    c.traefikServiceUrl(SvcHasura),
 		"NHOST_AUTH_URL":       c.traefikServiceUrl(SvcAuth),
 		"NHOST_STORAGE_URL":    c.traefikServiceUrl(SvcStorage),
 		"NHOST_FUNCTIONS_URL":  c.traefikServiceUrl(SvcFunctions),
@@ -542,7 +541,7 @@ func (c Config) authService() *types.ServiceConfig {
 			SvcPostgres: {
 				Condition: types.ServiceConditionHealthy,
 			},
-			SvcGraphql: {
+			SvcHasura: {
 				Condition: types.ServiceConditionStarted,
 			},
 		},
@@ -572,7 +571,7 @@ func (c Config) envValueHasuraGraphqlJwtSecret() string {
 }
 
 func (c Config) hasuraEndpoint() string {
-	return fmt.Sprintf("http://%s:%d/v1", SvcGraphql, graphqlPort)
+	return fmt.Sprintf("http://%s:%d/v1", SvcHasura, graphqlPort)
 }
 
 func (c Config) hasuraServiceEnvs() env {
@@ -585,7 +584,7 @@ func (c Config) hasuraServiceEnvs() env {
 		"NHOST_SUBDOMAIN":                          "localhost",
 		"NHOST_REGION":                             "",
 		"NHOST_HASURA_URL":                         fmt.Sprintf("http://%s:%d", SvcTraefik, proxyPort),
-		"NHOST_GRAPHQL_URL":                        c.traefikServiceUrl(SvcGraphql),
+		"NHOST_GRAPHQL_URL":                        c.traefikServiceUrl(SvcHasura),
 		"NHOST_AUTH_URL":                           c.traefikServiceUrl(SvcAuth),
 		"NHOST_STORAGE_URL":                        c.traefikServiceUrl(SvcStorage),
 		"NHOST_FUNCTIONS_URL":                      c.traefikServiceUrl(SvcFunctions),
@@ -613,7 +612,7 @@ func (c Config) hasuraService() *types.ServiceConfig {
 	}
 
 	return &types.ServiceConfig{
-		Name:        SvcGraphql,
+		Name:        SvcHasura,
 		Image:       c.serviceDockerImage(SvcHasura, svcHasuraDefaultImage),
 		Environment: c.hasuraServiceEnvs().dockerServiceConfigEnv(),
 		Labels:      labels,
