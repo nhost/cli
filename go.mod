@@ -3,7 +3,7 @@ module github.com/nhost/cli
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.152
+	github.com/aws/aws-sdk-go v1.44.179
 	github.com/compose-spec/compose-go v1.8.0
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/fsnotify/fsnotify v1.5.4
