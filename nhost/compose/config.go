@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+	"github.com/nhost/cli/config"
 	"gopkg.in/yaml.v3"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/compose-spec/compose-go/types"
 	"github.com/nhost/cli/nhost"
-	"github.com/nhost/cli/util"
 )
 
 const (
@@ -57,10 +57,6 @@ const (
 
 	// environment variables
 
-	// envs prefixes
-	envPrefixAuth    = "AUTH"
-	envPrefixStorage = "STORAGE"
-
 	// dashboard
 	// envDashboardNextPublicNhost
 	envDashboardNextPublicNhostLocalBackendPort = "NEXT_PUBLIC_NHOST_LOCAL_BACKEND_PORT"
@@ -79,14 +75,6 @@ const (
 	envMinioRootUser     = "MINIO_ROOT_USER"
 	envMinioRootPassword = "MINIO_ROOT_PASSWORD"
 
-	// auth
-	envAuthSmtpHost   = "AUTH_SMTP_HOST"
-	envAuthSmtpPort   = "AUTH_SMTP_PORT"
-	envAuthSmtpUser   = "AUTH_SMTP_USER"
-	envAuthSmtpPass   = "AUTH_SMTP_PASS"
-	envAuthSmtpSecure = "AUTH_SMTP_SECURE"
-	envAuthSmtpSender = "AUTH_SMTP_SENDER"
-
 	// postgres
 	envPostgresPassword = "POSTGRES_PASSWORD"
 	envPostgresDb       = "POSTGRES_DB"
@@ -103,8 +91,8 @@ const (
 )
 
 type Config struct {
-	nhostConfig        *nhost.Configuration // nhost configuration
-	gitBranch          string               // git branch name, used as a namespace for postgres data mounted from host
+	conf               *config.Config
+	gitBranch          string // git branch name, used as a namespace for postgres data mounted from host
 	composeConfig      *types.Config
 	composeProjectName string
 	dotenv             []string // environment variables from .env file
@@ -122,8 +110,8 @@ func HasuraCliVersion() (string, error) {
 	return s[1], nil
 }
 
-func NewConfig(conf *nhost.Configuration, p *ports.Ports, env []string, gitBranch, projectName string) *Config {
-	return &Config{nhostConfig: conf, ports: p, dotenv: env, gitBranch: gitBranch, composeProjectName: projectName}
+func NewConfig(conf *config.Config, p *ports.Ports, env []string, gitBranch, projectName string) *Config {
+	return &Config{conf: conf, ports: p, dotenv: env, gitBranch: gitBranch, composeProjectName: projectName}
 }
 
 func (c Config) addLocaldevExtraHost(svc *types.ServiceConfig) *types.ServiceConfig {
@@ -134,24 +122,14 @@ func (c Config) addLocaldevExtraHost(svc *types.ServiceConfig) *types.ServiceCon
 }
 
 func (c Config) serviceDockerImage(svcName, dockerImageFallback string) string {
-	if svcConf, ok := c.nhostConfig.Services[svcName]; ok && svcConf != nil {
-		if svcConf.Image != "" {
-			return svcConf.Image
-		}
-	}
+	// TODO: decide how to set custom docker image in the new config
+	//if svcConf, ok := c.nhostConfig.Services[svcName]; ok && svcConf != nil {
+	//	if svcConf.Image != "" {
+	//		return svcConf.Image
+	//	}
+	//}
 
 	return dockerImageFallback
-}
-
-// serviceConfigEnvs returns environment variables from "services".$name."environment" section in yaml config
-func (c *Config) serviceConfigEnvs(svc string) env {
-	e := env{}
-
-	if svcConf, ok := c.nhostConfig.Services[svc]; ok && svcConf != nil {
-		e.mergeWithServiceEnv(svcConf.Environment)
-	}
-
-	return e
 }
 
 func (c *Config) build() *types.Config {
@@ -229,32 +207,19 @@ func (c Config) DashboardURL() string {
 }
 
 func (c Config) mailhogServiceEnvs() env {
-	authEnv := c.authServiceEnvs()
+	smtpConf := c.conf.Provider().GetSmtp()
 
-	e := env{
-		"SMTP_HOST":   authEnv[envAuthSmtpHost],
-		"SMTP_PORT":   authEnv[envAuthSmtpPort],
-		"SMTP_PASS":   authEnv[envAuthSmtpPass],
-		"SMTP_USER":   authEnv[envAuthSmtpUser],
-		"SMTP_SECURE": authEnv[envAuthSmtpSecure],
-		"SMTP_SENDER": authEnv[envAuthSmtpSender],
-	}
-
-	e.merge(c.serviceConfigEnvs(SvcMailhog))
-	e.mergeWithSlice(c.dotenv)
-	return e
-}
-
-func (c Config) runMailhogService() bool {
-	if conf, ok := c.nhostConfig.Services[SvcMailhog]; ok && conf != nil {
-		if conf.NoContainer {
-			return false
-		}
-	}
-
-	authEnv := c.authServiceEnvs()
-
-	return authEnv[envAuthSmtpHost] == SvcMailhog
+	return env{
+		"SMTP_HOST":   smtpConf.GetHost(),
+		"SMTP_PORT":   fmt.Sprint(smtpConf.GetPort()),
+		"SMTP_PASS":   smtpConf.GetPassword(),
+		"SMTP_USER":   smtpConf.GetUser(),
+		"SMTP_SECURE": fmt.Sprint(smtpConf.GetSecure()),
+		"SMTP_SENDER": smtpConf.GetSender(),
+	}.merge(
+		// global environment variables from config
+		c.globalEnvs(),
+	)
 }
 
 func (c Config) dashboardServiceEnvs() env {
@@ -288,7 +253,8 @@ func (c Config) dashboardService() *types.ServiceConfig {
 }
 
 func (c Config) mailhogService() *types.ServiceConfig {
-	if !c.runMailhogService() {
+	authEnv := c.authServiceEnvs()
+	if authEnv["AUTH_SMTP_HOST"] != SvcMailhog {
 		return nil
 	}
 
@@ -322,30 +288,16 @@ func (c Config) mailhogService() *types.ServiceConfig {
 }
 
 func (c Config) minioServiceEnvs() env {
-	e := env{
+	return env{
 		envMinioRootUser:     nhost.MINIO_USER,
 		envMinioRootPassword: nhost.MINIO_PASSWORD,
-	}
-	e.merge(c.serviceConfigEnvs(SvcMinio))
-	e.mergeWithSlice(c.dotenv)
-	return e
-}
-
-func (c Config) RunMinioService() bool {
-	if conf, ok := c.nhostConfig.Services[SvcMinio]; ok && conf != nil {
-		if conf.NoContainer {
-			return false
-		}
-	}
-
-	return true
+	}.merge(
+		// global environment variables from config
+		c.globalEnvs(),
+	)
 }
 
 func (c Config) minioService() *types.ServiceConfig {
-	if !c.RunMinioService() {
-		return nil
-	}
-
 	return &types.ServiceConfig{
 		Name:        SvcMinio,
 		Environment: c.minioServiceEnvs().dockerServiceConfigEnv(),
@@ -380,8 +332,9 @@ func (c Config) traefikServiceUrl(svc string) string {
 }
 
 func (c Config) functionsServiceEnvs() env {
-	e := env{}
-	e.merge(env{
+	hasuraConf := c.conf.Hasura()
+
+	return env{
 		"NHOST_BACKEND_URL":    c.envValueNhostBackendUrl(),
 		"NHOST_SUBDOMAIN":      "localhost",
 		"NHOST_REGION":         "",
@@ -390,12 +343,13 @@ func (c Config) functionsServiceEnvs() env {
 		"NHOST_AUTH_URL":       c.traefikServiceUrl(SvcAuth),
 		"NHOST_STORAGE_URL":    c.traefikServiceUrl(SvcStorage),
 		"NHOST_FUNCTIONS_URL":  c.traefikServiceUrl(SvcFunctions),
-		"NHOST_ADMIN_SECRET":   util.ADMIN_SECRET,
-		"NHOST_WEBHOOK_SECRET": util.WEBHOOK_SECRET,
-		"NHOST_JWT_SECRET":     c.envValueHasuraGraphqlJwtSecret(),
-	})
-	e.mergeWithSlice(c.dotenv)
-	return e
+		"NHOST_ADMIN_SECRET":   hasuraConf.GetAdminSecret(),
+		"NHOST_WEBHOOK_SECRET": hasuraConf.GetWebhookSecret(),
+		"NHOST_JWT_SECRET":     c.graphqlJwtSecret(),
+	}.merge(
+		// global environment variables from config
+		c.globalEnvs(),
+	)
 }
 
 func (c Config) functionsServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
@@ -450,17 +404,34 @@ func (c Config) functionsService() *types.ServiceConfig {
 	}
 }
 
-func (c Config) storageServiceEnvs() env {
-	minioEnv := c.minioServiceEnvs()
-	s3Endpoint := "http://minio:9000"
+func (c Config) graphqlJwtSecret() string {
+	hasuraConf := c.conf.Hasura()
+	var graphqlJwtSecret string
 
-	if minioConf, ok := c.nhostConfig.Services[SvcMinio]; ok && minioConf != nil {
-		if minioConf.NoContainer {
-			s3Endpoint = minioConf.Address
-		}
+	if len(hasuraConf.GetJwtSecrets()) > 0 { // TODO: what if we have more than one secret?
+		graphqlJwtSecret = fmt.Sprintf(`{"type":"%s", "key": "%s"}`, hasuraConf.JwtSecrets[0].Type, hasuraConf.JwtSecrets[0].Key)
 	}
 
-	e := env{
+	return graphqlJwtSecret
+}
+
+func (c Config) twilioSettings() (accountSid, authToken, messagingServiceId string) {
+	providerConf := c.conf.Provider()
+
+	if strings.ToLower(providerConf.GetSms().GetProvider()) == "twilio" {
+		accountSid = providerConf.Sms.AccountSid
+		authToken = providerConf.Sms.AuthToken
+		messagingServiceId = providerConf.Sms.MessagingServiceId
+	}
+
+	return
+}
+
+func (c Config) storageServiceEnvs() env {
+	minioEnv := c.minioServiceEnvs()
+	hasuraConf := c.conf.Hasura()
+
+	return env{
 		"DEBUG":                       "true",
 		"BIND":                        ":8576",
 		"PUBLIC_URL":                  fmt.Sprintf("http://localhost:%d", c.ports.Proxy()),
@@ -468,23 +439,20 @@ func (c Config) storageServiceEnvs() env {
 		"POSTGRES_MIGRATIONS":         "1",
 		"HASURA_METADATA":             "1",
 		"HASURA_ENDPOINT":             c.hasuraEndpoint(),
-		"HASURA_GRAPHQL_ADMIN_SECRET": util.ADMIN_SECRET,
+		"HASURA_GRAPHQL_ADMIN_SECRET": hasuraConf.GetAdminSecret(),
 		"S3_ACCESS_KEY":               minioEnv[envMinioRootUser],
 		"S3_SECRET_KEY":               minioEnv[envMinioRootPassword],
-		"S3_ENDPOINT":                 s3Endpoint,
-		"S3_BUCKET":                   "nhost",
-		"HASURA_GRAPHQL_JWT_SECRET":   c.envValueHasuraGraphqlJwtSecret(),
-		"NHOST_JWT_SECRET":            c.envValueHasuraGraphqlJwtSecret(),
-		"NHOST_ADMIN_SECRET":          util.ADMIN_SECRET,
-		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
-		"POSTGRES_MIGRATIONS_SOURCE":  fmt.Sprintf("%s?sslmode=disable", c.connectionStringForUser("nhost_storage_admin")),
-	}
-
-	e.merge(c.serviceConfigEnvs(SvcStorage))
-	e.mergeWithConfigEnv(c.nhostConfig.Storage, envPrefixStorage)
-	e.mergeWithSlice(c.dotenv)
-
-	return e
+		//"S3_ENDPOINT":                 "", // TODO: ?
+		"S3_BUCKET":                  "nhost",
+		"HASURA_GRAPHQL_JWT_SECRET":  c.graphqlJwtSecret(),
+		"NHOST_JWT_SECRET":           c.graphqlJwtSecret(),
+		"NHOST_ADMIN_SECRET":         hasuraConf.GetAdminSecret(),
+		"NHOST_WEBHOOK_SECRET":       hasuraConf.GetWebhookSecret(),
+		"POSTGRES_MIGRATIONS_SOURCE": fmt.Sprintf("%s?sslmode=disable", c.connectionStringForUser("nhost_storage_admin")),
+	}.merge(
+		// global environment variables from config
+		c.globalEnvs(),
+	)
 }
 
 func (c Config) storageService() *types.ServiceConfig {
@@ -505,23 +473,82 @@ func (c Config) storageService() *types.ServiceConfig {
 	}
 }
 
+func (c Config) globalEnvs() env {
+	o := env{}
+	globalEnvs := c.conf.Global().Environment
+	for _, e := range globalEnvs {
+		o[e.Name] = e.Value
+	}
+	return o
+}
+
 func (c Config) authServiceEnvs() env {
-	e := env{
+	authConf := c.conf.Auth()
+	hasuraConf := c.conf.Hasura()
+	providerConf := c.conf.Provider()
+
+	twilioAccountSid, twilioAuthToken, twilioMessagingServiceId := c.twilioSettings()
+
+	return env{
+		// default environment variables
 		"AUTH_HOST":                   "0.0.0.0",
 		"HASURA_GRAPHQL_DATABASE_URL": c.connectionStringForUser("nhost_auth_admin"),
 		"HASURA_GRAPHQL_GRAPHQL_URL":  fmt.Sprintf("%s/graphql", c.hasuraEndpoint()),
 		"AUTH_SERVER_URL":             c.PublicAuthConnectionString(),
-		"HASURA_GRAPHQL_JWT_SECRET":   c.envValueHasuraGraphqlJwtSecret(),
-		"HASURA_GRAPHQL_ADMIN_SECRET": util.ADMIN_SECRET,
-		"NHOST_ADMIN_SECRET":          util.ADMIN_SECRET,
-		"NHOST_WEBHOOK_SECRET":        util.WEBHOOK_SECRET,
-	}
-
-	e.merge(c.serviceConfigEnvs(SvcAuth))
-	e.mergeWithConfigEnv(c.nhostConfig.Auth, envPrefixAuth)
-	e.mergeWithSlice(c.dotenv)
-
-	return e
+	}.merge(
+		// global environment variables from config
+		c.globalEnvs(),
+	).merge(env{
+		// environment variables from config
+		"NHOST_ADMIN_SECRET":          hasuraConf.GetAdminSecret(),
+		"NHOST_WEBHOOK_SECRET":        hasuraConf.GetWebhookSecret(),
+		"HASURA_GRAPHQL_JWT_SECRET":   c.graphqlJwtSecret(),
+		"HASURA_GRAPHQL_ADMIN_SECRET": hasuraConf.GetAdminSecret(),
+		//"AUTH_PORT":                   "", // TODO: ???
+		"AUTH_SMTP_PASS":   providerConf.GetSmtp().GetPassword(),
+		"AUTH_SMTP_HOST":   providerConf.GetSmtp().GetHost(),
+		"AUTH_SMTP_USER":   providerConf.GetSmtp().GetUser(),
+		"AUTH_SMTP_SENDER": providerConf.GetSmtp().GetSender(),
+		//"AUTH_SMTP_AUTH_METHOD":                     "", // TODO: ???
+		"AUTH_SMTP_PORT":    fmt.Sprint(providerConf.GetSmtp().GetPort()),
+		"AUTH_SMTP_SECURE":  fmt.Sprint(providerConf.GetSmtp().GetSecure()),
+		"AUTH_SMS_PROVIDER": providerConf.GetSms().GetProvider(),
+		//"AUTH_SMS_TEST_PHONE_NUMBERS":               "", // TODO: ???
+		"AUTH_SMS_TWILIO_ACCOUNT_SID":               twilioAccountSid,
+		"AUTH_SMS_TWILIO_AUTH_TOKEN":                twilioAuthToken,
+		"AUTH_SMS_TWILIO_MESSAGING_SERVICE_ID":      twilioMessagingServiceId,
+		"AUTH_GRAVATAR_ENABLED":                     fmt.Sprint(authConf.GetUser().GetGravatar().GetEnabled()),
+		"AUTH_GRAVATAR_DEFAULT":                     authConf.GetUser().GetGravatar().GetDefault(),
+		"AUTH_GRAVATAR_RATING":                      authConf.GetUser().GetGravatar().GetRating(),
+		"AUTH_CLIENT_URL":                           authConf.GetRedirections().GetClientUrl(),
+		"AUTH_WEBAUTHN_ENABLED":                     fmt.Sprint(authConf.GetMethod().GetWebauthn().GetEnabled()),
+		"AUTH_WEBAUTHN_RP_NAME":                     authConf.GetMethod().GetWebauthn().GetRelyingParty().GetName(),
+		"AUTH_WEBAUTHN_RP_ORIGINS":                  strings.Join(authConf.GetMethod().GetWebauthn().GetRelyingParty().GetOrigins(), ","),
+		"AUTH_WEBAUTHN_ATTESTATION_TIMEOUT":         fmt.Sprint(authConf.GetMethod().GetWebauthn().GetAttestation().GetTimeout()),
+		"AUTH_ANONYMOUS_USERS_ENABLED":              fmt.Sprint(authConf.GetMethod().GetAnonymous().GetEnabled()),
+		"AUTH_DISABLE_NEW_USERS":                    fmt.Sprint(!authConf.GetSignUp().GetEnabled()),
+		"AUTH_ACCESS_CONTROL_ALLOWED_EMAILS":        strings.Join(authConf.GetUser().GetEmail().GetAllowed(), ","),
+		"AUTH_ACCESS_CONTROL_ALLOWED_EMAIL_DOMAINS": strings.Join(authConf.GetUser().GetEmailDomains().GetAllowed(), ","),
+		"AUTH_ACCESS_CONTROL_BLOCKED_EMAILS":        strings.Join(authConf.GetUser().GetEmail().GetBlocked(), ","),
+		"AUTH_ACCESS_CONTROL_BLOCKED_EMAIL_DOMAINS": strings.Join(authConf.GetUser().GetEmailDomains().GetBlocked(), ","),
+		"AUTH_PASSWORD_MIN_LENGTH":                  fmt.Sprint(authConf.GetMethod().GetEmailPassword().GetPasswordMinLength()),
+		"AUTH_PASSWORD_HIBP_ENABLED":                fmt.Sprint(authConf.GetMethod().GetEmailPassword().GetHibpEnabled()),
+		"AUTH_USER_DEFAULT_ROLE":                    authConf.GetUser().GetRoles().GetDefault(),
+		"AUTH_USER_DEFAULT_ALLOWED_ROLES":           strings.Join(authConf.GetUser().GetRoles().GetAllowed(), ","),
+		"AUTH_LOCALE_DEFAULT":                       authConf.GetUser().GetLocale().GetDefault(),
+		"AUTH_LOCALE_ALLOWED_LOCALES":               strings.Join(authConf.GetUser().GetLocale().GetAllowed(), ","),
+		"AUTH_EMAIL_PASSWORDLESS_ENABLED":           fmt.Sprint(authConf.GetMethod().GetEmailPasswordless().GetEnabled()),
+		"AUTH_SMS_PASSWORDLESS_ENABLED":             fmt.Sprint(authConf.GetMethod().GetSmsPasswordless().GetEnabled()),
+		"AUTH_EMAIL_SIGNIN_EMAIL_VERIFIED_REQUIRED": fmt.Sprint(authConf.GetMethod().GetEmailPassword().GetEmailVerificationRequired()),
+		"AUTH_ACCESS_CONTROL_ALLOWED_REDIRECT_URLS": strings.Join(authConf.GetRedirections().GetAllowedUrls(), ","),
+		"AUTH_MFA_ENABLED":                          fmt.Sprint(authConf.GetTotp().GetEnabled()),
+		"AUTH_MFA_TOTP_ISSUER":                      authConf.GetTotp().GetIssuer(),
+		"AUTH_ACCESS_TOKEN_EXPIRES_IN":              fmt.Sprint(authConf.GetSession().GetAccessToken().GetExpiresIn()),
+		"AUTH_REFRESH_TOKEN_EXPIRES_IN":             fmt.Sprint(authConf.GetSession().GetRefreshToken().GetExpiresIn()),
+		"AUTH_EMAIL_TEMPLATE_FETCH_URL":             "", // TODO: deprecated?
+		"AUTH_JWT_CUSTOM_CLAIMS":                    "", // TODO: ???
+		"AUTH_CONCEAL_ERRORS":                       "", // TODO: ???
+	})
 }
 
 func (c Config) authServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
@@ -578,20 +605,18 @@ func (c Config) envValueNhostBackendUrl() string {
 	return fmt.Sprintf("http://traefik:%d", proxyPort)
 }
 
-func (c Config) envValueHasuraGraphqlJwtSecret() string {
-	return fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY)
-}
-
 func (c Config) hasuraEndpoint() string {
 	return fmt.Sprintf("http://%s:%d/v1", SvcGraphql, graphqlPort)
 }
 
 func (c Config) hasuraServiceEnvs() env {
-	e := env{
+	hasuraConf := c.conf.Hasura()
+
+	return env{
 		"HASURA_GRAPHQL_DATABASE_URL":              c.connectionStringForUser("nhost_hasura"),
-		"HASURA_GRAPHQL_JWT_SECRET":                c.envValueHasuraGraphqlJwtSecret(),
-		"HASURA_GRAPHQL_ADMIN_SECRET":              util.ADMIN_SECRET,
-		"NHOST_ADMIN_SECRET":                       util.ADMIN_SECRET,
+		"HASURA_GRAPHQL_JWT_SECRET":                c.graphqlJwtSecret(),
+		"HASURA_GRAPHQL_ADMIN_SECRET":              hasuraConf.GetAdminSecret(),
+		"NHOST_ADMIN_SECRET":                       hasuraConf.GetAdminSecret(),
 		"NHOST_BACKEND_URL":                        c.envValueNhostBackendUrl(),
 		"NHOST_SUBDOMAIN":                          "localhost",
 		"NHOST_REGION":                             "",
@@ -607,13 +632,11 @@ func (c Config) hasuraServiceEnvs() env {
 		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT": "20",
 		"HASURA_GRAPHQL_NO_OF_RETRIES":             "20",
 		"HASURA_GRAPHQL_ENABLE_TELEMETRY":          "false",
-		"NHOST_WEBHOOK_SECRET":                     util.WEBHOOK_SECRET,
-	}
-
-	e.merge(c.serviceConfigEnvs(SvcHasura))
-	e.mergeWithSlice(c.dotenv)
-
-	return e
+		"NHOST_WEBHOOK_SECRET":                     hasuraConf.GetWebhookSecret(),
+	}.merge(
+		// global environment variables from config
+		c.globalEnvs(),
+	)
 }
 
 func (c Config) hasuraService() *types.ServiceConfig {
@@ -646,17 +669,16 @@ func (c Config) hasuraService() *types.ServiceConfig {
 }
 
 func (c Config) postgresServiceEnvs() env {
-	e := env{
+	return env{
+		// default environment variables
 		envPostgresData:     envPostgresDataDefaultValue,
 		envPostgresUser:     envPostgresUserDefaultValue,
 		envPostgresPassword: envPostgresPasswordDefaultValue,
 		envPostgresDb:       envPostgresDbDefaultValue,
-	}
-
-	e.merge(c.serviceConfigEnvs(SvcPostgres))
-	e.mergeWithSlice(c.dotenv)
-
-	return e
+	}.merge(
+		// global environment variables from config
+		c.globalEnvs(),
+	)
 }
 
 func (c Config) postgresServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {

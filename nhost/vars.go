@@ -84,7 +84,7 @@ var (
 	LOCATIONS Required
 )
 
-//	Initialize Nhost variables for runtime
+// Initialize Nhost variables for runtime
 func Init() {
 	DOMAIN = "nhost.run"
 
@@ -134,7 +134,7 @@ func Init() {
 	ENV_FILE = filepath.Join(util.WORKING_DIR, ".env.development")
 
 	//  path for .config.yaml file
-	CONFIG_PATH = filepath.Join(NHOST_DIR, "config.yaml")
+	CONFIG_PATH = filepath.Join(NHOST_DIR, "config.toml")
 
 	//  path for .gitignore file
 	GITIGNORE = filepath.Join(util.WORKING_DIR, ".gitignore")

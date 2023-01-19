@@ -27,6 +27,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/nhost/cli/config"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,7 +58,7 @@ var defaultTemplates = []nhost.Template{
 	},
 }
 
-//  initCmd represents the init command
+// initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init [--remote | --remote <sudomain>]",
 	Short: "Initialize current directory as Nhost app",
@@ -205,15 +206,33 @@ in the following manner:
 			status.Errorln(err.Error())
 		}
 
+		c, err := config.DefaultConfig()
+		if err != nil {
+			log.Debug(err)
+			status.Fatal(err.Error())
+		}
+
+		b, err := c.Marshal()
+		if err != nil {
+			log.Debug(err)
+			status.Fatal(err.Error())
+		}
+
+		//  Write config to file
+		if err := os.WriteFile(nhost.CONFIG_PATH, b, 0644); err != nil {
+			log.Debug(err)
+			status.Fatal(err.Error())
+		}
+
 		//  generate Nhost configuration
 		//  which will contain the information for GraphQL, Minio and other services
-		nhostConfig := nhost.GenerateConfig(selectedProject)
-
-		//  save the Nhost configuration
-		if err := nhostConfig.Save(); err != nil {
-			log.Debug(err)
-			status.Fatal("Failed to save Nhost configuration")
-		}
+		//nhostConfig := nhost.GenerateConfig(selectedProject)
+		//
+		////  save the Nhost configuration
+		//if err := nhostConfig.Save(); err != nil {
+		//	log.Debug(err)
+		//	status.Fatal("Failed to save Nhost configuration")
+		//}
 
 		installDefaultTemplates(log)
 
@@ -258,6 +277,7 @@ in the following manner:
 				status.Fatal("Failed to pull migrations from remote")
 			}
 
+			// TODO: ???
 			//  write ENV variables to .env.development
 			var envArray []string
 			for _, row := range selectedProject.EnvVars {

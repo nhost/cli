@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) Nhost
+# Copyright (c) Nhost
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -34,13 +34,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//  envCmd represents the env command
+// envCmd represents the env command
 var envCmd = &cobra.Command{
 	Use:   "env",
 	Short: "Manage your Nhost env vars",
 }
 
-//  lsCmd getches env vars from remote
+// lsCmd getches env vars from remote
 var lsCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
@@ -98,7 +98,9 @@ var lsCmd = &cobra.Command{
 	},
 }
 
-//  pullCmd syncs env vars from remote with local environment
+//	pullCmd syncs env vars from remote with local environment
+//
+// TODO: pull envs and put into global envs in new config?
 var envPullCmd = &cobra.Command{
 	Use:   "pull",
 	Short: "Sync env vars from remote with local env",

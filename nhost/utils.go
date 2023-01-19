@@ -2,6 +2,10 @@ package nhost
 
 import (
 	"fmt"
+	"github.com/nhost/be/services/mimir/model"
+	"github.com/nhost/be/services/mimir/schema"
+	"github.com/nhost/cli/config"
+	"github.com/pelletier/go-toml/v2"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -12,7 +16,6 @@ import (
 
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/nhost/cli/util"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -49,16 +52,29 @@ func GetDockerComposeProjectName() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-func GetConfiguration() (*Configuration, error) {
-	var c Configuration
+func GetConfiguration() (*config.Config, error) {
+	var c model.ConfigConfig
 
-	data, err := ioutil.ReadFile(CONFIG_PATH)
+	data, err := os.ReadFile(CONFIG_PATH)
 	if err != nil {
 		return nil, err
 	}
 
-	err = yaml.Unmarshal(data, &c)
-	return &c, err
+	err = toml.Unmarshal(data, &c)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := schema.New()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.ValidateConfig(c); err != nil {
+		return nil, err
+	}
+
+	return config.NewConfig(&c), nil
 }
 
 func EnsureProjectNameFileExists() error {

@@ -15,10 +15,11 @@ func (e env) mergeWithServiceEnv(m map[string]interface{}) {
 	}
 }
 
-func (e env) merge(e2 env) {
+func (e env) merge(e2 env) env {
 	for k, v := range e2 {
 		e[k] = v
 	}
+	return e
 }
 
 func (e env) mergeWithConfigEnv(m map[interface{}]interface{}, prefix string) {

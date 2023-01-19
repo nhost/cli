@@ -28,11 +28,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/internal/git"
 	"github.com/nhost/cli/internal/ports"
 	"os"
 	"os/signal"
-	"reflect"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -318,37 +318,15 @@ func init() {
 	viper.BindPFlag(userDefinedHasuraCliFlag, devCmd.PersistentFlags().Lookup(userDefinedHasuraCliFlag))
 }
 
-func configurationWarnings(c *nhost.Configuration) {
-	// warn about deprecated fields
-	for name, svc := range c.Services {
-		if svc != nil && svc.Version != nil && svc.Version.(string) != "" {
-			fmt.Printf("WARNING: [services.%s.version] \"version\" field is not used anymore, please use \"image\" instead or let CLI use the default version\n", name)
-		}
+func configurationWarnings(c *config.Config) {
+	smtpHost := c.Provider().GetSmtp().GetHost()
+	smtpPort := c.Provider().GetSmtp().GetPort()
+
+	if smtpHost != "" && smtpHost != "mailhog" && strings.Contains(smtpHost, "mailhog") {
+		fmt.Printf("WARNING: [provider.smtp] \"host\" field has a value \"%s\", please set the value to \"mailhog\" if you want CLI to catch the mails\n", smtpHost)
 	}
 
-	// check auth smtp config
-	var smtpHost, smtpPort string
-	if smtp, ok := c.Auth["smtp"]; ok { //nolint:nestif
-		v := reflect.ValueOf(smtp)
-
-		if v.Kind() == reflect.Map {
-			for _, key := range v.MapKeys() {
-				if key.Interface().(string) == "host" {
-					smtpHost = v.MapIndex(key).Interface().(string)
-				}
-
-				if key.Interface().(string) == "port" {
-					smtpPort = fmt.Sprint(v.MapIndex(key).Interface())
-				}
-			}
-		}
-
-		if smtpHost != "" && smtpHost != "mailhog" && strings.Contains(smtpHost, "mailhog") {
-			fmt.Printf("WARNING: [auth.smtp.host] \"host\" field has a value \"%s\", please set the value to \"mailhog\" if you want CLI to spin up a container for mail catching\n", smtpHost)
-		}
-
-		if smtpPort != "1025" && strings.Contains(smtpHost, "mailhog") {
-			fmt.Printf("WARNING: [auth.smtp.port] \"port\" field has a value \"%s\", please set the value to \"1025\" if you want mailhog to work properly\n", smtpPort)
-		}
+	if smtpPort != 1025 && strings.Contains(smtpHost, "mailhog") {
+		fmt.Printf("WARNING: [provider.smtp] \"port\" field has a value \"%d\", please set the value to \"1025\" if you want mailhog to work properly\n", smtpPort)
 	}
 }

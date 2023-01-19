@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/nhost/cli/config"
 	"net/http"
 	"os"
 	"os/exec"
@@ -36,7 +37,7 @@ type Manager interface {
 	Endpoints() *Endpoints
 }
 
-func NewDockerComposeManager(c *nhost.Configuration, workdir string, hc *hasura.Client, p *ports.Ports, env []string, gitBranch, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) (*dockerComposeManager, error) {
+func NewDockerComposeManager(c *config.Config, workdir string, hc *hasura.Client, p *ports.Ports, env []string, gitBranch, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) (*dockerComposeManager, error) {
 	dcConf := compose.NewConfig(c, p, env, gitBranch, projectName)
 	w, err := compose.InitWrapper(workdir, gitBranch, dcConf)
 	if err != nil {
@@ -50,7 +51,6 @@ func NewDockerComposeManager(c *nhost.Configuration, workdir string, hc *hasura.
 		env:           env,
 		branch:        gitBranch,
 		projectName:   projectName,
-		nhostConfig:   c,
 		composeConfig: dcConf,
 		l:             logger,
 		status:        status,
@@ -65,7 +65,6 @@ type dockerComposeManager struct {
 	debug         bool
 	branch        string
 	projectName   string
-	nhostConfig   *nhost.Configuration
 	composeConfig *compose.Config
 	status        *util.Status
 	l             logrus.FieldLogger
@@ -208,10 +207,6 @@ func (m *dockerComposeManager) startPostgresGraphql(ctx context.Context, ds *com
 }
 
 func (m *dockerComposeManager) ensureBucketExists(ctx context.Context) error {
-	if !m.composeConfig.RunMinioService() {
-		return nil
-	}
-
 	m.l.Debug("Ensuring S3 bucket exists")
 	const bucketName = "nhost"
 

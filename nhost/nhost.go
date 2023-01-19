@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nhost/cli/internal/ports"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -140,9 +139,9 @@ func Info() (App, error) {
 	return response, err
 }
 
-//  fetches the required asset from release
-//  depending on OS and Architecture
-//  by matching download URL
+// fetches the required asset from release
+// depending on OS and Architecture
+// by matching download URL
 func (release *Release) Asset() Asset {
 
 	log.Debug("Extracting asset from release")
@@ -165,7 +164,7 @@ func (r *Release) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-//	Compares and updates the changelog for specified release
+// Compares and updates the changelog for specified release
 func (r *Release) Changes(releases []Release) (string, error) {
 
 	var response string
@@ -183,7 +182,7 @@ func (r *Release) Changes(releases []Release) (string, error) {
 	return response, nil
 }
 
-//  Seaches for required release from supplied list of releases, and returns it.
+// Seaches for required release from supplied list of releases, and returns it.
 func SearchRelease(releases []Release, version string) (Release, error) {
 
 	log.Debug("Fetching latest release")
@@ -240,7 +239,7 @@ func SearchRelease(releases []Release, version string) (Release, error) {
 	return releases[0], nil
 }
 
-//	Downloads the list of all releases from GitHub API
+// Downloads the list of all releases from GitHub API
 func GetReleases() ([]Release, error) {
 
 	log.Debug("Fetching list of all releases")
@@ -259,7 +258,7 @@ func GetReleases() ([]Release, error) {
 	return array, nil
 }
 
-//  fetches the list of Nhost production servers
+// fetches the list of Nhost production servers
 func Servers() ([]Server, error) {
 
 	log.Debug("Fetching server locations")
@@ -293,220 +292,7 @@ func Servers() ([]Server, error) {
 	return response, err
 }
 
-//  generates fresh config.yaml for /nhost dir
-func GenerateConfig(options App) Configuration {
-
-	log.Debug("Generating app configuration")
-
-	hasura := Service{
-		Environment: map[string]interface{}{
-			"hasura_graphql_enable_remote_schema_permissions": false,
-		},
-	}
-
-	postgres := Service{
-		Environment: map[string]interface{}{
-			"postgres_user":     DB_USER,
-			"postgres_password": DB_PASSWORD,
-		},
-	}
-
-	minio := Service{
-		Environment: map[string]interface{}{
-			"minio_root_user":     MINIO_USER,
-			"minio_root_password": MINIO_PASSWORD,
-		},
-	}
-
-	//	This is no longer required from Hasura >= v2.1.0,
-	//	because it officially supports Apple Silicon machines.
-	//
-	//	Hasura's image is still not natively working on Apple Silicon.
-	//	If it's an Apple Silicon processor,
-	//	then add the custom Hasura image, as a temporary fix.
-	/*
-		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-			hasura.Image = "fedormelexin/graphql-engine-arm64"
-		}
-	*/
-
-	return Configuration{
-		Version: 3,
-		Services: map[string]*Service{
-			"hasura":   &hasura,
-			"postgres": &postgres,
-			"minio":    &minio,
-		},
-		MetadataDirectory: "metadata",
-		Storage: map[interface{}]interface{}{
-			"force_download_for_content_types": "text/html,application/javascript",
-		},
-		Auth: map[interface{}]interface{}{
-			"client_url":              "http://localhost:3000",
-			"anonymous_users_enabled": false,
-			"disable_new_users":       false,
-			"access_control": map[interface{}]interface{}{
-				"url": map[interface{}]interface{}{
-					"allowed_redirect_urls": "",
-				},
-				"email": map[interface{}]interface{}{
-					"allowed_emails":        "",
-					"allowed_email_domains": "",
-					"blocked_emails":        "",
-					"blocked_email_domains": "",
-				},
-			},
-			"password": map[interface{}]interface{}{
-				"min_length":   3,
-				"hibp_enabled": false,
-			},
-			"user": map[interface{}]interface{}{
-				"default_role":          "user",
-				"default_allowed_roles": "user,me",
-				"allowed_roles":         "user,me",
-				"mfa": map[interface{}]interface{}{
-					"enabled": false,
-					"issuer":  "nhost",
-				},
-			},
-			"token": map[interface{}]interface{}{
-				"access": map[interface{}]interface{}{
-					"expires_in": 900,
-				},
-				"refresh": map[interface{}]interface{}{
-					"expires_in": 43200,
-				},
-			},
-			"locale": map[interface{}]interface{}{
-				"default": "en",
-				"allowed": "en",
-			},
-			"smtp": map[interface{}]interface{}{
-				"host":   "mailhog",
-				"port":   ports.DefaultSMTPPort,
-				"user":   "user",
-				"pass":   "password",
-				"sender": "hasura-auth@example.com",
-				"method": "",
-				"secure": false,
-			},
-			"email": map[interface{}]interface{}{
-				"enabled":                        false,
-				"signin_email_verified_required": true,
-				"template_fetch_url":             "",
-				"passwordless": map[interface{}]interface{}{
-					"enabled": false,
-				},
-			},
-			"sms": map[interface{}]interface{}{
-				"enabled": false,
-				"provider": map[interface{}]interface{}{
-					"twilio": map[interface{}]interface{}{
-						"account_sid":          "",
-						"auth_token":           "",
-						"messaging_service_id": "",
-						"from":                 "",
-					},
-				},
-				"passwordless": map[interface{}]interface{}{
-					"enabled": false,
-				},
-			},
-			"provider": generateProviders(),
-			"gravatar": generateGravatarVars(),
-		},
-	}
-}
-
-func generateGravatarVars() map[string]interface{} {
-	return map[string]interface{}{
-		"enabled": true,
-		"default": "",
-		"rating":  "",
-	}
-}
-
-func generateProviders() map[string]interface{} {
-
-	return map[string]interface{}{
-		"google": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "email,profile",
-		},
-		"twilio": map[string]interface{}{
-			"enabled":              false,
-			"account_sid":          "",
-			"auth_token":           "",
-			"messaging_service_id": "",
-		},
-		"strava": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-		},
-		"facebook": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "email,photos,displayName",
-		},
-		"twitter": map[string]interface{}{
-			"enabled":         false,
-			"consumer_key":    "",
-			"consumer_secret": "",
-		},
-		"linkedin": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "r_emailaddress,r_liteprofile",
-		},
-		"apple": map[string]interface{}{
-			"enabled":     false,
-			"client_id":   "",
-			"key_id":      "",
-			"private_key": "",
-			"team_id":     "",
-			"scope":       "name,email",
-		},
-		"github": map[string]interface{}{
-			"enabled":          false,
-			"client_id":        "",
-			"client_secret":    "",
-			"token_url":        "",
-			"user_profile_url": "",
-			"scope":            "user:email",
-		},
-		"windows_live": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "wl.basic,wl.emails,wl.contacts_emails",
-		},
-		"spotify": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "user-read-email,user-read-private",
-		},
-		"gitlab": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"base_url":      "",
-			"scope":         "read_user",
-		},
-		"bitbucket": map[string]interface{}{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-		},
-	}
-}
-
-//  fetches saved credentials from auth file
+// fetches saved credentials from auth file
 func LoadCredentials() (Credentials, error) {
 
 	log.Debug("Fetching saved auth credentials")
