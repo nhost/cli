@@ -224,15 +224,12 @@ in the following manner:
 			status.Fatal(err.Error())
 		}
 
-		//  generate Nhost configuration
-		//  which will contain the information for GraphQL, Minio and other services
-		//nhostConfig := nhost.GenerateConfig(selectedProject)
-		//
-		////  save the Nhost configuration
-		//if err := nhostConfig.Save(); err != nil {
-		//	log.Debug(err)
-		//	status.Fatal("Failed to save Nhost configuration")
-		//}
+		// write config.yaml for hasura CLI to work :facepalm:
+		// maybe someday hasura cli won't need this file
+		if err := os.WriteFile(filepath.Join(nhost.NHOST_DIR, "config.yaml"), []byte("version: 3"), 0644); err != nil {
+			log.Debug(err)
+			status.Fatal(err.Error())
+		}
 
 		installDefaultTemplates(log)
 

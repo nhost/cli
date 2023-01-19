@@ -134,7 +134,7 @@ func Init() {
 	ENV_FILE = filepath.Join(util.WORKING_DIR, ".env.development")
 
 	//  path for .config.yaml file
-	CONFIG_PATH = filepath.Join(NHOST_DIR, "config.toml")
+	CONFIG_PATH = filepath.Join(NHOST_DIR, "conf.toml") // we can't name it "config.toml" because it will then be read by hasura CLI and break :facepalm:
 
 	//  path for .gitignore file
 	GITIGNORE = filepath.Join(util.WORKING_DIR, ".gitignore")
