@@ -118,8 +118,10 @@ github.com/cloudflare/circl/math/mlsbset
 github.com/cloudflare/circl/sign
 github.com/cloudflare/circl/sign/ed25519
 github.com/cloudflare/circl/sign/ed448
-# github.com/compose-spec/compose-go v1.8.2
+# github.com/compose-spec/compose-go v1.9.0
 ## explicit; go 1.18
+github.com/compose-spec/compose-go/dotenv
+github.com/compose-spec/compose-go/template
 github.com/compose-spec/compose-go/types
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
 ## explicit; go 1.11
