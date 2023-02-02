@@ -424,7 +424,7 @@ func (c Config) functionsService() *types.ServiceConfig {
 		Image:       c.serviceDockerImage(SvcFunctions, svcFunctionsDefaultImage),
 		Labels:      labels,
 		Restart:     types.RestartPolicyAlways,
-		Expose:      []string{"3000"},
+		Expose:      []string{"3000", "9229"},
 		Environment: c.functionsServiceEnvs().dockerServiceConfigEnv(),
 		HealthCheck: c.functionsServiceHealthcheck(time.Second*1, time.Minute*30), // 30 minutes is the maximum allowed time for a "functions" service to start, see more below
 		// Probe failure during that period will not be counted towards the maximum number of retries
@@ -445,6 +445,14 @@ func (c Config) functionsService() *types.ServiceConfig {
 				Type:   types.VolumeTypeVolume,
 				Source: volFunctionsNodeModules,
 				Target: "/opt/project/functions/node_modules",
+			},
+		},
+		Ports: []types.ServicePortConfig{
+			{
+				Mode:     "ingress",
+				Target:   9229,
+				Published: "9229",
+				Protocol: "tcp",
 			},
 		},
 	}
