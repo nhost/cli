@@ -15,8 +15,6 @@ import (
 	"time"
 
 	"github.com/nhost/cli/util"
-	"github.com/subosito/gotenv"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -103,26 +101,6 @@ func (config *Configuration) Save() error {
 	f.Sync()
 
 	return nil
-}
-
-func Env() ([]string, error) {
-	if !util.PathExists(ENV_FILE) {
-		return []string{}, nil
-	}
-
-	data, err := ioutil.ReadFile(ENV_FILE)
-	if err != nil {
-		return nil, err
-	}
-
-	pairs := gotenv.Parse(strings.NewReader(string(data)))
-	envs := []string{}
-
-	for key, value := range pairs {
-		envs = append(envs, fmt.Sprintf("%v=%v", key, value))
-	}
-
-	return envs, nil
 }
 
 func Info() (App, error) {
@@ -293,7 +271,8 @@ func Servers() ([]Server, error) {
 	return response, err
 }
 
-// generates fresh config.yaml for /nhost dir
+// deprecated
+// TODO: remove
 func GenerateConfig(options App) Configuration {
 
 	log.Debug("Generating app configuration")
@@ -418,6 +397,7 @@ func GenerateConfig(options App) Configuration {
 	}
 }
 
+// deprecated
 func generateGravatarVars() map[string]interface{} {
 	return map[string]interface{}{
 		"enabled": true,
@@ -426,6 +406,7 @@ func generateGravatarVars() map[string]interface{} {
 	}
 }
 
+// deprecated
 func generateProviders() map[string]interface{} {
 
 	return map[string]interface{}{

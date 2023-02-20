@@ -27,6 +27,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/nhost/cli/config"
+	"github.com/nhost/cli/internal/generichelper"
 	"os"
 	"path/filepath"
 	"strings"
@@ -93,6 +95,12 @@ in the following manner:
 
 		var err error
 		var selectedProject nhost.App
+
+		defaultConfig, err := config.DefaultConfig()
+		if err != nil {
+			status.Errorln("Failed to build default config")
+			os.Exit(1)
+		}
 
 		//	Read project ID from arguments, if remote is true
 		if remote && len(args) > 0 {
@@ -208,14 +216,24 @@ in the following manner:
 			status.Errorln(err.Error())
 		}
 
-		//  generate Nhost configuration
-		//  which will contain the information for GraphQL, Minio and other services
-		nhostConfig := nhost.GenerateConfig(selectedProject)
+		b, err := defaultConfig.Marshal()
+		if err != nil {
+			log.Debug(err)
+			status.Fatal(err.Error())
+		}
 
 		//  save the Nhost configuration
-		if err := nhostConfig.Save(); err != nil {
+		if err := os.WriteFile(nhost.CONFIG_PATH, b, 0644); err != nil {
 			log.Debug(err)
 			status.Fatal("Failed to save Nhost configuration")
+			status.Fatal(err.Error())
+		}
+
+		// write config.yaml for hasura CLI to work :facepalm:
+		// maybe someday hasura cli won't need this file
+		if err := os.WriteFile(filepath.Join(nhost.NHOST_DIR, "config.yaml"), []byte("version: 3"), 0644); err != nil {
+			log.Debug(err)
+			status.Fatal(err.Error())
 		}
 
 		installDefaultTemplates(log)
@@ -256,8 +274,9 @@ in the following manner:
 			hasuraEndpoint := fmt.Sprintf("https://%s.hasura.%s.%s", selectedProject.Subdomain, selectedProject.Region.AwsName, nhost.DOMAIN)
 			adminSecret := resolvedConf.GetHasura().GetAdminSecret()
 
+			hasuraVersion := generichelper.DerefPtr(defaultConfig.Hasura().GetVersion())
 			//  create new hasura client
-			hasuraClient, err := hasura.InitClient(hasuraEndpoint, adminSecret, viper.GetString(userDefinedHasuraCliFlag), nil)
+			hasuraClient, err := hasura.InitClient(hasuraEndpoint, adminSecret, hasuraVersion, viper.GetString(userDefinedHasuraCliFlag), nil)
 			if err != nil {
 				log.Debug(err)
 				status.Fatal("Failed to initialize Hasura client")

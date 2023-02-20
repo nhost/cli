@@ -28,6 +28,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nhost/cli/config"
+	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/internal/git"
 	"github.com/nhost/cli/internal/ports"
 	nhostssl "github.com/nhost/cli/internal/ssl"
@@ -36,7 +38,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"reflect"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -138,11 +139,6 @@ var devCmd = &cobra.Command{
 			return err
 		}
 
-		env, err := nhost.Env()
-		if err != nil {
-			return fmt.Errorf("failed to read .env.development: %v", err)
-		}
-
 		ports, err := getPorts(cmd.Flags())
 		if err != nil {
 			return fmt.Errorf("failed to get ports: %v", err)
@@ -150,7 +146,9 @@ var devCmd = &cobra.Command{
 
 		debug := logger.DEBUG
 
-		hc, err := hasura.InitClient(compose.HasuraConsoleHostname(ports.GraphQL()), util.ADMIN_SECRET, viper.GetString(userDefinedHasuraCliFlag), nil)
+		hasuraVersion := generichelper.DerefPtr(config.Hasura().GetVersion())
+
+		hc, err := hasura.InitClient(compose.HasuraConsoleHostname(ports.GraphQL()), util.ADMIN_SECRET, hasuraVersion, viper.GetString(userDefinedHasuraCliFlag), nil)
 		if err != nil {
 			return fmt.Errorf("failed to init hasura client: %v", err)
 		}
@@ -175,13 +173,18 @@ var devCmd = &cobra.Command{
 			return fmt.Errorf("failed to get current working directory: %v", err)
 		}
 
+		secrets, err := nhost.GetLocalSecrets()
+		if err != nil {
+			return fmt.Errorf("failed to get local secrets: %v", err)
+		}
+
 		dcMgr, err := service.NewDockerComposeManager(
 			nhostssl.NewNhostSSLCert(),
 			config,
+			secrets,
 			cwd,
 			hc,
 			ports,
-			env,
 			gitBranchName,
 			projectName,
 			log,
@@ -400,37 +403,15 @@ func init() {
 	viper.BindPFlag(userDefinedHasuraCliFlag, devCmd.PersistentFlags().Lookup(userDefinedHasuraCliFlag))
 }
 
-func configurationWarnings(c *nhost.Configuration) {
-	// warn about deprecated fields
-	for name, svc := range c.Services {
-		if svc != nil && svc.Version != nil && svc.Version.(string) != "" {
-			fmt.Printf("WARNING: [services.%s.version] \"version\" field is not used anymore, please use \"image\" instead or let CLI use the default version\n", name)
-		}
+func configurationWarnings(c *config.Config) {
+	smtpHost := c.Provider().GetSmtp().GetHost()
+	smtpPort := generichelper.DerefPtr(c.Provider().GetSmtp().GetPort())
+
+	if smtpHost != "" && smtpHost != "mailhog" && strings.Contains(smtpHost, "mailhog") {
+		fmt.Printf("WARNING: [provider.smtp] \"host\" field has a value \"%s\", please set the value to \"mailhog\" if you want CLI to catch the mails\n", smtpHost)
 	}
 
-	// check auth smtp config
-	var smtpHost, smtpPort string
-	if smtp, ok := c.Auth["smtp"]; ok { //nolint:nestif
-		v := reflect.ValueOf(smtp)
-
-		if v.Kind() == reflect.Map {
-			for _, key := range v.MapKeys() {
-				if key.Interface().(string) == "host" {
-					smtpHost = v.MapIndex(key).Interface().(string)
-				}
-
-				if key.Interface().(string) == "port" {
-					smtpPort = fmt.Sprint(v.MapIndex(key).Interface())
-				}
-			}
-		}
-
-		if smtpHost != "" && smtpHost != "mailhog" && strings.Contains(smtpHost, "mailhog") {
-			fmt.Printf("WARNING: [auth.smtp.host] \"host\" field has a value \"%s\", please set the value to \"mailhog\" if you want CLI to spin up a container for mail catching\n", smtpHost)
-		}
-
-		if smtpPort != "1025" && strings.Contains(smtpHost, "mailhog") {
-			fmt.Printf("WARNING: [auth.smtp.port] \"port\" field has a value \"%s\", please set the value to \"1025\" if you want mailhog to work properly\n", smtpPort)
-		}
+	if smtpPort != 1025 && strings.Contains(smtpHost, "mailhog") {
+		fmt.Printf("WARNING: [provider.smtp] \"port\" field has a value \"%d\", please set the value to \"1025\" if you want mailhog to work properly\n", smtpPort)
 	}
 }

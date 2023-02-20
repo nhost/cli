@@ -20,17 +20,12 @@ const (
 )
 
 func (c Config) postgresServiceEnvs() env {
-	e := env{
+	return env{
 		envPostgresData:     envPostgresDataDefaultValue,
 		envPostgresUser:     envPostgresUserDefaultValue,
 		envPostgresPassword: envPostgresPasswordDefaultValue,
 		envPostgresDb:       envPostgresDbDefaultValue,
-	}
-
-	e.merge(c.serviceConfigEnvs(SvcPostgres))
-	e.mergeWithSlice(c.dotenv)
-
-	return e
+	}.merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
 func (c Config) postgresServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
@@ -52,7 +47,7 @@ func (c Config) postgresService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name: SvcPostgres,
 		// keep in mind that the provided postgres image should create schemas and triggers like in https://github.com/nhost/postgres/blob/ea53451b6df9f4b10ce515a2cefbd9ddfdfadb25/v12/db/0001-create-schema.sql
-		Image:       c.serviceDockerImage(SvcPostgres, svcPostgresDefaultImage),
+		Image:       "nhost/postgres:14.5-20230104-1",
 		Restart:     types.RestartPolicyAlways,
 		Environment: c.postgresServiceEnvs().dockerServiceConfigEnv(),
 		HealthCheck: c.postgresServiceHealthcheck(time.Second*3, time.Minute*2),

@@ -418,7 +418,7 @@ github.com/mitchellh/mapstructure
 # github.com/mpvl/unique v0.0.0-20150818121801-cbe035fff7de
 ## explicit
 github.com/mpvl/unique
-# github.com/nhost/be v0.0.0-20230324111224-9d455f8b0652
+# github.com/nhost/be v0.0.0-20230315113135-132d878b86ad
 ## explicit; go 1.20
 github.com/nhost/be/services/mimir/model
 github.com/nhost/be/services/mimir/schema
@@ -492,7 +492,7 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/stretchr/testify v1.8.1
+# github.com/stretchr/testify v1.8.2
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 # github.com/subosito/gotenv v1.4.2

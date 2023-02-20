@@ -6,28 +6,12 @@ import (
 	"testing"
 )
 
-func Test_env_mergeWithServiceEnv(t *testing.T) {
+func Test_env_merge(t *testing.T) {
 	assert := assert.New(t)
 
 	e := env{"A": "B"}
-	e.mergeWithServiceEnv(map[string]interface{}{"A": "C", "B": "D", "small": "bIG"})
-	assert.Equal(env{"A": "C", "B": "D", "SMALL": "bIG"}, e)
-}
-
-func Test_env_mergeWithConfigEnv(t *testing.T) {
-	assert := assert.New(t)
-
-	e := env{"A": "B"}
-	e.mergeWithConfigEnv(map[interface{}]interface{}{"A": "C", "B": "D", "small": "bIG"}, "SVC")
-	assert.Equal(env{"A": "B", "SVC_B": "D", "SVC_A": "C", "SVC_SMALL": "bIG"}, e)
-}
-
-func Test_env_mergeWithSlice(t *testing.T) {
-	assert := assert.New(t)
-
-	e := env{"A": "B"}
-	e.mergeWithConfigEnv(map[interface{}]interface{}{"A": "C", "B": "D", "small": "bIG"}, "SVC")
-	assert.Equal(env{"A": "B", "SVC_B": "D", "SVC_A": "C", "SVC_SMALL": "bIG"}, e)
+	e.merge(env{"C": "D", "D": "E"}, env{"FOO": "BAR", "D": "F"})
+	assert.Equal(env{"A": "B", "C": "D", "D": "F", "FOO": "BAR"}, e)
 }
 
 func Test_env_dockerServiceConfigEnv(t *testing.T) {

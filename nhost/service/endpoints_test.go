@@ -2,13 +2,23 @@ package service_test
 
 import (
 	"bytes"
+	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/internal/ports"
-	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/nhost/compose"
 	"github.com/nhost/cli/nhost/service"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+func defaultConfig(t *testing.T) *config.Config {
+	t.Helper()
+	c, err := config.DefaultConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return c
+}
 
 func TestEndpoints_Dump(t *testing.T) {
 	assert := assert.New(t)
@@ -24,7 +34,7 @@ func TestEndpoints_Dump(t *testing.T) {
 		ports.DefaultDashboardPort,
 		ports.DefaultMailhogPort,
 	)
-	dcConf := compose.NewConfig(&nhost.Configuration{}, p, []string{}, "", "")
+	dcConf := compose.NewConfig(defaultConfig(t), p, map[string]string{}, "", "")
 	endpoints := service.NewEndpoints(
 		dcConf.PublicPostgresConnectionString(),
 		dcConf.PublicHasuraGraphqlEndpoint(),

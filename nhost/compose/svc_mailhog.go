@@ -17,42 +17,22 @@ const (
 func (c Config) mailhogServiceEnvs() env {
 	authEnv := c.authServiceEnvs()
 
-	e := env{
+	return env{
 		"SMTP_HOST":   authEnv[envAuthSmtpHost],
 		"SMTP_PORT":   authEnv[envAuthSmtpPort],
 		"SMTP_PASS":   authEnv[envAuthSmtpPass],
 		"SMTP_USER":   authEnv[envAuthSmtpUser],
 		"SMTP_SECURE": authEnv[envAuthSmtpSecure],
 		"SMTP_SENDER": authEnv[envAuthSmtpSender],
-	}
-
-	e.merge(c.serviceConfigEnvs(SvcMailhog))
-	e.mergeWithSlice(c.dotenv)
-	return e
-}
-
-func (c Config) runMailhogService() bool {
-	if conf, ok := c.nhostConfig.Services[SvcMailhog]; ok && conf != nil {
-		if conf.NoContainer {
-			return false
-		}
-	}
-
-	authEnv := c.authServiceEnvs()
-
-	return authEnv[envAuthSmtpHost] == SvcMailhog
+	}.merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
 func (c Config) mailhogService() *types.ServiceConfig {
-	if !c.runMailhogService() {
-		return nil
-	}
-
 	return &types.ServiceConfig{
 		Name:        SvcMailhog,
 		Environment: c.mailhogServiceEnvs().dockerServiceConfigEnv(),
 		Restart:     types.RestartPolicyAlways,
-		Image:       c.serviceDockerImage(SvcMailhog, svcMailhogDefaultImage),
+		Image:       "mailhog/mailhog",
 		Ports: []types.ServicePortConfig{
 			{
 				Mode:      "ingress",
