@@ -256,35 +256,11 @@ const (
 
 // GetDependencies retrieve all services this service depends on
 func (s ServiceConfig) GetDependencies() []string {
-	dependencies := make(set)
-	for dependency := range s.DependsOn {
-		dependencies.append(dependency)
+	var dependencies []string
+	for service := range s.DependsOn {
+		dependencies = append(dependencies, service)
 	}
-	for _, link := range s.Links {
-		parts := strings.Split(link, ":")
-		if len(parts) == 2 {
-			dependencies.append(parts[0])
-		} else {
-			dependencies.append(link)
-		}
-	}
-	if strings.HasPrefix(s.NetworkMode, ServicePrefix) {
-		dependencies.append(s.NetworkMode[len(ServicePrefix):])
-	}
-	if strings.HasPrefix(s.Ipc, ServicePrefix) {
-		dependencies.append(s.Ipc[len(ServicePrefix):])
-	}
-	if strings.HasPrefix(s.Pid, ServicePrefix) {
-		dependencies.append(s.Pid[len(ServicePrefix):])
-	}
-	for _, vol := range s.VolumesFrom {
-		if !strings.HasPrefix(s.Pid, ContainerPrefix) {
-			spec := strings.Split(vol, ":")
-			dependencies.append(spec[0])
-		}
-	}
-
-	return dependencies.toSlice()
+	return dependencies
 }
 
 type set map[string]struct{}
@@ -480,6 +456,21 @@ func NewMapping(values []string) Mapping {
 		}
 	}
 	return mapping
+}
+
+// ToMappingWithEquals converts Mapping into a MappingWithEquals with pointer references
+func (m Mapping) ToMappingWithEquals() MappingWithEquals {
+	mapping := MappingWithEquals{}
+	for k, v := range m {
+		v := v
+		mapping[k] = &v
+	}
+	return mapping
+}
+
+func (m Mapping) Resolve(s string) (string, bool) {
+	v, ok := m[s]
+	return v, ok
 }
 
 // Labels is a mapping type for labels
@@ -992,6 +983,7 @@ type DependsOnConfig map[string]ServiceDependency
 
 type ServiceDependency struct {
 	Condition  string                 `yaml:",omitempty" json:"condition,omitempty"`
+	Restart    bool                   `yaml:",omitempty" json:"restart,omitempty"`
 	Extensions map[string]interface{} `yaml:",inline" json:"-"`
 }
 
