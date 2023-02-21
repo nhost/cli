@@ -1,13 +1,17 @@
-package compose
+package envvars
 
 import (
 	"fmt"
 	"github.com/compose-spec/compose-go/types"
 )
 
-type env map[string]string
+func New() Env {
+	return Env{}
+}
 
-func (e env) merge(otherEnv ...env) env {
+type Env map[string]string
+
+func (e Env) Merge(otherEnv ...Env) Env {
 	for _, e2 := range otherEnv {
 		for k, v := range e2 {
 			e[k] = v
@@ -17,7 +21,7 @@ func (e env) merge(otherEnv ...env) env {
 	return e
 }
 
-func (e env) dockerServiceConfigEnv() types.MappingWithEquals {
+func (e Env) ToDockerServiceConfigEnv() types.MappingWithEquals {
 	out := []string{}
 
 	for k, v := range e {

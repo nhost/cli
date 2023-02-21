@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/internal/ports"
+	"github.com/nhost/cli/nhost/envvars"
 	"github.com/nhost/cli/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -16,14 +17,14 @@ func TestConfig_storageServiceEnvs(t *testing.T) {
 		apiRootPrefix string
 		nhostConfig   *config.Config
 		ports         *ports.Ports
-		want          env
+		want          envvars.Env
 	}{
 		{
 			name:          "when minio is enabled",
 			apiRootPrefix: "/v1",
 			nhostConfig:   defaultNhostConfig(t),
 			ports:         testPorts(t),
-			want: env{
+			want: envvars.Env{
 				"DEBUG":                       "true",
 				"BIND":                        ":8576",
 				"PUBLIC_URL":                  "https://local.storage.nhost.run",

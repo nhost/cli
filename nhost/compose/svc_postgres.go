@@ -3,6 +3,7 @@ package compose
 import (
 	"fmt"
 	"github.com/compose-spec/compose-go/types"
+	"github.com/nhost/cli/nhost/envvars"
 	"time"
 )
 
@@ -19,13 +20,13 @@ const (
 	envPostgresDataDefaultValue     = "/var/lib/postgresql/data/pgdata"
 )
 
-func (c Config) postgresServiceEnvs() env {
-	return env{
+func (c Config) postgresServiceEnvs() envvars.Env {
+	return envvars.Env{
 		envPostgresData:     envPostgresDataDefaultValue,
 		envPostgresUser:     envPostgresUserDefaultValue,
 		envPostgresPassword: envPostgresPasswordDefaultValue,
 		envPostgresDb:       envPostgresDbDefaultValue,
-	}.merge(c.nhostSystemEnvs(), c.globalEnvs)
+	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
 func (c Config) postgresServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
@@ -49,7 +50,7 @@ func (c Config) postgresService() *types.ServiceConfig {
 		// keep in mind that the provided postgres image should create schemas and triggers like in https://github.com/nhost/postgres/blob/ea53451b6df9f4b10ce515a2cefbd9ddfdfadb25/v12/db/0001-create-schema.sql
 		Image:       "nhost/postgres:14.5-20230104-1",
 		Restart:     types.RestartPolicyAlways,
-		Environment: c.postgresServiceEnvs().dockerServiceConfigEnv(),
+		Environment: c.postgresServiceEnvs().ToDockerServiceConfigEnv(),
 		HealthCheck: c.postgresServiceHealthcheck(time.Second*3, time.Minute*2),
 		Command: []string{
 			"postgres",

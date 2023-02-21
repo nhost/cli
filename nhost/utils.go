@@ -26,21 +26,6 @@ var (
 	projectNameIgnoreRegex = regexp.MustCompile(`([^a-z0-9-_])+`)
 )
 
-func ParseEnvVarsFromConfig(payload map[interface{}]interface{}, prefix string) []string {
-	var response []string
-	for key, item := range payload {
-		switch item := item.(type) {
-		case map[interface{}]interface{}:
-			response = append(response, ParseEnvVarsFromConfig(item, strings.ToUpper(strings.Join([]string{prefix, fmt.Sprint(key)}, "_")))...)
-		case interface{}:
-			if item != "" {
-				response = append(response, fmt.Sprintf("%s_%v=%v", prefix, strings.ToUpper(fmt.Sprint(key)), item))
-			}
-		}
-	}
-	return response
-}
-
 // GetLocalSecrets returns the contents of the .env.secrets file if it exists.
 func GetLocalSecrets() ([]byte, error) {
 	secretsPath := filepath.Join(util.WORKING_DIR, ".env.secrets")
@@ -81,7 +66,7 @@ func GetConfiguration() (*config.Config, error) {
 		return nil, err
 	}
 
-	if err = s.ValidateConfig(c); err != nil {
+	if err := s.ValidateConfig(c); err != nil {
 		return nil, err
 	}
 

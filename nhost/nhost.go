@@ -278,20 +278,20 @@ func GenerateConfig(options App) Configuration {
 	log.Debug("Generating app configuration")
 
 	hasura := Service{
-		Environment: map[string]interface{}{
+		Environment: map[string]any{
 			"hasura_graphql_enable_remote_schema_permissions": true,
 		},
 	}
 
 	postgres := Service{
-		Environment: map[string]interface{}{
+		Environment: map[string]any{
 			"postgres_user":     DB_USER,
 			"postgres_password": DB_PASSWORD,
 		},
 	}
 
 	minio := Service{
-		Environment: map[string]interface{}{
+		Environment: map[string]any{
 			"minio_root_user":     MINIO_USER,
 			"minio_root_password": MINIO_PASSWORD,
 		},
@@ -317,50 +317,50 @@ func GenerateConfig(options App) Configuration {
 			"minio":    &minio,
 		},
 		MetadataDirectory: "metadata",
-		Storage: map[interface{}]interface{}{
+		Storage: map[any]any{
 			"force_download_for_content_types": "text/html,application/javascript",
 		},
-		Auth: map[interface{}]interface{}{
+		Auth: map[any]any{
 			"client_url":              "http://localhost:3000",
 			"anonymous_users_enabled": false,
 			"disable_new_users":       false,
-			"access_control": map[interface{}]interface{}{
-				"url": map[interface{}]interface{}{
+			"access_control": map[any]any{
+				"url": map[any]any{
 					"allowed_redirect_urls": "",
 				},
-				"email": map[interface{}]interface{}{
+				"email": map[any]any{
 					"allowed_emails":        "",
 					"allowed_email_domains": "",
 					"blocked_emails":        "",
 					"blocked_email_domains": "",
 				},
 			},
-			"password": map[interface{}]interface{}{
+			"password": map[any]any{
 				"min_length":   3,
 				"hibp_enabled": false,
 			},
-			"user": map[interface{}]interface{}{
+			"user": map[any]any{
 				"default_role":          "user",
 				"default_allowed_roles": "user,me",
 				"allowed_roles":         "user,me",
-				"mfa": map[interface{}]interface{}{
+				"mfa": map[any]any{
 					"enabled": false,
 					"issuer":  "nhost",
 				},
 			},
-			"token": map[interface{}]interface{}{
-				"access": map[interface{}]interface{}{
+			"token": map[any]any{
+				"access": map[any]any{
 					"expires_in": 900,
 				},
-				"refresh": map[interface{}]interface{}{
+				"refresh": map[any]any{
 					"expires_in": 43200,
 				},
 			},
-			"locale": map[interface{}]interface{}{
+			"locale": map[any]any{
 				"default": "en",
 				"allowed": "en",
 			},
-			"smtp": map[interface{}]interface{}{
+			"smtp": map[any]any{
 				"host":   "mailhog",
 				"port":   ports.DefaultSMTPPort,
 				"user":   "user",
@@ -369,25 +369,25 @@ func GenerateConfig(options App) Configuration {
 				"method": "",
 				"secure": false,
 			},
-			"email": map[interface{}]interface{}{
+			"email": map[any]any{
 				"enabled":                        false,
 				"signin_email_verified_required": true,
 				"template_fetch_url":             "",
-				"passwordless": map[interface{}]interface{}{
+				"passwordless": map[any]any{
 					"enabled": false,
 				},
 			},
-			"sms": map[interface{}]interface{}{
+			"sms": map[any]any{
 				"enabled": false,
-				"provider": map[interface{}]interface{}{
-					"twilio": map[interface{}]interface{}{
+				"provider": map[any]any{
+					"twilio": map[any]any{
 						"account_sid":          "",
 						"auth_token":           "",
 						"messaging_service_id": "",
 						"from":                 "",
 					},
 				},
-				"passwordless": map[interface{}]interface{}{
+				"passwordless": map[any]any{
 					"enabled": false,
 				},
 			},
@@ -398,8 +398,8 @@ func GenerateConfig(options App) Configuration {
 }
 
 // deprecated
-func generateGravatarVars() map[string]interface{} {
-	return map[string]interface{}{
+func generateGravatarVars() map[any]any {
+	return map[any]any{
 		"enabled": true,
 		"default": "",
 		"rating":  "",
@@ -407,44 +407,44 @@ func generateGravatarVars() map[string]interface{} {
 }
 
 // deprecated
-func generateProviders() map[string]interface{} {
+func generateProviders() map[any]any {
 
-	return map[string]interface{}{
-		"google": map[string]interface{}{
+	return map[any]any{
+		"google": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",
 			"scope":         "email,profile",
 		},
-		"twilio": map[string]interface{}{
+		"twilio": map[any]any{
 			"enabled":              false,
 			"account_sid":          "",
 			"auth_token":           "",
 			"messaging_service_id": "",
 		},
-		"strava": map[string]interface{}{
+		"strava": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",
 		},
-		"facebook": map[string]interface{}{
+		"facebook": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",
 			"scope":         "email,photos,displayName",
 		},
-		"twitter": map[string]interface{}{
+		"twitter": map[any]any{
 			"enabled":         false,
 			"consumer_key":    "",
 			"consumer_secret": "",
 		},
-		"linkedin": map[string]interface{}{
+		"linkedin": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",
 			"scope":         "r_emailaddress,r_liteprofile",
 		},
-		"apple": map[string]interface{}{
+		"apple": map[any]any{
 			"enabled":     false,
 			"client_id":   "",
 			"key_id":      "",
@@ -452,7 +452,7 @@ func generateProviders() map[string]interface{} {
 			"team_id":     "",
 			"scope":       "name,email",
 		},
-		"github": map[string]interface{}{
+		"github": map[any]any{
 			"enabled":          false,
 			"client_id":        "",
 			"client_secret":    "",
@@ -460,26 +460,26 @@ func generateProviders() map[string]interface{} {
 			"user_profile_url": "",
 			"scope":            "user:email",
 		},
-		"windows_live": map[string]interface{}{
+		"windows_live": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",
 			"scope":         "wl.basic,wl.emails,wl.contacts_emails",
 		},
-		"spotify": map[string]interface{}{
+		"spotify": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",
 			"scope":         "user-read-email,user-read-private",
 		},
-		"gitlab": map[string]interface{}{
+		"gitlab": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",
 			"base_url":      "",
 			"scope":         "read_user",
 		},
-		"bitbucket": map[string]interface{}{
+		"bitbucket": map[any]any{
 			"enabled":       false,
 			"client_id":     "",
 			"client_secret": "",

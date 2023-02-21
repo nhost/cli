@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/compose-spec/compose-go/types"
 	"github.com/nhost/cli/nhost"
+	"github.com/nhost/cli/nhost/envvars"
 )
 
 const (
@@ -11,17 +12,17 @@ const (
 	envMinioRootPassword = "MINIO_ROOT_PASSWORD"
 )
 
-func (c Config) minioServiceEnvs() env {
-	return env{
+func (c Config) minioServiceEnvs() envvars.Env {
+	return envvars.Env{
 		envMinioRootUser:     nhost.MINIO_USER,
 		envMinioRootPassword: nhost.MINIO_PASSWORD,
-	}.merge(c.nhostSystemEnvs(), c.globalEnvs)
+	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
 func (c Config) minioService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name:        SvcMinio,
-		Environment: c.minioServiceEnvs().dockerServiceConfigEnv(),
+		Environment: c.minioServiceEnvs().ToDockerServiceConfigEnv(),
 		Restart:     types.RestartPolicyAlways,
 		Image:       "minio/minio:RELEASE.2022-07-08T00-05-23Z",
 		Command:     []string{"server", "/data", "--address", "0.0.0.0:9000", "--console-address", "0.0.0.0:8484"},

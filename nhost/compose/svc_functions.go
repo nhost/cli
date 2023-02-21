@@ -3,11 +3,12 @@ package compose
 import (
 	"github.com/compose-spec/compose-go/types"
 	"github.com/nhost/cli/internal/generichelper"
+	"github.com/nhost/cli/nhost/envvars"
 	"time"
 )
 
-func (c Config) functionsServiceEnvs() env {
-	return c.nhostSystemEnvs().merge(c.globalEnvs)
+func (c Config) functionsServiceEnvs() envvars.Env {
+	return c.nhostSystemEnvs().Merge(c.globalEnvs)
 }
 
 func (c Config) functionsServiceHealthcheck(interval, startPeriod time.Duration) *types.HealthCheckConfig {
@@ -42,7 +43,7 @@ func (c Config) functionsService() *types.ServiceConfig {
 		Image:       "nhost/functions:" + generichelper.DerefPtr(c.nhostConfig.Functions().GetVersion()),
 		Labels:      mergeTraefikServiceLabels(sslLabels, httpLabels).AsMap(),
 		Restart:     types.RestartPolicyAlways,
-		Environment: c.functionsServiceEnvs().dockerServiceConfigEnv(),
+		Environment: c.functionsServiceEnvs().ToDockerServiceConfigEnv(),
 		HealthCheck: c.functionsServiceHealthcheck(time.Second*1, time.Minute*30), // 30 minutes is the maximum allowed time for a "functions" service to start, see more below
 		// Probe failure during that period will not be counted towards the maximum number of retries
 		// However, if a health check succeeds during the start period, the container is considered started and all

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/config"
+	"github.com/nhost/cli/nhost/envvars"
 	"github.com/nhost/cli/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -19,7 +20,7 @@ func TestConfig_authServiceEnvs(t *testing.T) {
 		nhostConfig: defaultNhostConfig(t),
 	}
 
-	assert.Equal(env{
+	assert.Equal(envvars.Env{
 		"AUTH_HOST":                                 "0.0.0.0",
 		"HASURA_GRAPHQL_DATABASE_URL":               "postgres://nhost_auth_admin@local.db.nhost.run:5432/postgres",
 		"HASURA_GRAPHQL_GRAPHQL_URL":                "https://local.hasura.nhost.run/v1/graphql",

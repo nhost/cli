@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-  "github.com/nhost/cli/config"
-  "github.com/nhost/cli/internal/generichelper"
+	"github.com/nhost/cli/config"
+	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/internal/ports"
+	"github.com/nhost/cli/nhost/envvars"
 	"gopkg.in/yaml.v3"
 
 	"github.com/compose-spec/compose-go/types"
-	"github.com/nhost/cli/util"
 )
 
 const (
@@ -47,25 +47,13 @@ const (
 	proxySSLPort    = 443
 	// --
 
-	// default docker images
-	svcDashboardDefaultImage = "nhost/dashboard:0.13.9"
-	svcPostgresDefaultImage  = "nhost/postgres:14.5-20230104-1"
-	svcAuthDefaultImage      = "nhost/hasura-auth:0.19.0"
-	svcStorageDefaultImage   = "nhost/hasura-storage:0.3.0"
-	svcFunctionsDefaultImage = "nhost/functions:0.1.8"
-	svcMinioDefaultImage     = "minio/minio:RELEASE.2022-07-08T00-05-23Z"
-	svcMailhogDefaultImage   = "mailhog/mailhog"
-	svcHasuraDefaultImage    = "hasura/graphql-engine:v2.15.2"
-	svcTraefikDefaultImage   = "traefik:v2.8"
-	// --
-
 	// volume names
 	volFunctionsNodeModules = "functions_node_modules"
 	volRootNodeModules      = "root_node_modules"
-  // --
+	// --
 
-  // providers
-  providerTwilio = "twilio"
+	// providers
+	providerTwilio = "twilio"
 )
 
 type Config struct {
@@ -234,9 +222,9 @@ func (c Config) PublicDashboardURL() string {
 	return DashboardHostname(c.ports.Dashboard())
 }
 
-func (c Config) nhostSystemEnvs() env {
+func (c Config) nhostSystemEnvs() envvars.Env {
 	hasuraConf := c.nhostConfig.Hasura()
-	return env{
+	return envvars.Env{
 		"NHOST_BACKEND_URL":    c.envValueNhostBackendUrl(),
 		"NHOST_SUBDOMAIN":      SubdomainLocal,
 		"NHOST_REGION":         "",

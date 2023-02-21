@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"github.com/compose-spec/compose-go/types"
 	"github.com/nhost/cli/internal/generichelper"
+	"github.com/nhost/cli/nhost/envvars"
 )
 
-func (c Config) hasuraServiceEnvs() env {
+func (c Config) hasuraServiceEnvs() envvars.Env {
 	hasuraConf := c.nhostConfig.Hasura()
 
-	return env{
+	return envvars.Env{
 		"HASURA_GRAPHQL_DATABASE_URL":              c.postgresConnectionStringForUser("nhost_hasura"),
 		"HASURA_GRAPHQL_JWT_SECRET":                c.graphqlJwtSecret(),
 		"HASURA_GRAPHQL_ADMIN_SECRET":              hasuraConf.GetAdminSecret(),
@@ -20,7 +21,7 @@ func (c Config) hasuraServiceEnvs() env {
 		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT": "20",
 		"HASURA_GRAPHQL_NO_OF_RETRIES":             "20",
 		"HASURA_GRAPHQL_ENABLE_TELEMETRY":          "false",
-	}.merge(c.nhostSystemEnvs(), c.globalEnvs)
+	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
 func (c Config) hasuraService() *types.ServiceConfig {
@@ -70,7 +71,7 @@ func (c Config) hasuraService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name:        SvcGraphql,
 		Image:       "hasura/graphql-engine:" + generichelper.DerefPtr(c.nhostConfig.Hasura().GetVersion()),
-		Environment: c.hasuraServiceEnvs().dockerServiceConfigEnv(),
+		Environment: c.hasuraServiceEnvs().ToDockerServiceConfigEnv(),
 		Labels: mergeTraefikServiceLabels(
 			redirectRootLabels,
 			redirectConsoleLabels,

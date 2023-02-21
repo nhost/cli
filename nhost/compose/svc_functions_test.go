@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+	"github.com/nhost/cli/nhost/envvars"
 	"github.com/nhost/cli/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -12,7 +13,7 @@ func TestConfig_functionsServiceEnvs(t *testing.T) {
 
 	c := &Config{nhostConfig: defaultNhostConfig(t), ports: testPorts(t)}
 
-	assert.Equal(t, env{
+	assert.Equal(t, envvars.Env{
 		"NHOST_BACKEND_URL":    "http://traefik:1337",
 		"NHOST_SUBDOMAIN":      "local",
 		"NHOST_REGION":         "",

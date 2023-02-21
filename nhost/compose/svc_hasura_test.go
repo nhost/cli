@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+	"github.com/nhost/cli/nhost/envvars"
 	"github.com/nhost/cli/util"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -17,7 +18,7 @@ func TestConfig_hasuraServiceEnvs(t *testing.T) {
 		nhostConfig: defaultNhostConfig(t),
 	}
 
-	assert.Equal(env{
+	assert.Equal(envvars.Env{
 		"HASURA_GRAPHQL_DATABASE_URL":              "postgres://nhost_hasura@local.db.nhost.run:5432/postgres",
 		"HASURA_GRAPHQL_JWT_SECRET":                fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
 		"HASURA_GRAPHQL_ADMIN_SECRET":              "nhost-admin-secret",

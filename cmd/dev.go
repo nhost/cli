@@ -38,6 +38,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"text/tabwriter"
@@ -128,6 +129,13 @@ var devCmd = &cobra.Command{
 
 		ctx, cancel := context.WithCancel(cmd.Context())
 		defer cancel()
+
+		if !util.PathExists(nhost.CONFIG_PATH) {
+			if util.PathExists(filepath.Join(nhost.NHOST_DIR, "config.yaml")) {
+				log.Infof("Config file '%s' wasn't found. Please run 'nhost convert-config' to migrate your project to the new config format.", nhost.CONFIG_PATH)
+				os.Exit(0)
+			}
+		}
 
 		config, err := nhost.GetConfiguration()
 		if err != nil {

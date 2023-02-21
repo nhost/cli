@@ -6,6 +6,7 @@ import (
 	"github.com/compose-spec/compose-go/types"
 	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/nhost"
+	"github.com/nhost/cli/nhost/envvars"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,14 +22,14 @@ func (c Config) authJwtCustomClaims() string {
 	return string(jwtCustomClaims)
 }
 
-func (c Config) authServiceEnvs() env {
+func (c Config) authServiceEnvs() envvars.Env {
 	authConf := c.nhostConfig.Auth()
 	hasuraConf := c.nhostConfig.Hasura()
 	providerConf := c.nhostConfig.Provider()
 
 	twilioAccountSid, twilioAuthToken, twilioMessagingServiceId := c.twilioSettings()
 
-	return env{
+	return envvars.Env{
 		"AUTH_HOST":                                 "0.0.0.0",
 		"HASURA_GRAPHQL_DATABASE_URL":               c.postgresConnectionStringForUser("nhost_auth_admin"),
 		"HASURA_GRAPHQL_GRAPHQL_URL":                "http://graphql:8080/v1/graphql",
@@ -75,7 +76,7 @@ func (c Config) authServiceEnvs() env {
 		"AUTH_ACCESS_TOKEN_EXPIRES_IN":              fmt.Sprint(generichelper.DerefPtr(authConf.GetSession().GetAccessToken().GetExpiresIn())),
 		"AUTH_REFRESH_TOKEN_EXPIRES_IN":             fmt.Sprint(generichelper.DerefPtr(authConf.GetSession().GetRefreshToken().GetExpiresIn())),
 		"AUTH_JWT_CUSTOM_CLAIMS":                    c.authJwtCustomClaims(),
-	}.merge(c.nhostSystemEnvs(), c.globalEnvs)
+	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
 func (c Config) authService() *types.ServiceConfig {
@@ -99,7 +100,7 @@ func (c Config) authService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name:        SvcAuth,
 		Image:       "nhost/hasura-auth:" + generichelper.DerefPtr(c.nhostConfig.Auth().GetVersion()),
-		Environment: c.authServiceEnvs().dockerServiceConfigEnv(),
+		Environment: c.authServiceEnvs().ToDockerServiceConfigEnv(),
 		Labels:      mergeTraefikServiceLabels(sslLabels, httpLabels).AsMap(),
 		DependsOn: map[string]types.ServiceDependency{
 			SvcPostgres: {
