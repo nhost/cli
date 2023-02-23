@@ -413,7 +413,7 @@ func init() {
 
 func configurationWarnings(c *config.Config) {
 	smtpHost := c.Provider().GetSmtp().GetHost()
-	smtpPort := generichelper.DerefPtr(c.Provider().GetSmtp().GetPort())
+	smtpPort := c.Provider().GetSmtp().GetPort()
 
 	if smtpHost != "" && smtpHost != "mailhog" && strings.Contains(smtpHost, "mailhog") {
 		fmt.Printf("WARNING: [provider.smtp] \"host\" field has a value \"%s\", please set the value to \"mailhog\" if you want CLI to catch the mails\n", smtpHost)

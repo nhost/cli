@@ -71,6 +71,11 @@ var convertConfigCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal new config: %w", err)
 		}
 
+		if err = newConfig.Validate(); err != nil {
+			log.Infof("Generated config:\n\n%s\n\n", string(tomlConfigData))
+			return fmt.Errorf("validation failed for new config: %w", err)
+		}
+
 		if err = os.WriteFile(newConfigPath, tomlConfigData, 0644); err != nil {
 			return fmt.Errorf("failed to write new config file: %w", err)
 		}

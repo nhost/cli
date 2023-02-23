@@ -19,7 +19,6 @@ func TestDefaultConfig(t *testing.T) {
 
 	expectedGlobalConfig := &model.ConfigGlobal{
 		Environment: []*model.ConfigEnvironmentVariable{},
-		Name:        generichelper.Pointerify("Nhost application"),
 	}
 
 	expectedAuthConfig := &model.ConfigAuth{
@@ -89,7 +88,6 @@ func TestDefaultConfig(t *testing.T) {
 				},
 				Discord: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"identity", "email"},
 				},
 				Facebook: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
@@ -117,18 +115,16 @@ func TestDefaultConfig(t *testing.T) {
 				},
 				Strava: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"profile:read_all"},
 				},
 				Twitch: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"user:read:email"},
 				},
 				Twitter: &model.ConfigAuthMethodOauthTwitter{
 					Enabled: generichelper.Pointerify(false),
 				},
 				Windowslive: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"wl.basic", "wl.emails"},
+					Scope:   []string{"wl.basic", "wl.emails", "wl.contacts_emails"},
 				},
 				Workos: &model.ConfigAuthMethodOauthWorkos{
 					Enabled: generichelper.Pointerify(false),
@@ -150,11 +146,11 @@ func TestDefaultConfig(t *testing.T) {
 		Smtp: &model.ConfigSmtp{
 			User:     "user",
 			Password: "password",
-			Sender:   generichelper.Pointerify("hasura-auth@example.com"),
+			Sender:   "hasura-auth@example.com",
 			Host:     "mailhog",
-			Port:     generichelper.Pointerify(uint16(ports.DefaultSMTPPort)),
-			Secure:   generichelper.Pointerify(false),
-			Method:   generichelper.Pointerify("PLAIN"),
+			Port:     uint16(ports.DefaultSMTPPort),
+			Secure:   false,
+			Method:   "PLAIN",
 		},
 	}
 
@@ -174,14 +170,13 @@ func TestDefaultConfig(t *testing.T) {
 	}
 
 	expectedFunctionsConfig := &model.ConfigFunctions{
-		Version: generichelper.Pointerify("0.1.8"),
 		Node: &model.ConfigFunctionsNode{
 			Version: generichelper.Pointerify(16),
 		},
 	}
 
 	expectedStorageConfig := &model.ConfigStorage{
-		Version: generichelper.Pointerify("0.3.1"),
+		Version: generichelper.Pointerify("0.3.3"),
 	}
 
 	assert.Equal(expectedGlobalConfig, defaultConfig.Global())

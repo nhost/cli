@@ -2,7 +2,6 @@ package compose
 
 import (
 	"github.com/compose-spec/compose-go/types"
-	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/nhost/envvars"
 	"time"
 )
@@ -40,7 +39,7 @@ func (c Config) functionsService() *types.ServiceConfig {
 
 	return &types.ServiceConfig{
 		Name:        SvcFunctions,
-		Image:       "nhost/functions:" + generichelper.DerefPtr(c.nhostConfig.Functions().GetVersion()),
+		Image:       "nhost/functions:0.1.8",
 		Labels:      mergeTraefikServiceLabels(sslLabels, httpLabels).AsMap(),
 		Restart:     types.RestartPolicyAlways,
 		Environment: c.functionsServiceEnvs().ToDockerServiceConfigEnv(),

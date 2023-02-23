@@ -19,6 +19,15 @@ func NewConfig(c *model.ConfigConfig) *Config {
 	}
 }
 
+func (c Config) Validate() error {
+	s, err := schema.New()
+	if err != nil {
+		return err
+	}
+	return s.ValidateConfig(c.c)
+
+}
+
 func (c Config) Global() *model.ConfigGlobal {
 	return c.c.Global
 }
@@ -74,12 +83,26 @@ func defaultAuthConfig() *model.ConfigAuth {
 		},
 		Method: &model.ConfigAuthMethod{
 			Oauth: &model.ConfigAuthMethodOauth{
-				Apple: &model.ConfigAuthMethodOauthApple{},
 				Facebook: &model.ConfigStandardOauthProviderWithScope{
 					Scope: []string{"email", "photos", "displayName"},
 				},
 				Linkedin: &model.ConfigStandardOauthProviderWithScope{
 					Scope: []string{"r_emailaddress", "r_liteprofile"},
+				},
+				Google: &model.ConfigStandardOauthProviderWithScope{
+					Scope: []string{"email", "profile"},
+				},
+				Gitlab: &model.ConfigStandardOauthProviderWithScope{
+					Scope: []string{"read_user"},
+				},
+				Github: &model.ConfigStandardOauthProviderWithScope{
+					Scope: []string{"user:email"},
+				},
+				Windowslive: &model.ConfigStandardOauthProviderWithScope{
+					Scope: []string{"wl.basic", "wl.emails", "wl.contacts_emails"},
+				},
+				Spotify: &model.ConfigStandardOauthProviderWithScope{
+					Scope: []string{"user-read-email", "user-read-private"},
 				},
 			},
 		},
@@ -92,10 +115,11 @@ func defaultProviderConfig() *model.ConfigProvider {
 		Smtp: &model.ConfigSmtp{
 			User:     "user",
 			Password: "password",
-			Sender:   generichelper.Pointerify("hasura-auth@example.com"),
+			Sender:   "hasura-auth@example.com",
 			Host:     "mailhog",
-			Port:     generichelper.Pointerify(uint16(ports.DefaultSMTPPort)),
-			Secure:   generichelper.Pointerify(false),
+			Port:     uint16(ports.DefaultSMTPPort),
+			Secure:   false,
+			Method:   "PLAIN",
 		},
 	}
 }

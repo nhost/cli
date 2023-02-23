@@ -448,7 +448,7 @@ func Convert(logger logrus.FieldLogger, legacyConfig *nhost.Configuration) (*con
 
 		case "AUTH_SMTP_METHOD":
 			if value != "" {
-				providerConf.GetSmtp().Method = generichelper.Pointerify(value)
+				providerConf.GetSmtp().Method = value
 			}
 
 		case "AUTH_SMTP_PASS":
@@ -464,17 +464,17 @@ func Convert(logger logrus.FieldLogger, legacyConfig *nhost.Configuration) (*con
 					return nil, fmt.Errorf("failed to convert %s to uint16 in %s env: %w", value, key, err)
 				}
 
-				providerConf.GetSmtp().Port = generichelper.Pointerify(uint16(uint16Val))
+				providerConf.GetSmtp().Port = uint16(uint16Val)
 			}
 
 		case "AUTH_SMTP_SECURE":
 			if value != "" {
-				providerConf.GetSmtp().Secure = generichelper.Pointerify(strings.ToLower(value) == "true")
+				providerConf.GetSmtp().Secure = strings.ToLower(value) == "true"
 			}
 
 		case "AUTH_SMTP_SENDER":
 			if value != "" {
-				providerConf.GetSmtp().Sender = generichelper.Pointerify(value)
+				providerConf.GetSmtp().Sender = value
 			}
 
 		case "AUTH_SMTP_USER":
