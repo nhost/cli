@@ -83,6 +83,10 @@ func defaultAuthConfig() *model.ConfigAuth {
 		},
 		Method: &model.ConfigAuthMethod{
 			Oauth: &model.ConfigAuthMethodOauth{
+				Apple: &model.ConfigAuthMethodOauthApple{
+					Enabled: generichelper.Pointerify(false),
+					Scope:   []string{"name", "email"},
+				},
 				Facebook: &model.ConfigStandardOauthProviderWithScope{
 					Scope: []string{"email", "photos", "displayName"},
 				},

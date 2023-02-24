@@ -22,7 +22,7 @@ func TestDefaultConfig(t *testing.T) {
 	}
 
 	expectedAuthConfig := &model.ConfigAuth{
-		Version: generichelper.Pointerify("0.17.0"),
+		Version: generichelper.Pointerify("0.19.0"),
 		Redirections: &model.ConfigAuthRedirections{
 			ClientUrl:   generichelper.Pointerify("http://localhost:3000"),
 			AllowedUrls: []string{},
@@ -78,6 +78,7 @@ func TestDefaultConfig(t *testing.T) {
 			Oauth: &model.ConfigAuthMethodOauth{
 				Apple: &model.ConfigAuthMethodOauthApple{
 					Enabled: generichelper.Pointerify(false),
+					Scope:   []string{"name", "email"},
 				},
 				Azuread: &model.ConfigAuthMethodOauthAzuread{
 					Enabled: generichelper.Pointerify(false),

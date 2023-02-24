@@ -182,8 +182,13 @@ func Convert(logger logrus.FieldLogger, legacyConfig *nhost.Configuration) (*con
 			}
 
 		case "AUTH_PROVIDER_APPLE_SCOPE":
-			// TODO: should we support this?
-			notSupportedEnv(logger, key)
+			if value != "" {
+				scopes := strings.Split(value, ",")
+				for i, scope := range scopes {
+					scopes[i] = strings.TrimSpace(scope)
+				}
+				oauthConf.GetApple().Scope = scopes
+			}
 
 		case "AUTH_PROVIDER_APPLE_TEAM_ID":
 			if value != "" {
