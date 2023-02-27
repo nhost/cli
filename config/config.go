@@ -33,36 +33,6 @@ func defaultAuthConfig() *model.ConfigAuth {
 		Redirections: &model.ConfigAuthRedirections{
 			ClientUrl: generichelper.Pointerify("http://localhost:3000"),
 		},
-		Method: &model.ConfigAuthMethod{
-			Oauth: &model.ConfigAuthMethodOauth{
-				Apple: &model.ConfigAuthMethodOauthApple{
-					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"name", "email"},
-				},
-				Facebook: &model.ConfigStandardOauthProviderWithScope{
-					Scope: []string{"email", "photos", "displayName"},
-				},
-				Linkedin: &model.ConfigStandardOauthProviderWithScope{
-					Scope: []string{"r_emailaddress", "r_liteprofile"},
-				},
-				Google: &model.ConfigStandardOauthProviderWithScope{
-					Scope: []string{"email", "profile"},
-				},
-				Gitlab: &model.ConfigStandardOauthProviderWithScope{
-					Scope: []string{"read_user"},
-				},
-				Github: &model.ConfigStandardOauthProviderWithScope{
-					Scope: []string{"user:email"},
-				},
-				Windowslive: &model.ConfigStandardOauthProviderWithScope{
-					Scope: []string{"wl.basic", "wl.emails", "wl.contacts_emails"},
-				},
-				Spotify: &model.ConfigStandardOauthProviderWithScope{
-					Scope: []string{"user-read-email", "user-read-private"},
-				},
-			},
-		},
-		SignUp: &model.ConfigAuthSignUp{},
 	}
 }
 

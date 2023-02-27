@@ -78,7 +78,6 @@ func TestDefaultConfig(t *testing.T) {
 			Oauth: &model.ConfigAuthMethodOauth{
 				Apple: &model.ConfigAuthMethodOauthApple{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"name", "email"},
 				},
 				Azuread: &model.ConfigAuthMethodOauthAzuread{
 					Enabled: generichelper.Pointerify(false),
@@ -92,27 +91,21 @@ func TestDefaultConfig(t *testing.T) {
 				},
 				Facebook: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"email", "photos", "displayName"},
 				},
 				Github: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"user:email"},
 				},
 				Gitlab: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"read_user"},
 				},
 				Google: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"email", "profile"},
 				},
 				Linkedin: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"r_emailaddress", "r_liteprofile"},
 				},
 				Spotify: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"user-read-email", "user-read-private"},
 				},
 				Strava: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
@@ -125,7 +118,6 @@ func TestDefaultConfig(t *testing.T) {
 				},
 				Windowslive: &model.ConfigStandardOauthProviderWithScope{
 					Enabled: generichelper.Pointerify(false),
-					Scope:   []string{"wl.basic", "wl.emails", "wl.contacts_emails"},
 				},
 				Workos: &model.ConfigAuthMethodOauthWorkos{
 					Enabled: generichelper.Pointerify(false),
