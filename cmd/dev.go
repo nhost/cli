@@ -25,6 +25,7 @@ SOFTWARE.
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -132,8 +133,31 @@ var devCmd = &cobra.Command{
 
 		if !util.PathExists(nhost.CONFIG_PATH) {
 			if util.PathExists(filepath.Join(nhost.NHOST_DIR, "config.yaml")) {
-				log.Infof("Config file '%s' wasn't found. Please run 'nhost convert-config' to migrate your project to the new config format.", nhost.CONFIG_PATH)
-				os.Exit(0)
+				fmt.Printf("\nConfig file '%s' wasn't found. Would you like to create it? [Yn]: ", nhost.CONFIG_PATH)
+
+				for {
+					r := bufio.NewReader(os.Stdin)
+					fmt.Print(">  ")
+
+					input, err := r.ReadString('\n')
+					if err != nil {
+						return err
+					}
+
+					input = strings.TrimSpace(strings.ToLower(input))
+
+					if input == "n" {
+						log.Info("Please first run 'nhost convert-config' to migrate your project to the new config format.")
+						os.Exit(0)
+					}
+
+					if input == "y" || input == "" {
+						if err := convertConfigCmd.RunE(nil, nil); err != nil {
+							return err
+						}
+						break
+					}
+				}
 			}
 		}
 
