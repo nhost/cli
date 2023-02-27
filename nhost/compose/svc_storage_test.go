@@ -31,7 +31,7 @@ func TestConfig_storageServiceEnvs(t *testing.T) {
 				"API_ROOT_PREFIX":             "/v1",
 				"POSTGRES_MIGRATIONS":         "1",
 				"HASURA_METADATA":             "1",
-				"HASURA_ENDPOINT":             "https://local.hasura.nhost.run/v1",
+				"HASURA_ENDPOINT":             "http://graphql:8080/v1",
 				"HASURA_GRAPHQL_ADMIN_SECRET": "nhost-admin-secret",
 				"S3_ACCESS_KEY":               "minioaccesskey123123",
 				"S3_SECRET_KEY":               "minioaccesskey123123",

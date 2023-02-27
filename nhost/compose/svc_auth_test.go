@@ -22,7 +22,7 @@ func TestConfig_authServiceEnvs(t *testing.T) {
 	assert.Equal(envvars.Env{
 		"AUTH_HOST":                                 "0.0.0.0",
 		"HASURA_GRAPHQL_DATABASE_URL":               "postgres://nhost_auth_admin@local.db.nhost.run:5432/postgres",
-		"HASURA_GRAPHQL_GRAPHQL_URL":                "https://local.hasura.nhost.run/v1/graphql",
+		"HASURA_GRAPHQL_GRAPHQL_URL":                "http://graphql:8080/v1/graphql",
 		"AUTH_SERVER_URL":                           "https://local.auth.nhost.run/v1",
 		"HASURA_GRAPHQL_JWT_SECRET":                 fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
 		"HASURA_GRAPHQL_ADMIN_SECRET":               "nhost-admin-secret",
