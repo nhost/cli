@@ -2,7 +2,7 @@ package compose
 
 import (
 	"fmt"
-	"github.com/nhost/cli/config"
+	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/internal/ports"
 	"github.com/nhost/cli/nhost/envvars"
 	"github.com/nhost/cli/util"
@@ -15,7 +15,7 @@ func TestConfig_storageServiceEnvs(t *testing.T) {
 	tests := []struct {
 		name          string
 		apiRootPrefix string
-		nhostConfig   *config.Config
+		nhostConfig   *model.ConfigConfig
 		ports         *ports.Ports
 		want          envvars.Env
 	}{

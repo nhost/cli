@@ -12,17 +12,17 @@ import (
 	"strings"
 )
 
-func Convert(logger logrus.FieldLogger, legacyConfig *nhost.Configuration) (*config.Config, error) {
+func Convert(logger logrus.FieldLogger, legacyConfig *nhost.Configuration) (*model.ConfigConfig, error) {
 	newConfig, err := config.DefaultConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	authConf := newConfig.Auth()
+	authConf := newConfig.Auth
 	userConf := authConf.GetUser()
 	methodConf := authConf.GetMethod()
 	oauthConf := methodConf.GetOauth()
-	providerConf := newConfig.Provider()
+	providerConf := newConfig.Provider
 	mfaConf := authConf.GetTotp()
 	sessionConf := authConf.GetSession()
 
@@ -39,7 +39,7 @@ func Convert(logger logrus.FieldLogger, legacyConfig *nhost.Configuration) (*con
 			})
 		}
 
-		newConfig.Global().Environment = globalEnvs
+		newConfig.Global.Environment = globalEnvs
 	}
 
 	// Fill out new config with legacy config values by checking all possible environment variables

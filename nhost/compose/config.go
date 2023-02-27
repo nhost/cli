@@ -2,13 +2,13 @@ package compose
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/nhost/cli/config"
+	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/internal/ports"
 	"github.com/nhost/cli/nhost/envvars"
 	"gopkg.in/yaml.v3"
+
+	"strings"
 
 	"github.com/compose-spec/compose-go/types"
 )
@@ -57,14 +57,14 @@ const (
 )
 
 type Config struct {
-	nhostConfig        *config.Config // nhost configuration
-	gitBranch          string         // git branch name, used as a namespace for postgres data mounted from host
+	nhostConfig        *model.ConfigConfig // nhost configuration
+	gitBranch          string              // git branch name, used as a namespace for postgres data mounted from host
 	composeConfig      *types.Config
 	composeProjectName string
 	ports              *ports.Ports
 }
 
-func NewConfig(conf *config.Config, p *ports.Ports, gitBranch, projectName string) *Config {
+func NewConfig(conf *model.ConfigConfig, p *ports.Ports, globalEnvsWithSecrets envvars.Env, gitBranch, projectName string) *Config {
 	return &Config{
 		nhostConfig:        conf,
 		ports:              p,
@@ -87,7 +87,7 @@ func (c Config) addExtraHosts(svc *types.ServiceConfig) *types.ServiceConfig {
 }
 
 func (c Config) twilioSettings() (accountSid, authToken, messagingServiceId string) {
-	providerConf := c.nhostConfig.Provider()
+	providerConf := c.nhostConfig.Provider
 	providerName := strings.ToLower(generichelper.DerefPtr(providerConf.GetSms().GetProvider()))
 
 	if providerName == providerTwilio {
@@ -100,7 +100,7 @@ func (c Config) twilioSettings() (accountSid, authToken, messagingServiceId stri
 }
 
 func (c Config) graphqlJwtSecret() string {
-	hasuraConf := c.nhostConfig.Hasura()
+	hasuraConf := c.nhostConfig.Hasura
 	var graphqlJwtSecret string
 
 	if len(hasuraConf.GetJwtSecrets()) > 0 {
@@ -223,7 +223,7 @@ func (c Config) PublicDashboardURL() string {
 }
 
 func (c Config) nhostSystemEnvs() envvars.Env {
-	hasuraConf := c.nhostConfig.Hasura()
+	hasuraConf := c.nhostConfig.Hasura
 	return envvars.Env{
 		"NHOST_BACKEND_URL":    c.envValueNhostBackendUrl(),
 		"NHOST_SUBDOMAIN":      SubdomainLocal,

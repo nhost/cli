@@ -6,57 +6,9 @@ import (
 	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/internal/ports"
 	"github.com/nhost/cli/util"
-	"github.com/pelletier/go-toml/v2"
 )
 
-type Config struct {
-	c *model.ConfigConfig
-}
-
-func NewConfig(c *model.ConfigConfig) *Config {
-	return &Config{
-		c: c,
-	}
-}
-
-func (c Config) Validate() error {
-	s, err := schema.New()
-	if err != nil {
-		return err
-	}
-	return s.ValidateConfig(c.c)
-
-}
-
-func (c Config) Global() *model.ConfigGlobal {
-	return c.c.Global
-}
-
-func (c Config) Auth() *model.ConfigAuth {
-	return c.c.Auth
-}
-
-func (c Config) Provider() *model.ConfigProvider {
-	return c.c.Provider
-}
-
-func (c Config) Hasura() *model.ConfigHasura {
-	return c.c.Hasura
-}
-
-func (c Config) Functions() *model.ConfigFunctions {
-	return c.c.Functions
-}
-
-func (c Config) Storage() *model.ConfigStorage {
-	return c.c.Storage
-}
-
-func (c Config) Marshal() ([]byte, error) {
-	return toml.Marshal(c.c)
-}
-
-func DefaultConfig() (*Config, error) {
+func DefaultConfig() (*model.ConfigConfig, error) {
 	s, err := schema.New()
 	if err != nil {
 		return nil, err
@@ -73,7 +25,7 @@ func DefaultConfig() (*Config, error) {
 		return nil, err
 	}
 
-	return &Config{c: c}, nil
+	return c, nil
 }
 
 func defaultAuthConfig() *model.ConfigAuth {

@@ -28,7 +28,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/nhost/cli/config"
+	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/internal/git"
 	"github.com/nhost/cli/internal/ports"
@@ -154,7 +154,7 @@ var devCmd = &cobra.Command{
 
 		debug := logger.DEBUG
 
-		hasuraVersion := generichelper.DerefPtr(config.Hasura().GetVersion())
+		hasuraVersion := generichelper.DerefPtr(config.Hasura.GetVersion())
 
 		hc, err := hasura.InitClient(compose.HasuraConsoleHostname(ports.GraphQL()), util.ADMIN_SECRET, hasuraVersion, viper.GetString(userDefinedHasuraCliFlag), nil)
 		if err != nil {
@@ -411,9 +411,9 @@ func init() {
 	viper.BindPFlag(userDefinedHasuraCliFlag, devCmd.PersistentFlags().Lookup(userDefinedHasuraCliFlag))
 }
 
-func configurationWarnings(c *config.Config) {
-	smtpHost := c.Provider().GetSmtp().GetHost()
-	smtpPort := c.Provider().GetSmtp().GetPort()
+func configurationWarnings(c *model.ConfigConfig) {
+	smtpHost := c.Provider.GetSmtp().GetHost()
+	smtpPort := c.Provider.GetSmtp().GetPort()
 
 	if smtpHost != "" && smtpHost != "mailhog" && strings.Contains(smtpHost, "mailhog") {
 		fmt.Printf("WARNING: [provider.smtp] \"host\" field has a value \"%s\", please set the value to \"mailhog\" if you want CLI to catch the mails\n", smtpHost)

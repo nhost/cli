@@ -8,7 +8,7 @@ import (
 )
 
 func (c Config) hasuraServiceEnvs() envvars.Env {
-	hasuraConf := c.nhostConfig.Hasura()
+	hasuraConf := c.nhostConfig.Hasura
 
 	return envvars.Env{
 		"HASURA_GRAPHQL_DATABASE_URL":              c.postgresConnectionStringForUser("nhost_hasura"),
@@ -70,7 +70,7 @@ func (c Config) hasuraService() *types.ServiceConfig {
 
 	return &types.ServiceConfig{
 		Name:        SvcGraphql,
-		Image:       "hasura/graphql-engine:" + generichelper.DerefPtr(c.nhostConfig.Hasura().GetVersion()),
+		Image:       "hasura/graphql-engine:" + generichelper.DerefPtr(c.nhostConfig.Hasura.GetVersion()),
 		Environment: c.hasuraServiceEnvs().ToDockerServiceConfigEnv(),
 		Labels: mergeTraefikServiceLabels(
 			redirectRootLabels,

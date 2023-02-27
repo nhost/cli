@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"bytes"
+	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/internal/ports"
 	"github.com/nhost/cli/nhost/compose"
@@ -10,7 +11,7 @@ import (
 	"testing"
 )
 
-func defaultConfig(t *testing.T) *config.Config {
+func defaultConfig(t *testing.T) *model.ConfigConfig {
 	t.Helper()
 	c, err := config.DefaultConfig()
 	if err != nil {

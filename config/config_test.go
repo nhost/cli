@@ -180,10 +180,10 @@ func TestDefaultConfig(t *testing.T) {
 		Version: generichelper.Pointerify("0.3.3"),
 	}
 
-	assert.Equal(expectedGlobalConfig, defaultConfig.Global())
-	assert.Equal(expectedAuthConfig, defaultConfig.Auth())
-	assert.Equal(expectedProviderConfig, defaultConfig.Provider())
-	assert.Equal(expectedHasuraConfig, defaultConfig.Hasura())
-	assert.Equal(expectedFunctionsConfig, defaultConfig.Functions())
-	assert.Equal(expectedStorageConfig, defaultConfig.Storage())
+	assert.Equal(expectedGlobalConfig, defaultConfig.Global)
+	assert.Equal(expectedAuthConfig, defaultConfig.Auth)
+	assert.Equal(expectedProviderConfig, defaultConfig.Provider)
+	assert.Equal(expectedHasuraConfig, defaultConfig.Hasura)
+	assert.Equal(expectedFunctionsConfig, defaultConfig.Functions)
+	assert.Equal(expectedStorageConfig, defaultConfig.Storage)
 }

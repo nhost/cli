@@ -25,9 +25,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/nhost/be/services/mimir/schema"
 	"github.com/nhost/cli/config/converter"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -66,12 +68,17 @@ var convertConfigCmd = &cobra.Command{
 			return fmt.Errorf("failed to convert config: %w", err)
 		}
 
-		tomlConfigData, err := newConfig.Marshal()
+		tomlConfigData, err := toml.Marshal(newConfig)
 		if err != nil {
 			return fmt.Errorf("failed to marshal new config: %w", err)
 		}
 
-		if err = newConfig.Validate(); err != nil {
+		s, err := schema.New()
+		if err != nil {
+			return err
+		}
+
+		if err = s.ValidateConfig(newConfig); err != nil {
 			log.Infof("Generated config:\n\n%s\n\n", string(tomlConfigData))
 			return fmt.Errorf("validation failed for new config: %w", err)
 		}

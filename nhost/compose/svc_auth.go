@@ -13,7 +13,7 @@ import (
 )
 
 func (c Config) authJwtCustomClaims() string {
-	customClaims := c.nhostConfig.Auth().GetSession().GetAccessToken().GetCustomClaims()
+	customClaims := c.nhostConfig.Auth.GetSession().GetAccessToken().GetCustomClaims()
 	m := map[string]string{}
 	for _, v := range customClaims {
 		m[v.GetKey()] = v.GetValue()
@@ -23,9 +23,9 @@ func (c Config) authJwtCustomClaims() string {
 }
 
 func (c Config) authServiceEnvs() envvars.Env {
-	authConf := c.nhostConfig.Auth()
-	hasuraConf := c.nhostConfig.Hasura()
-	providerConf := c.nhostConfig.Provider()
+	authConf := c.nhostConfig.Auth
+	hasuraConf := c.nhostConfig.Hasura
+	providerConf := c.nhostConfig.Provider
 
 	twilioAccountSid, twilioAuthToken, twilioMessagingServiceId := c.twilioSettings()
 
@@ -99,7 +99,7 @@ func (c Config) authService() *types.ServiceConfig {
 
 	return &types.ServiceConfig{
 		Name:        SvcAuth,
-		Image:       "nhost/hasura-auth:" + generichelper.DerefPtr(c.nhostConfig.Auth().GetVersion()),
+		Image:       "nhost/hasura-auth:" + generichelper.DerefPtr(c.nhostConfig.Auth.GetVersion()),
 		Environment: c.authServiceEnvs().ToDockerServiceConfigEnv(),
 		Labels:      mergeTraefikServiceLabels(sslLabels, httpLabels).AsMap(),
 		DependsOn: map[string]types.ServiceDependency{

@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/internal/generichelper"
+	"github.com/pelletier/go-toml/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -216,7 +217,7 @@ in the following manner:
 			status.Errorln(err.Error())
 		}
 
-		b, err := defaultConfig.Marshal()
+		b, err := toml.Marshal(defaultConfig)
 		if err != nil {
 			log.Debug(err)
 			status.Fatal(err.Error())
@@ -274,7 +275,7 @@ in the following manner:
 			hasuraEndpoint := fmt.Sprintf("https://%s.hasura.%s.%s", selectedProject.Subdomain, selectedProject.Region.AwsName, nhost.DOMAIN)
 			adminSecret := resolvedConf.GetHasura().GetAdminSecret()
 
-			hasuraVersion := generichelper.DerefPtr(defaultConfig.Hasura().GetVersion())
+			hasuraVersion := generichelper.DerefPtr(defaultConfig.Hasura.GetVersion())
 			//  create new hasura client
 			hasuraClient, err := hasura.InitClient(hasuraEndpoint, adminSecret, hasuraVersion, viper.GetString(userDefinedHasuraCliFlag), nil)
 			if err != nil {

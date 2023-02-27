@@ -3,7 +3,6 @@ package compose
 import (
 	"fmt"
 	"github.com/nhost/be/services/mimir/model"
-	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/nhost/envvars"
 	"github.com/nhost/cli/util"
 	"github.com/stretchr/testify/assert"
@@ -84,19 +83,19 @@ func TestConfig_authServiceEnvs(t *testing.T) {
 func TestConfig_authJwtCustomClaims(t *testing.T) {
 	tests := []struct {
 		name        string
-		nhostConfig func() *config.Config
+		nhostConfig func() *model.ConfigConfig
 		want        string
 	}{
 		{
 			name:        "default",
-			nhostConfig: func() *config.Config { return defaultNhostConfig(t) },
+			nhostConfig: func() *model.ConfigConfig { return defaultNhostConfig(t) },
 			want:        "{}",
 		},
 		{
 			name: "with custom claims",
-			nhostConfig: func() *config.Config {
+			nhostConfig: func() *model.ConfigConfig {
 				conf := defaultNhostConfig(t)
-				accessToken := conf.Auth().GetSession().GetAccessToken()
+				accessToken := conf.Auth.GetSession().GetAccessToken()
 				accessToken.CustomClaims = []*model.ConfigAuthsessionaccessTokenCustomClaims{
 					{
 						Key:   "foo",

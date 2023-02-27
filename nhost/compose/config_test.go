@@ -2,13 +2,14 @@ package compose
 
 import (
 	"github.com/compose-spec/compose-go/types"
+	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/internal/ports"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func defaultNhostConfig(t *testing.T) *config.Config {
+func defaultNhostConfig(t *testing.T) *model.ConfigConfig {
 	t.Helper()
 	c, err := config.DefaultConfig()
 	if err != nil {

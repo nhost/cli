@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/be/services/mimir/schema"
-	"github.com/nhost/cli/config"
 	"github.com/pelletier/go-toml/v2"
 	"io/ioutil"
 	"math/rand"
@@ -48,7 +47,7 @@ func GetDockerComposeProjectName() (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-func GetConfiguration() (*config.Config, error) {
+func GetConfiguration() (*model.ConfigConfig, error) {
 	var c model.ConfigConfig
 
 	data, err := os.ReadFile(CONFIG_PATH)
@@ -70,7 +69,7 @@ func GetConfiguration() (*config.Config, error) {
 		return nil, err
 	}
 
-	return config.NewConfig(&c), nil
+	return &c, nil
 }
 
 func EnsureProjectNameFileExists() error {
