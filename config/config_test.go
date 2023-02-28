@@ -172,6 +172,7 @@ func TestDefaultConfig(t *testing.T) {
 		Version: generichelper.Pointerify("0.3.3"),
 	}
 
+	assert.Equal("14.5-20230104-1", generichelper.DerefPtr(defaultConfig.Postgres.GetVersion()))
 	assert.Equal(expectedGlobalConfig, defaultConfig.Global)
 	assert.Equal(expectedAuthConfig, defaultConfig.Auth)
 	assert.Equal(expectedProviderConfig, defaultConfig.Provider)

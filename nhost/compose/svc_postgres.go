@@ -3,6 +3,7 @@ package compose
 import (
 	"fmt"
 	"github.com/compose-spec/compose-go/types"
+	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/nhost/envvars"
 	"time"
 )
@@ -48,7 +49,7 @@ func (c Config) postgresService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name: SvcPostgres,
 		// keep in mind that the provided postgres image should create schemas and triggers like in https://github.com/nhost/postgres/blob/ea53451b6df9f4b10ce515a2cefbd9ddfdfadb25/v12/db/0001-create-schema.sql
-		Image:       "nhost/postgres:14.5-20230104-1",
+		Image:       "nhost/postgres:" + generichelper.DerefPtr(c.nhostConfig.GetPostgres().GetVersion()),
 		Restart:     types.RestartPolicyAlways,
 		Environment: c.postgresServiceEnvs().ToDockerServiceConfigEnv(),
 		HealthCheck: c.postgresServiceHealthcheck(time.Second*3, time.Minute*2),
