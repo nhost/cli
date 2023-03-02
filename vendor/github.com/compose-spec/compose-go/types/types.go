@@ -107,7 +107,7 @@ type ServiceConfig struct {
 	// Command for the service containers.
 	// If set, overrides COMMAND from the image.
 	//
-	// Set to `[]` or `''` to clear the command from the image.
+	// Set to `[]` or an empty string to clear the command from the image.
 	Command ShellCommand `yaml:",omitempty" json:"command"` // NOTE: we can NOT omitempty for JSON! see ShellCommand type for details.
 
 	Configs           []ServiceConfigObjConfig `yaml:",omitempty" json:"configs,omitempty"`
@@ -126,7 +126,7 @@ type ServiceConfig struct {
 	// Entrypoint for the service containers.
 	// If set, overrides ENTRYPOINT from the image.
 	//
-	// Set to `[]` or `''` to clear the entrypoint from the image.
+	// Set to `[]` or an empty string to clear the entrypoint from the image.
 	Entrypoint ShellCommand `yaml:"entrypoint,omitempty" json:"entrypoint"` // NOTE: we can NOT omitempty for JSON! see ShellCommand type for details.
 
 	Environment     MappingWithEquals                `yaml:",omitempty" json:"environment,omitempty"`
@@ -254,37 +254,26 @@ const (
 	NetworkModeContainerPrefix = ContainerPrefix
 )
 
-// GetDependencies retrieve all services this service depends on
+// GetDependencies retrieves all services this service depends on
 func (s ServiceConfig) GetDependencies() []string {
-	dependencies := make(set)
-	for dependency := range s.DependsOn {
-		dependencies.append(dependency)
+	var dependencies []string
+	for service := range s.DependsOn {
+		dependencies = append(dependencies, service)
 	}
-	for _, link := range s.Links {
-		parts := strings.Split(link, ":")
-		if len(parts) == 2 {
-			dependencies.append(parts[0])
-		} else {
-			dependencies.append(link)
-		}
-	}
-	if strings.HasPrefix(s.NetworkMode, ServicePrefix) {
-		dependencies.append(s.NetworkMode[len(ServicePrefix):])
-	}
-	if strings.HasPrefix(s.Ipc, ServicePrefix) {
-		dependencies.append(s.Ipc[len(ServicePrefix):])
-	}
-	if strings.HasPrefix(s.Pid, ServicePrefix) {
-		dependencies.append(s.Pid[len(ServicePrefix):])
-	}
-	for _, vol := range s.VolumesFrom {
-		if !strings.HasPrefix(s.Pid, ContainerPrefix) {
-			spec := strings.Split(vol, ":")
-			dependencies.append(spec[0])
-		}
-	}
+	return dependencies
+}
 
-	return dependencies.toSlice()
+// GetDependents retrieves all services which depend on this service
+func (s ServiceConfig) GetDependents(p *Project) []string {
+	var dependent []string
+	for _, service := range p.Services {
+		for name := range service.DependsOn {
+			if name == s.Name {
+				dependent = append(dependent, service.Name)
+			}
+		}
+	}
+	return dependent
 }
 
 type set map[string]struct{}
@@ -357,13 +346,13 @@ type ThrottleDevice struct {
 // ShellCommand is a string or list of string args.
 //
 // When marshaled to YAML, nil command fields will be omitted if `omitempty`
-// is specified as a struct tag. Explicitly empty commands (i.e. `[]` or `''`)
-// will serialize to an empty array (`[]`).
+// is specified as a struct tag. Explicitly empty commands (i.e. `[]` or
+// empty string will serialize to an empty array (`[]`).
 //
 // When marshaled to JSON, the `omitempty` struct must NOT be specified.
 // If the command field is nil, it will be serialized as `null`.
-// Explicitly empty commands (i.e. `[]` or `''`) will serialize to an empty
-// array (`[]`).
+// Explicitly empty commands (i.e. `[]` or empty string) will serialize to
+// an empty array (`[]`).
 //
 // The distinction between nil and explicitly empty is important to distinguish
 // between an unset value and a provided, but empty, value, which should be
@@ -480,6 +469,21 @@ func NewMapping(values []string) Mapping {
 		}
 	}
 	return mapping
+}
+
+// ToMappingWithEquals converts Mapping into a MappingWithEquals with pointer references
+func (m Mapping) ToMappingWithEquals() MappingWithEquals {
+	mapping := MappingWithEquals{}
+	for k, v := range m {
+		v := v
+		mapping[k] = &v
+	}
+	return mapping
+}
+
+func (m Mapping) Resolve(s string) (string, bool) {
+	v, ok := m[s]
+	return v, ok
 }
 
 // Labels is a mapping type for labels
@@ -992,6 +996,7 @@ type DependsOnConfig map[string]ServiceDependency
 
 type ServiceDependency struct {
 	Condition  string                 `yaml:",omitempty" json:"condition,omitempty"`
+	Restart    bool                   `yaml:",omitempty" json:"restart,omitempty"`
 	Extensions map[string]interface{} `yaml:",inline" json:"-"`
 }
 
