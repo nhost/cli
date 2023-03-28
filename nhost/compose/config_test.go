@@ -9,9 +9,14 @@ import (
 	"testing"
 )
 
-func defaultNhostConfig(t *testing.T) *model.ConfigConfig {
+func resolvedDefaultNhostConfig(t *testing.T) *model.ConfigConfig {
 	t.Helper()
-	c, err := config.DefaultConfig()
+	c, secr, err := config.DefaultConfigAndSecrets()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c, err = config.ValidateAndResolve(c, secr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +82,7 @@ func TestConfig_PublicPostgresConnectionString(t *testing.T) {
 
 	c := &Config{
 		ports:       testPorts(t),
-		nhostConfig: defaultNhostConfig(t),
+		nhostConfig: resolvedDefaultNhostConfig(t),
 	}
 
 	assert.Equal("postgres://postgres:postgres@local.db.nhost.run:5432/postgres", c.PublicPostgresConnectionString())
@@ -137,7 +142,7 @@ func TestConfig_storageEnvPublicURL(t *testing.T) {
 
 func TestConfig_postgresConnectionStringForUser(t *testing.T) {
 	t.Parallel()
-	c := &Config{ports: testPorts(t), nhostConfig: defaultNhostConfig(t)}
+	c := &Config{ports: testPorts(t), nhostConfig: resolvedDefaultNhostConfig(t)}
 	assert.Equal(t, "postgres://foo@local.db.nhost.run:5432/postgres", c.postgresConnectionStringForUser("foo"))
 }
 
@@ -145,4 +150,67 @@ func TestConfig_PublicMailURL(t *testing.T) {
 	t.Parallel()
 	c := &Config{ports: testPorts(t)}
 	assert.Equal(t, "http://localhost:8025", c.PublicMailhogURL())
+}
+
+func TestConfig_smtpSettings(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		conf func(t *testing.T) *model.ConfigConfig
+		want *model.ConfigSmtp
+	}{
+		{
+			name: "default",
+			conf: func(t *testing.T) *model.ConfigConfig {
+				return resolvedDefaultNhostConfig(t)
+			},
+			want: &model.ConfigSmtp{
+				User:     "user",
+				Password: "password",
+				Sender:   "hasura-auth@example.com",
+				Host:     "mailhog",
+				Port:     uint16(ports.DefaultSMTPPort),
+				Secure:   false,
+				Method:   "PLAIN",
+			},
+		},
+		{
+			name: "custom",
+			conf: func(t *testing.T) *model.ConfigConfig {
+				return &model.ConfigConfig{
+					Provider: &model.ConfigProvider{Smtp: &model.ConfigSmtp{
+						User:     "foo",
+						Password: "bar",
+						Sender:   "foo@bar.com",
+						Host:     "foobar.com",
+						Port:     9999,
+						Secure:   true,
+						Method:   "GSSAPI",
+					}},
+				}
+			},
+			want: &model.ConfigSmtp{
+				User:     "foo",
+				Password: "bar",
+				Sender:   "foo@bar.com",
+				Host:     "foobar.com",
+				Port:     9999,
+				Secure:   true,
+				Method:   "GSSAPI",
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			c := Config{
+				nhostConfig: tt.conf(t),
+			}
+			assert.Equal(t, tt.want, c.smtpSettings())
+		})
+	}
 }

@@ -11,7 +11,7 @@ import (
 func TestConfig_functionsServiceEnvs(t *testing.T) {
 	t.Parallel()
 
-	c := &Config{nhostConfig: defaultNhostConfig(t), ports: testPorts(t)}
+	c := &Config{nhostConfig: resolvedDefaultNhostConfig(t), ports: testPorts(t)}
 
 	assert.Equal(t, envvars.Env{
 		"NHOST_BACKEND_URL":    "http://traefik:1337",

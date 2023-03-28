@@ -62,11 +62,13 @@ type Config struct {
 	composeConfig      *types.Config
 	composeProjectName string
 	ports              *ports.Ports
+	globalEnvs         envvars.Env
 }
 
-func NewConfig(conf *model.ConfigConfig, p *ports.Ports, globalEnvsWithSecrets envvars.Env, gitBranch, projectName string) *Config {
+func NewConfig(conf *model.ConfigConfig, p *ports.Ports, gitBranch, projectName string) *Config {
 	return &Config{
 		nhostConfig:        conf,
+		globalEnvs:         configGlobalEnvVarsToEnvVars(conf),
 		ports:              p,
 		gitBranch:          gitBranch,
 		composeProjectName: projectName,
@@ -87,7 +89,7 @@ func (c Config) addExtraHosts(svc *types.ServiceConfig) *types.ServiceConfig {
 }
 
 func (c Config) twilioSettings() (accountSid, authToken, messagingServiceId string) {
-	providerConf := c.nhostConfig.Provider
+	providerConf := c.nhostConfig.GetProvider()
 	providerName := strings.ToLower(generichelper.DerefPtr(providerConf.GetSms().GetProvider()))
 
 	if providerName == providerTwilio {
@@ -100,7 +102,7 @@ func (c Config) twilioSettings() (accountSid, authToken, messagingServiceId stri
 }
 
 func (c Config) graphqlJwtSecret() string {
-	hasuraConf := c.nhostConfig.Hasura
+	hasuraConf := c.nhostConfig.GetHasura()
 	var graphqlJwtSecret string
 
 	if len(hasuraConf.GetJwtSecrets()) > 0 {
@@ -156,6 +158,24 @@ func (c Config) build() *types.Config {
 	c.composeConfig = conf
 
 	return conf
+}
+
+func (c Config) smtpSettings() *model.ConfigSmtp {
+	// use smtp settings if they are provided
+	if c.nhostConfig.GetProvider().GetSmtp() != nil {
+		return c.nhostConfig.GetProvider().GetSmtp()
+	}
+
+	// otherwise use mailhog
+	return &model.ConfigSmtp{
+		User:     "user",
+		Password: "password",
+		Sender:   "hasura-auth@example.com",
+		Host:     "mailhog",
+		Port:     uint16(ports.DefaultSMTPPort),
+		Secure:   false,
+		Method:   "PLAIN",
+	}
 }
 
 func (c Config) BuildYAML() ([]byte, error) {
@@ -223,7 +243,7 @@ func (c Config) PublicDashboardURL() string {
 }
 
 func (c Config) nhostSystemEnvs() envvars.Env {
-	hasuraConf := c.nhostConfig.Hasura
+	hasuraConf := c.nhostConfig.GetHasura()
 	return envvars.Env{
 		"NHOST_BACKEND_URL":    c.envValueNhostBackendUrl(),
 		"NHOST_SUBDOMAIN":      SubdomainLocal,
@@ -233,8 +253,8 @@ func (c Config) nhostSystemEnvs() envvars.Env {
 		"NHOST_AUTH_URL":       c.PublicAuthConnectionString(),
 		"NHOST_STORAGE_URL":    c.PublicStorageConnectionString(),
 		"NHOST_FUNCTIONS_URL":  c.PublicFunctionsConnectionString(),
-		"NHOST_ADMIN_SECRET":   hasuraConf.GetAdminSecret(),
-		"NHOST_WEBHOOK_SECRET": hasuraConf.GetWebhookSecret(),
+		"NHOST_ADMIN_SECRET":   escapeDollarSignForDockerCompose(hasuraConf.GetAdminSecret()),
+		"NHOST_WEBHOOK_SECRET": escapeDollarSignForDockerCompose(hasuraConf.GetWebhookSecret()),
 		"NHOST_JWT_SECRET":     c.graphqlJwtSecret(),
 	}
 }
@@ -254,4 +274,18 @@ func (c Config) hasuraApiURL() string {
 
 func (c Config) hasuraMigrationsApiURL() string {
 	return HasuraMigrationsAPIHostname(c.ports.HasuraConsoleAPI())
+}
+
+func configGlobalEnvVarsToEnvVars(conf *model.ConfigConfig) envvars.Env {
+	envs := envvars.Env{}
+	globalEnvs := conf.GetGlobal().GetEnvironment()
+	for _, env := range globalEnvs {
+		envs[env.GetName()] = env.GetValue()
+	}
+	return envs
+}
+
+// prevents '$' from being replaced by docker-compose, see https://docs.docker.com/compose/compose-file/compose-file-v2/#variable-substitution
+func escapeDollarSignForDockerCompose(v string) string {
+	return strings.ReplaceAll(v, "$", "$$")
 }

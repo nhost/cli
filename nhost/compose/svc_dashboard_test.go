@@ -13,7 +13,7 @@ func TestConfig_dashboardService(t *testing.T) {
 	assert := assert.New(t)
 
 	c := &Config{
-		nhostConfig: defaultNhostConfig(t),
+		nhostConfig: resolvedDefaultNhostConfig(t),
 		ports:       testPorts(t),
 	}
 
@@ -28,6 +28,7 @@ func TestConfig_dashboardService(t *testing.T) {
 		"NEXT_PUBLIC_NHOST_HASURA_MIGRATIONS_API_URL=http://localhost:9693",
 		"NEXT_PUBLIC_NHOST_STORAGE_URL=https://local.storage.nhost.run/v1",
 		"NEXT_PUBLIC_NHOST_STORAGE_URL=https://local.storage.nhost.run/v1",
+		"NEXT_PUBLIC_NHOST_ADMIN_SECRET=nhost-admin-secret",
 		"NHOST_ADMIN_SECRET=nhost-admin-secret",
 		"NHOST_AUTH_URL=https://local.auth.nhost.run/v1",
 		"NHOST_BACKEND_URL=http://traefik:1337",

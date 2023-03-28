@@ -10,7 +10,7 @@ import (
 
 func (c Config) storageServiceEnvs(apiRootPrefix string) envvars.Env {
 	minioEnv := c.minioServiceEnvs()
-	hasuraConf := c.nhostConfig.Hasura
+	hasuraConf := c.nhostConfig.GetHasura()
 
 	e := envvars.Env{
 		"DEBUG":                       "true",
@@ -44,7 +44,7 @@ func (c Config) httpStorageService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name:        "http-" + SvcStorage,
 		Restart:     types.RestartPolicyAlways,
-		Image:       "nhost/hasura-storage:" + generichelper.DerefPtr(c.nhostConfig.Storage.GetVersion()),
+		Image:       "nhost/hasura-storage:" + generichelper.DerefPtr(c.nhostConfig.GetStorage().GetVersion()),
 		Environment: c.storageServiceEnvs("/v1/storage").ToDockerServiceConfigEnv(),
 		Labels:      httpLabels.AsMap(),
 		Command:     []string{"serve"},
@@ -63,7 +63,7 @@ func (c Config) storageService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name:        SvcStorage,
 		Restart:     types.RestartPolicyAlways,
-		Image:       "nhost/hasura-storage:" + generichelper.DerefPtr(c.nhostConfig.Storage.GetVersion()),
+		Image:       "nhost/hasura-storage:" + generichelper.DerefPtr(c.nhostConfig.GetStorage().GetVersion()),
 		Environment: c.storageServiceEnvs("").ToDockerServiceConfigEnv(),
 		Labels:      sslLabels.AsMap(),
 		Command:     []string{"serve"},

@@ -22,7 +22,7 @@ func TestConfig_storageServiceEnvs(t *testing.T) {
 		{
 			name:          "when minio is enabled",
 			apiRootPrefix: "/v1",
-			nhostConfig:   defaultNhostConfig(t),
+			nhostConfig:   resolvedDefaultNhostConfig(t),
 			ports:         testPorts(t),
 			want: envvars.Env{
 				"DEBUG":                       "true",

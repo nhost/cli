@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/nhost/be/services/mimir/model"
 	nhostssl "github.com/nhost/cli/internal/ssl"
-	"github.com/nhost/cli/nhost/secrets"
 	"net/http"
 	"os"
 	"os/exec"
@@ -39,18 +38,8 @@ type Manager interface {
 	Endpoints() *Endpoints
 }
 
-func NewDockerComposeManager(cert *nhostssl.SSLCert, c *model.ConfigConfig, secr []byte, workdir string, hc *hasura.Client, p *ports.Ports, gitBranch, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) (*dockerComposeManager, error) {
-	globalEnv, err := secrets.Interpolate(c.Global.GetEnvironment(), secr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to interpolate global environment variables: %w", err)
-	}
-
-	envsWithSecrets := map[string]string{}
-	for _, v := range globalEnv {
-		envsWithSecrets[v.GetName()] = v.GetValue()
-	}
-
-	dcConf := compose.NewConfig(c, p, envsWithSecrets, gitBranch, projectName)
+func NewDockerComposeManager(cert *nhostssl.SSLCert, c *model.ConfigConfig, workdir string, hc *hasura.Client, p *ports.Ports, gitBranch, projectName string, logger logrus.FieldLogger, status *util.Status, debug bool) (*dockerComposeManager, error) {
+	dcConf := compose.NewConfig(c, p, gitBranch, projectName)
 	w, err := compose.InitWrapper(workdir, cert, gitBranch, dcConf)
 	if err != nil {
 		return nil, err

@@ -11,9 +11,14 @@ import (
 	"testing"
 )
 
-func defaultConfig(t *testing.T) *model.ConfigConfig {
+func resolvedDefaultConfig(t *testing.T) *model.ConfigConfig {
 	t.Helper()
-	c, err := config.DefaultConfig()
+	c, secr, err := config.DefaultConfigAndSecrets()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c, err = config.ValidateAndResolve(c, secr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +40,7 @@ func TestEndpoints_Dump(t *testing.T) {
 		ports.DefaultDashboardPort,
 		ports.DefaultMailhogPort,
 	)
-	dcConf := compose.NewConfig(defaultConfig(t), p, map[string]string{}, "", "")
+	dcConf := compose.NewConfig(resolvedDefaultConfig(t), p, "", "")
 	endpoints := service.NewEndpoints(
 		dcConf.PublicPostgresConnectionString(),
 		dcConf.PublicHasuraGraphqlEndpoint(),

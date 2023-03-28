@@ -29,6 +29,11 @@ func (c Config) mailhogServiceEnvs() envvars.Env {
 }
 
 func (c Config) mailhogService() *types.ServiceConfig {
+	// do not start mailhog if smtp host is not mailhog
+	if c.smtpSettings().Host != "mailhog" {
+		return nil
+	}
+
 	return &types.ServiceConfig{
 		Name:        SvcMailhog,
 		Environment: c.mailhogServiceEnvs().ToDockerServiceConfigEnv(),

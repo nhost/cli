@@ -15,13 +15,14 @@ func (c Config) dashboardServiceEnvs() envvars.Env {
 		"NEXT_PUBLIC_NHOST_HASURA_CONSOLE_URL":        c.PublicHasuraConsoleRedirectURL(),
 		"NEXT_PUBLIC_NHOST_HASURA_MIGRATIONS_API_URL": c.hasuraMigrationsApiURL(),
 		"NEXT_PUBLIC_NHOST_HASURA_API_URL":            c.hasuraApiURL(),
+		"NEXT_PUBLIC_NHOST_ADMIN_SECRET":              c.nhostConfig.GetHasura().GetAdminSecret(),
 	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
 func (c Config) dashboardService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name:        SvcDashboard,
-		Image:       "dashboard", // TODO: fix it
+		Image:       "nhost/dashboard:0.13.9",
 		Environment: c.dashboardServiceEnvs().ToDockerServiceConfigEnv(),
 		Ports: []types.ServicePortConfig{
 			{

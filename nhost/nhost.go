@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nhost/cli/internal/ports"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -104,12 +104,11 @@ func (config *Configuration) Save() error {
 }
 
 func Info() (App, error) {
-
 	log.Debug("Fetching app information")
 
 	var response App
 
-	file, err := ioutil.ReadFile(INFO_PATH)
+	file, err := os.ReadFile(INFO_PATH)
 	if err != nil {
 		return response, err
 	}
@@ -271,249 +270,66 @@ func Servers() ([]Server, error) {
 	return response, err
 }
 
-// deprecated
-// TODO: remove
-func GenerateConfig(options App) Configuration {
-
-	log.Debug("Generating app configuration")
-
-	hasura := Service{
-		Environment: map[string]any{
-			"hasura_graphql_enable_remote_schema_permissions": true,
-		},
-	}
-
-	postgres := Service{
-		Environment: map[string]any{
-			"postgres_user":     DB_USER,
-			"postgres_password": DB_PASSWORD,
-		},
-	}
-
-	minio := Service{
-		Environment: map[string]any{
-			"minio_root_user":     MINIO_USER,
-			"minio_root_password": MINIO_PASSWORD,
-		},
-	}
-
-	//	This is no longer required from Hasura >= v2.1.0,
-	//	because it officially supports Apple Silicon machines.
-	//
-	//	Hasura's image is still not natively working on Apple Silicon.
-	//	If it's an Apple Silicon processor,
-	//	then add the custom Hasura image, as a temporary fix.
-	/*
-		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-			hasura.Image = "fedormelexin/graphql-engine-arm64"
-		}
-	*/
-
-	return Configuration{
-		Version: 3,
-		Services: map[string]*Service{
-			"hasura":   &hasura,
-			"postgres": &postgres,
-			"minio":    &minio,
-		},
-		MetadataDirectory: "metadata",
-		Storage: map[any]any{
-			"force_download_for_content_types": "text/html,application/javascript",
-		},
-		Auth: map[any]any{
-			"client_url":              "http://localhost:3000",
-			"anonymous_users_enabled": false,
-			"disable_new_users":       false,
-			"access_control": map[any]any{
-				"url": map[any]any{
-					"allowed_redirect_urls": "",
-				},
-				"email": map[any]any{
-					"allowed_emails":        "",
-					"allowed_email_domains": "",
-					"blocked_emails":        "",
-					"blocked_email_domains": "",
-				},
-			},
-			"password": map[any]any{
-				"min_length":   3,
-				"hibp_enabled": false,
-			},
-			"user": map[any]any{
-				"default_role":          "user",
-				"default_allowed_roles": "user,me",
-				"allowed_roles":         "user,me",
-				"mfa": map[any]any{
-					"enabled": false,
-					"issuer":  "nhost",
-				},
-			},
-			"token": map[any]any{
-				"access": map[any]any{
-					"expires_in": 900,
-				},
-				"refresh": map[any]any{
-					"expires_in": 43200,
-				},
-			},
-			"locale": map[any]any{
-				"default": "en",
-				"allowed": "en",
-			},
-			"smtp": map[any]any{
-				"host":   "mailhog",
-				"port":   ports.DefaultSMTPPort,
-				"user":   "user",
-				"pass":   "password",
-				"sender": "hasura-auth@example.com",
-				"method": "",
-				"secure": false,
-			},
-			"email": map[any]any{
-				"enabled":                        false,
-				"signin_email_verified_required": true,
-				"template_fetch_url":             "",
-				"passwordless": map[any]any{
-					"enabled": false,
-				},
-			},
-			"sms": map[any]any{
-				"enabled": false,
-				"provider": map[any]any{
-					"twilio": map[any]any{
-						"account_sid":          "",
-						"auth_token":           "",
-						"messaging_service_id": "",
-						"from":                 "",
-					},
-				},
-				"passwordless": map[any]any{
-					"enabled": false,
-				},
-			},
-			"provider": generateProviders(),
-			"gravatar": generateGravatarVars(),
-		},
-	}
-}
-
-// deprecated
-func generateGravatarVars() map[any]any {
-	return map[any]any{
-		"enabled": true,
-		"default": "",
-		"rating":  "",
-	}
-}
-
-// deprecated
-func generateProviders() map[any]any {
-
-	return map[any]any{
-		"google": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "email,profile",
-		},
-		"twilio": map[any]any{
-			"enabled":              false,
-			"account_sid":          "",
-			"auth_token":           "",
-			"messaging_service_id": "",
-		},
-		"strava": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-		},
-		"facebook": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "email,photos,displayName",
-		},
-		"twitter": map[any]any{
-			"enabled":         false,
-			"consumer_key":    "",
-			"consumer_secret": "",
-		},
-		"linkedin": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "r_emailaddress,r_liteprofile",
-		},
-		"apple": map[any]any{
-			"enabled":     false,
-			"client_id":   "",
-			"key_id":      "",
-			"private_key": "",
-			"team_id":     "",
-			"scope":       "name,email",
-		},
-		"github": map[any]any{
-			"enabled":          false,
-			"client_id":        "",
-			"client_secret":    "",
-			"token_url":        "",
-			"user_profile_url": "",
-			"scope":            "user:email",
-		},
-		"windows_live": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "wl.basic,wl.emails,wl.contacts_emails",
-		},
-		"spotify": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"scope":         "user-read-email,user-read-private",
-		},
-		"gitlab": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-			"base_url":      "",
-			"scope":         "read_user",
-		},
-		"bitbucket": map[any]any{
-			"enabled":       false,
-			"client_id":     "",
-			"client_secret": "",
-		},
-	}
-}
-
 // fetches saved credentials from auth file
-func LoadCredentials() (Credentials, error) {
-
+func LoadCredentials() (*Credentials, error) {
 	log.Debug("Fetching saved auth credentials")
 
 	//  we initialize our credentials array
 	var credentials Credentials
 
+	if util.PathExists(AUTH_PATH) == false {
+		return nil, fmt.Errorf("auth file does not exist, run 'nhost login' first")
+	}
 	//  Open our jsonFile
 	jsonFile, err := os.Open(AUTH_PATH)
 	//  if we os.Open returns an error then handle it
 	if err != nil {
-		return credentials, err
+		return nil, err
 	}
 
 	//  defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 
 	//  read our opened xmlFile as a byte array.
-	byteValue, err := ioutil.ReadAll(jsonFile)
+	byteValue, err := io.ReadAll(jsonFile)
 	if err != nil {
-		return credentials, err
+		return nil, err
 	}
 
 	//  we unmarshal our byteArray which contains our
 	//  jsonFile's content into 'credentials' which we defined above
 	err = json.Unmarshal(byteValue, &credentials)
 
-	return credentials, err
+	return &credentials, err
+}
+
+func GetUser(creds *Credentials) (*User, error) {
+	postBody, err := json.Marshal(creds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal credentials: %w", err)
+	}
+
+	resp, err := http.Post(API+"/custom/cli/user", "application/json", bytes.NewBuffer(postBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	var response User
+
+	if err = json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body: %w:\n%s", err, string(body))
+	}
+
+	if response.ID == "" {
+		err = errors.New("user not found")
+	}
+
+	return &response, err
 }

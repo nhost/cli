@@ -5,44 +5,29 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/nhost/be/services/mimir/model"
+	"github.com/nhost/cli/util"
+	"os"
 	"strings"
 )
 
-func Interpolate(envs []*model.ConfigEnvironmentVariable, secrets []byte) ([]*model.ConfigEnvironmentVariable, error) {
-	out := make([]*model.ConfigEnvironmentVariable, len(envs))
-	secretVars, err := parseSecrets(secrets)
+func ParseSecrets(path string) (model.Secrets, error) {
+	secrets := model.Secrets{}
+
+	if !util.PathExists(path) {
+		return secrets, nil
+	}
+
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can't read secrets file '%s' %v", path, err)
 	}
 
-	for i, env := range envs {
-		out[i] = &model.ConfigEnvironmentVariable{
-			Name:  env.Name,
-			Value: env.Value,
-		}
-		for _, secret := range secretVars {
-			out[i].Value = strings.ReplaceAll(out[i].Value, fmt.Sprintf("{{ secrets.%s }}", secret.name), secret.value)
-		}
+	data = bytes.TrimSpace(data)
+	if len(data) == 0 {
+		return secrets, nil
 	}
 
-	return out, nil
-}
-
-type variable struct {
-	name  string
-	value string
-}
-
-// Parse the secrets file with KEY=VALUE and return a list of variables.
-func parseSecrets(secrets []byte) ([]variable, error) {
-	var vars []variable
-
-	secrets = bytes.TrimSpace(secrets)
-	if len(secrets) == 0 {
-		return vars, nil
-	}
-
-	scanner := bufio.NewScanner(bytes.NewReader(secrets))
+	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -53,8 +38,8 @@ func parseSecrets(secrets []byte) ([]variable, error) {
 			return nil, fmt.Errorf("invalid secret: %s", line)
 		}
 
-		vars = append(vars, variable{name: strings.TrimSpace(parts[0]), value: strings.TrimSpace(parts[1])})
+		secrets = append(secrets, &model.ConfigEnvironmentVariable{Name: strings.TrimSpace(parts[0]), Value: strings.TrimSpace(parts[1])})
 	}
 
-	return vars, nil
+	return secrets, nil
 }

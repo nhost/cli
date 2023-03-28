@@ -30,11 +30,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nhost/be/services/mimir/model"
+	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/internal/git"
 	"github.com/nhost/cli/internal/ports"
 	nhostssl "github.com/nhost/cli/internal/ssl"
 	"github.com/nhost/cli/nhost/compose"
+	"github.com/nhost/cli/nhost/secrets"
 	"net"
 	"os"
 	"os/signal"
@@ -132,38 +134,46 @@ var devCmd = &cobra.Command{
 		defer cancel()
 
 		if !util.PathExists(nhost.CONFIG_PATH) {
-			if util.PathExists(filepath.Join(nhost.NHOST_DIR, "config.yaml")) {
-				fmt.Printf("\nConfig file '%s' wasn't found. Would you like to create it? [Yn]: ", nhost.CONFIG_PATH)
+			fmt.Printf("\nConfig file '%s' wasn't found. Would you like to generate a new one from the cloud? [Yn]: ", nhost.CONFIG_PATH)
 
-				for {
-					r := bufio.NewReader(os.Stdin)
-					fmt.Print(">  ")
+			for {
+				r := bufio.NewReader(os.Stdin)
+				fmt.Print(">  ")
 
-					input, err := r.ReadString('\n')
-					if err != nil {
+				input, err := r.ReadString('\n')
+				if err != nil {
+					return err
+				}
+
+				input = strings.TrimSpace(strings.ToLower(input))
+
+				if input == "n" {
+					log.Info("Please first run 'nhost config pull' to get the new config format.")
+					os.Exit(0)
+				}
+
+				if input == "y" || input == "" {
+					if err := pullConfigCmd.RunE(nil, nil); err != nil {
 						return err
 					}
-
-					input = strings.TrimSpace(strings.ToLower(input))
-
-					if input == "n" {
-						log.Info("Please first run 'nhost convert-config' to migrate your project to the new config format.")
-						os.Exit(0)
-					}
-
-					if input == "y" || input == "" {
-						if err := convertConfigCmd.RunE(nil, nil); err != nil {
-							return err
-						}
-						break
-					}
+					break
 				}
 			}
 		}
 
-		config, err := nhost.GetConfiguration()
+		secr, err := secrets.ParseSecrets(filepath.Join(util.WORKING_DIR, ".secrets"))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get local secrets: %v", err)
+		}
+
+		confData, err := os.ReadFile(nhost.CONFIG_PATH)
+		if err != nil {
+			return fmt.Errorf("failed to read config file: %v", err)
+		}
+
+		conf, err := config.ValidateAndResolve(confData, secr)
+		if err != nil {
+			return fmt.Errorf("failed to resolve config: %v", err)
 		}
 
 		projectName, err := nhost.GetDockerComposeProjectName()
@@ -178,9 +188,9 @@ var devCmd = &cobra.Command{
 
 		debug := logger.DEBUG
 
-		hasuraVersion := generichelper.DerefPtr(config.Hasura.GetVersion())
+		hasuraVersion := generichelper.DerefPtr(conf.GetHasura().GetVersion())
 
-		hc, err := hasura.InitClient(compose.HasuraConsoleHostname(ports.GraphQL()), util.ADMIN_SECRET, hasuraVersion, viper.GetString(userDefinedHasuraCliFlag), nil)
+		hc, err := hasura.InitClient(compose.HasuraConsoleHostname(ports.GraphQL()), conf.GetHasura().GetAdminSecret(), hasuraVersion, viper.GetString(userDefinedHasuraCliFlag), nil)
 		if err != nil {
 			return fmt.Errorf("failed to init hasura client: %v", err)
 		}
@@ -205,15 +215,9 @@ var devCmd = &cobra.Command{
 			return fmt.Errorf("failed to get current working directory: %v", err)
 		}
 
-		secrets, err := nhost.GetLocalSecrets()
-		if err != nil {
-			return fmt.Errorf("failed to get local secrets: %v", err)
-		}
-
 		dcMgr, err := service.NewDockerComposeManager(
 			nhostssl.NewNhostSSLCert(),
-			config,
-			secrets,
+			conf,
 			cwd,
 			hc,
 			ports,
@@ -261,7 +265,7 @@ var devCmd = &cobra.Command{
 			}
 
 			fmt.Println()
-			configurationWarnings(config)
+			configurationWarnings(conf)
 		}()
 
 		// handle cancellation or termination signals
@@ -293,7 +297,6 @@ func checkHostnames() error {
 		compose.HostLocalAuthNhostRun,
 		compose.HostLocalStorageNhostRun,
 		compose.HostLocalFunctionsNhostRun,
-		compose.HostLocalDashboardNhostRun,
 	}
 
 	for _, hostname := range hostnames {

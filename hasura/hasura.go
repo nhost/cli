@@ -189,13 +189,16 @@ func (c *Client) GetSchemas() ([]string, error) {
 
 	defer resp.Body.Close()
 
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return response, err
 	}
 
 	var responseData map[string]interface{}
-	json.Unmarshal(body, &responseData)
+	err = json.Unmarshal(body, &responseData)
+	if err != nil {
+		return response, err
+	}
 
 	//  Remove the first row/head and filter schemas from following rows
 	//  Following is a sample result:

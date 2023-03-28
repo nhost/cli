@@ -16,7 +16,7 @@ func TestConfig_authServiceEnvs(t *testing.T) {
 
 	c := &Config{
 		ports:       testPorts(t),
-		nhostConfig: defaultNhostConfig(t),
+		nhostConfig: resolvedDefaultNhostConfig(t),
 	}
 
 	assert.Equal(envvars.Env{
@@ -26,6 +26,20 @@ func TestConfig_authServiceEnvs(t *testing.T) {
 		"AUTH_SERVER_URL":                           "https://local.auth.nhost.run/v1",
 		"HASURA_GRAPHQL_JWT_SECRET":                 fmt.Sprintf(`{"type":"HS256", "key": "%s"}`, util.JWT_KEY),
 		"HASURA_GRAPHQL_ADMIN_SECRET":               "nhost-admin-secret",
+		"AUTH_ACCESS_TOKEN_EXPIRES_IN":              "900",
+		"AUTH_CLIENT_URL":                           "http://localhost:3000",
+		"AUTH_DISABLE_NEW_USERS":                    "false",
+		"AUTH_EMAIL_SIGNIN_EMAIL_VERIFIED_REQUIRED": "true",
+		"AUTH_GRAVATAR_DEFAULT":                     "blank",
+		"AUTH_GRAVATAR_ENABLED":                     "true",
+		"AUTH_GRAVATAR_RATING":                      "g",
+		"AUTH_LOCALE_ALLOWED_LOCALES":               "en",
+		"AUTH_LOCALE_DEFAULT":                       "en",
+		"AUTH_PASSWORD_MIN_LENGTH":                  "9",
+		"AUTH_REFRESH_TOKEN_EXPIRES_IN":             "43200",
+		"AUTH_USER_DEFAULT_ALLOWED_ROLES":           "user,me",
+		"AUTH_USER_DEFAULT_ROLE":                    "user",
+		"AUTH_WEBAUTHN_ATTESTATION_TIMEOUT":         "60000",
 		"AUTH_SMTP_PASS":                            "password",
 		"AUTH_SMTP_HOST":                            "mailhog",
 		"AUTH_SMTP_USER":                            "user",
@@ -37,34 +51,20 @@ func TestConfig_authServiceEnvs(t *testing.T) {
 		"AUTH_SMS_TWILIO_ACCOUNT_SID":               "",
 		"AUTH_SMS_TWILIO_AUTH_TOKEN":                "",
 		"AUTH_SMS_TWILIO_MESSAGING_SERVICE_ID":      "",
-		"AUTH_GRAVATAR_ENABLED":                     "true",
-		"AUTH_GRAVATAR_DEFAULT":                     "blank",
-		"AUTH_GRAVATAR_RATING":                      "g",
-		"AUTH_CLIENT_URL":                           "http://localhost:3000",
 		"AUTH_WEBAUTHN_ENABLED":                     "false",
 		"AUTH_WEBAUTHN_RP_NAME":                     "",
 		"AUTH_WEBAUTHN_RP_ORIGINS":                  "",
-		"AUTH_WEBAUTHN_ATTESTATION_TIMEOUT":         "60000",
 		"AUTH_ANONYMOUS_USERS_ENABLED":              "false",
-		"AUTH_DISABLE_NEW_USERS":                    "false",
 		"AUTH_ACCESS_CONTROL_ALLOWED_EMAILS":        "",
 		"AUTH_ACCESS_CONTROL_ALLOWED_EMAIL_DOMAINS": "",
 		"AUTH_ACCESS_CONTROL_BLOCKED_EMAILS":        "",
 		"AUTH_ACCESS_CONTROL_BLOCKED_EMAIL_DOMAINS": "",
-		"AUTH_PASSWORD_MIN_LENGTH":                  "9",
 		"AUTH_PASSWORD_HIBP_ENABLED":                "false",
-		"AUTH_USER_DEFAULT_ROLE":                    "user",
-		"AUTH_USER_DEFAULT_ALLOWED_ROLES":           "user,me",
-		"AUTH_LOCALE_DEFAULT":                       "en",
-		"AUTH_LOCALE_ALLOWED_LOCALES":               "en",
 		"AUTH_EMAIL_PASSWORDLESS_ENABLED":           "false",
 		"AUTH_SMS_PASSWORDLESS_ENABLED":             "false",
-		"AUTH_EMAIL_SIGNIN_EMAIL_VERIFIED_REQUIRED": "true",
 		"AUTH_ACCESS_CONTROL_ALLOWED_REDIRECT_URLS": "",
 		"AUTH_MFA_ENABLED":                          "false",
 		"AUTH_MFA_TOTP_ISSUER":                      "",
-		"AUTH_ACCESS_TOKEN_EXPIRES_IN":              "900",
-		"AUTH_REFRESH_TOKEN_EXPIRES_IN":             "43200",
 		"AUTH_JWT_CUSTOM_CLAIMS":                    "{}",
 		"NHOST_BACKEND_URL":                         "http://traefik:1337",
 		"NHOST_SUBDOMAIN":                           "local",
@@ -88,14 +88,15 @@ func TestConfig_authJwtCustomClaims(t *testing.T) {
 	}{
 		{
 			name:        "default",
-			nhostConfig: func() *model.ConfigConfig { return defaultNhostConfig(t) },
+			nhostConfig: func() *model.ConfigConfig { return resolvedDefaultNhostConfig(t) },
 			want:        "{}",
 		},
 		{
 			name: "with custom claims",
 			nhostConfig: func() *model.ConfigConfig {
-				conf := defaultNhostConfig(t)
-				accessToken := conf.Auth.GetSession().GetAccessToken()
+				conf := resolvedDefaultNhostConfig(t)
+				conf.Auth = &model.ConfigAuth{Session: &model.ConfigAuthSession{AccessToken: &model.ConfigAuthSessionAccessToken{}}}
+				accessToken := conf.GetAuth().GetSession().GetAccessToken()
 				accessToken.CustomClaims = []*model.ConfigAuthsessionaccessTokenCustomClaims{
 					{
 						Key:   "foo",

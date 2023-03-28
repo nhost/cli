@@ -1,182 +1,364 @@
 package config_test
 
 import (
+	"fmt"
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/config"
-	"github.com/nhost/cli/internal/generichelper"
-	"github.com/nhost/cli/internal/ports"
 	"github.com/nhost/cli/util"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestDefaultConfig(t *testing.T) {
+func TestDefaultConfigAndSecrets(t *testing.T) {
 	t.Parallel()
+
 	assert := assert.New(t)
-
-	defaultConfig, err := config.DefaultConfig()
-	assert.NoError(err)
-
-	expectedGlobalConfig := &model.ConfigGlobal{
-		Environment: []*model.ConfigEnvironmentVariable{},
+	defaultConf, defaultSecrets, err := config.DefaultConfigAndSecrets()
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	expectedAuthConfig := &model.ConfigAuth{
-		Version: generichelper.Pointerify("0.19.0"),
-		Redirections: &model.ConfigAuthRedirections{
-			ClientUrl:   generichelper.Pointerify("http://localhost:3000"),
-			AllowedUrls: []string{},
+	defaultConfData, err := config.MarshalFunc(defaultConf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedSecrets := fmt.Sprintf(`HASURA_GRAPHQL_ADMIN_SECRET=%s
+HASURA_GRAPHQL_JWT_SECRET=%s
+NHOST_WEBHOOK_SECRET=%s
+`, util.ADMIN_SECRET, util.JWT_KEY, util.WEBHOOK_SECRET)
+
+	expectedConf := `[global]
+
+[hasura]
+version = 'v2.15.2'
+adminSecret = '{{ secrets.HASURA_GRAPHQL_ADMIN_SECRET }}'
+webhookSecret = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
+
+[[hasura.jwtSecrets]]
+type = 'HS256'
+key = '{{ secrets.HASURA_GRAPHQL_JWT_SECRET }}'
+
+[hasura.settings]
+enableRemoteSchemaPermissions = false
+
+[hasura.logs]
+level = 'warn'
+
+[hasura.events]
+httpPoolSize = 100
+
+[functions]
+[functions.node]
+version = 16
+
+[auth]
+version = '0.19.1'
+
+[auth.redirections]
+clientUrl = 'http://localhost:3000'
+
+[auth.signUp]
+enabled = true
+
+[auth.user]
+[auth.user.roles]
+default = 'user'
+allowed = ['user', 'me']
+
+[auth.user.locale]
+default = 'en'
+allowed = ['en']
+
+[auth.user.gravatar]
+enabled = true
+default = 'blank'
+rating = 'g'
+
+[auth.user.email]
+
+[auth.user.emailDomains]
+
+[auth.session]
+[auth.session.accessToken]
+expiresIn = 900
+
+[auth.session.refreshToken]
+expiresIn = 43200
+
+[auth.method]
+[auth.method.anonymous]
+enabled = false
+
+[auth.method.emailPasswordless]
+enabled = false
+
+[auth.method.emailPassword]
+hibpEnabled = false
+emailVerificationRequired = true
+passwordMinLength = 9
+
+[auth.method.smsPasswordless]
+enabled = false
+
+[auth.method.oauth]
+[auth.method.oauth.apple]
+enabled = false
+
+[auth.method.oauth.azuread]
+tenant = 'common'
+enabled = false
+
+[auth.method.oauth.bitbucket]
+enabled = false
+
+[auth.method.oauth.discord]
+enabled = false
+
+[auth.method.oauth.facebook]
+enabled = false
+
+[auth.method.oauth.github]
+enabled = false
+
+[auth.method.oauth.gitlab]
+enabled = false
+
+[auth.method.oauth.google]
+enabled = false
+
+[auth.method.oauth.linkedin]
+enabled = false
+
+[auth.method.oauth.spotify]
+enabled = false
+
+[auth.method.oauth.strava]
+enabled = false
+
+[auth.method.oauth.twitch]
+enabled = false
+
+[auth.method.oauth.twitter]
+enabled = false
+
+[auth.method.oauth.windowslive]
+enabled = false
+
+[auth.method.oauth.workos]
+enabled = false
+
+[auth.method.webauthn]
+enabled = false
+
+[auth.method.webauthn.attestation]
+timeout = 60000
+
+[auth.totp]
+enabled = false
+
+[postgres]
+version = '14.5-20230104-1'
+
+[provider]
+
+[storage]
+version = '0.3.4'
+`
+
+	assert.Equal(expectedSecrets, string(config.DumpSecrets(defaultSecrets)))
+	assert.Equal(expectedConf, string(defaultConfData))
+}
+
+func TestDumpSecrets(t *testing.T) {
+	t.Parallel()
+
+	secrets := model.Secrets{
+		{
+			Name:  "HASURA_ADMIN_SECRET",
+			Value: "admin-secret",
 		},
-		SignUp: &model.ConfigAuthSignUp{Enabled: generichelper.Pointerify(true)},
-		User: &model.ConfigAuthUser{
-			Roles: &model.ConfigAuthUserRoles{
-				Default: generichelper.Pointerify("user"),
-				Allowed: []string{"user", "me"},
-			},
-			Locale: &model.ConfigAuthUserLocale{
-				Default: generichelper.Pointerify("en"),
-				Allowed: []string{"en"},
-			},
-			Gravatar: &model.ConfigAuthUserGravatar{
-				Enabled: generichelper.Pointerify(true),
-				Default: generichelper.Pointerify("blank"),
-				Rating:  generichelper.Pointerify("g"),
-			},
-			Email: &model.ConfigAuthUserEmail{
-				Allowed: []string{},
-				Blocked: []string{},
-			},
-			EmailDomains: &model.ConfigAuthUserEmailDomains{
-				Allowed: []string{},
-				Blocked: []string{},
-			},
-		},
-		Session: &model.ConfigAuthSession{
-			AccessToken: &model.ConfigAuthSessionAccessToken{
-				ExpiresIn:    generichelper.Pointerify(uint32(900)),
-				CustomClaims: []*model.ConfigAuthsessionaccessTokenCustomClaims{},
-			},
-			RefreshToken: &model.ConfigAuthSessionRefreshToken{
-				ExpiresIn: generichelper.Pointerify(uint32(43200)),
-			},
-		},
-		Method: &model.ConfigAuthMethod{
-			Anonymous: &model.ConfigAuthMethodAnonymous{
-				Enabled: generichelper.Pointerify(false),
-			},
-			EmailPasswordless: &model.ConfigAuthMethodEmailPasswordless{
-				Enabled: generichelper.Pointerify(false),
-			},
-			EmailPassword: &model.ConfigAuthMethodEmailPassword{
-				HibpEnabled:               generichelper.Pointerify(false),
-				EmailVerificationRequired: generichelper.Pointerify(true),
-				PasswordMinLength:         generichelper.Pointerify(uint8(9)),
-			},
-			SmsPasswordless: &model.ConfigAuthMethodSmsPasswordless{
-				Enabled: generichelper.Pointerify(false),
-			},
-			Oauth: &model.ConfigAuthMethodOauth{
-				Apple: &model.ConfigAuthMethodOauthApple{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Azuread: &model.ConfigAuthMethodOauthAzuread{
-					Enabled: generichelper.Pointerify(false),
-					Tenant:  generichelper.Pointerify("common"),
-				},
-				Bitbucket: &model.ConfigStandardOauthProvider{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Discord: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Facebook: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Github: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Gitlab: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Google: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Linkedin: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Spotify: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Strava: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Twitch: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Twitter: &model.ConfigAuthMethodOauthTwitter{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Windowslive: &model.ConfigStandardOauthProviderWithScope{
-					Enabled: generichelper.Pointerify(false),
-				},
-				Workos: &model.ConfigAuthMethodOauthWorkos{
-					Enabled: generichelper.Pointerify(false),
-				},
-			},
-			Webauthn: &model.ConfigAuthMethodWebauthn{
-				Enabled: generichelper.Pointerify(false),
-				Attestation: &model.ConfigAuthMethodWebauthnAttestation{
-					Timeout: generichelper.Pointerify(uint32(60000)),
-				},
-			},
-		},
-		Totp: &model.ConfigAuthTotp{
-			Enabled: generichelper.Pointerify(false),
+		{
+			Name:  "HASURA_WEBHOOK_SECRET",
+			Value: "webhook-secret",
 		},
 	}
 
-	expectedProviderConfig := &model.ConfigProvider{
-		Smtp: &model.ConfigSmtp{
-			User:     "user",
-			Password: "password",
-			Sender:   "hasura-auth@example.com",
-			Host:     "mailhog",
-			Port:     uint16(ports.DefaultSMTPPort),
-			Secure:   false,
-			Method:   "PLAIN",
-		},
+	expected := `HASURA_ADMIN_SECRET=admin-secret
+HASURA_WEBHOOK_SECRET=webhook-secret
+`
+
+	assert.Equal(t, expected, string(config.DumpSecrets(secrets)))
+}
+
+func TestValidateAndResolve(t *testing.T) {
+	assert := assert.New(t)
+	defaultConf, _, err := config.DefaultConfigAndSecrets()
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	expectedHasuraConfig := &model.ConfigHasura{
-		Version: generichelper.Pointerify("v2.15.2"),
-		Settings: &model.ConfigHasuraSettings{
-			EnableRemoteSchemaPermissions: generichelper.Pointerify(false),
+	secrets := model.Secrets{
+		{
+			Name:  "HASURA_GRAPHQL_ADMIN_SECRET",
+			Value: `secret with 'single' quotes`,
 		},
-		AdminSecret:   util.ADMIN_SECRET,
-		WebhookSecret: util.WEBHOOK_SECRET,
-		JwtSecrets: []*model.ConfigJWTSecret{
-			{
-				Type: generichelper.Pointerify("HS256"),
-				Key:  generichelper.Pointerify(util.JWT_KEY),
-			},
+		{
+			Name:  "HASURA_GRAPHQL_JWT_SECRET",
+			Value: `secret with "double" quotes`,
 		},
-	}
-
-	expectedFunctionsConfig := &model.ConfigFunctions{
-		Node: &model.ConfigFunctionsNode{
-			Version: generichelper.Pointerify(16),
+		{
+			Name:  "NHOST_WEBHOOK_SECRET",
+			Value: `secret with 'single' and "double" quotes`,
 		},
 	}
+	expected := `[global]
 
-	expectedStorageConfig := &model.ConfigStorage{
-		Version: generichelper.Pointerify("0.3.3"),
+[hasura]
+version = 'v2.15.2'
+adminSecret = "secret with 'single' quotes"
+webhookSecret = "secret with 'single' and \"double\" quotes"
+
+[[hasura.jwtSecrets]]
+type = 'HS256'
+key = 'secret with "double" quotes'
+
+[hasura.settings]
+enableRemoteSchemaPermissions = false
+
+[hasura.logs]
+level = 'warn'
+
+[hasura.events]
+httpPoolSize = 100
+
+[functions]
+[functions.node]
+version = 16
+
+[auth]
+version = '0.19.1'
+
+[auth.redirections]
+clientUrl = 'http://localhost:3000'
+
+[auth.signUp]
+enabled = true
+
+[auth.user]
+[auth.user.roles]
+default = 'user'
+allowed = ['user', 'me']
+
+[auth.user.locale]
+default = 'en'
+allowed = ['en']
+
+[auth.user.gravatar]
+enabled = true
+default = 'blank'
+rating = 'g'
+
+[auth.user.email]
+
+[auth.user.emailDomains]
+
+[auth.session]
+[auth.session.accessToken]
+expiresIn = 900
+
+[auth.session.refreshToken]
+expiresIn = 43200
+
+[auth.method]
+[auth.method.anonymous]
+enabled = false
+
+[auth.method.emailPasswordless]
+enabled = false
+
+[auth.method.emailPassword]
+hibpEnabled = false
+emailVerificationRequired = true
+passwordMinLength = 9
+
+[auth.method.smsPasswordless]
+enabled = false
+
+[auth.method.oauth]
+[auth.method.oauth.apple]
+enabled = false
+
+[auth.method.oauth.azuread]
+tenant = 'common'
+enabled = false
+
+[auth.method.oauth.bitbucket]
+enabled = false
+
+[auth.method.oauth.discord]
+enabled = false
+
+[auth.method.oauth.facebook]
+enabled = false
+
+[auth.method.oauth.github]
+enabled = false
+
+[auth.method.oauth.gitlab]
+enabled = false
+
+[auth.method.oauth.google]
+enabled = false
+
+[auth.method.oauth.linkedin]
+enabled = false
+
+[auth.method.oauth.spotify]
+enabled = false
+
+[auth.method.oauth.strava]
+enabled = false
+
+[auth.method.oauth.twitch]
+enabled = false
+
+[auth.method.oauth.twitter]
+enabled = false
+
+[auth.method.oauth.windowslive]
+enabled = false
+
+[auth.method.oauth.workos]
+enabled = false
+
+[auth.method.webauthn]
+enabled = false
+
+[auth.method.webauthn.attestation]
+timeout = 60000
+
+[auth.totp]
+enabled = false
+
+[postgres]
+version = '14.5-20230104-1'
+
+[provider]
+
+[storage]
+version = '0.3.4'
+`
+	got, err := config.ValidateAndResolve(defaultConf, secrets)
+	if err != nil {
+		t.Fatalf("ValidateAndResolve() error = %v", err)
 	}
 
-	assert.Equal("14.5-20230104-1", generichelper.DerefPtr(defaultConfig.Postgres.GetVersion()))
-	assert.Equal(expectedGlobalConfig, defaultConfig.Global)
-	assert.Equal(expectedAuthConfig, defaultConfig.Auth)
-	assert.Equal(expectedProviderConfig, defaultConfig.Provider)
-	assert.Equal(expectedHasuraConfig, defaultConfig.Hasura)
-	assert.Equal(expectedFunctionsConfig, defaultConfig.Functions)
-	assert.Equal(expectedStorageConfig, defaultConfig.Storage)
+	conf, err := toml.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(expected, string(conf))
 }

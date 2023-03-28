@@ -1,10 +1,10 @@
 package nhost
 
 import (
+	"github.com/nhost/be/services/mimir/model"
 	"sync"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/nhost/be/services/mimir/model"
 )
 
 type (

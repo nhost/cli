@@ -8,7 +8,7 @@ import (
 )
 
 func (c Config) hasuraServiceEnvs() envvars.Env {
-	hasuraConf := c.nhostConfig.Hasura
+	hasuraConf := c.nhostConfig.GetHasura()
 
 	return envvars.Env{
 		"HASURA_GRAPHQL_DATABASE_URL":              c.postgresConnectionStringForUser("nhost_hasura"),
@@ -16,7 +16,8 @@ func (c Config) hasuraServiceEnvs() envvars.Env {
 		"HASURA_GRAPHQL_ADMIN_SECRET":              hasuraConf.GetAdminSecret(),
 		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE":         "public",
 		"HASURA_GRAPHQL_DEV_MODE":                  "true",
-		"HASURA_GRAPHQL_LOG_LEVEL":                 "debug",
+		"HASURA_GRAPHQL_LOG_LEVEL":                 generichelper.DerefPtr(hasuraConf.GetLogs().GetLevel()),
+		"HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE":     fmt.Sprint(generichelper.DerefPtr(hasuraConf.GetEvents().GetHttpPoolSize())),
 		"HASURA_GRAPHQL_ENABLE_CONSOLE":            "false",
 		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT": "20",
 		"HASURA_GRAPHQL_NO_OF_RETRIES":             "20",
@@ -70,7 +71,7 @@ func (c Config) hasuraService() *types.ServiceConfig {
 
 	return &types.ServiceConfig{
 		Name:        SvcGraphql,
-		Image:       "hasura/graphql-engine:" + generichelper.DerefPtr(c.nhostConfig.Hasura.GetVersion()),
+		Image:       "hasura/graphql-engine:" + generichelper.DerefPtr(c.nhostConfig.GetHasura().GetVersion()),
 		Environment: c.hasuraServiceEnvs().ToDockerServiceConfigEnv(),
 		Labels: mergeTraefikServiceLabels(
 			redirectRootLabels,

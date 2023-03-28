@@ -15,7 +15,7 @@ func TestConfig_hasuraServiceEnvs(t *testing.T) {
 
 	c := Config{
 		ports:       testPorts(t),
-		nhostConfig: defaultNhostConfig(t),
+		nhostConfig: resolvedDefaultNhostConfig(t),
 	}
 
 	assert.Equal(envvars.Env{
@@ -24,9 +24,10 @@ func TestConfig_hasuraServiceEnvs(t *testing.T) {
 		"HASURA_GRAPHQL_ADMIN_SECRET":              "nhost-admin-secret",
 		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE":         "public",
 		"HASURA_GRAPHQL_DEV_MODE":                  "true",
-		"HASURA_GRAPHQL_LOG_LEVEL":                 "debug",
+		"HASURA_GRAPHQL_LOG_LEVEL":                 "warn",
 		"HASURA_GRAPHQL_ENABLE_CONSOLE":            "false",
 		"HASURA_GRAPHQL_MIGRATIONS_SERVER_TIMEOUT": "20",
+		"HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE":     "100",
 		"HASURA_GRAPHQL_NO_OF_RETRIES":             "20",
 		"HASURA_GRAPHQL_ENABLE_TELEMETRY":          "false",
 		"NHOST_BACKEND_URL":                        "http://traefik:1337",
