@@ -255,7 +255,7 @@ func (c Config) nhostSystemEnvs() envvars.Env {
 		"NHOST_FUNCTIONS_URL":  c.PublicFunctionsConnectionString(),
 		"NHOST_ADMIN_SECRET":   escapeDollarSignForDockerCompose(hasuraConf.GetAdminSecret()),
 		"NHOST_WEBHOOK_SECRET": escapeDollarSignForDockerCompose(hasuraConf.GetWebhookSecret()),
-		"NHOST_JWT_SECRET":     c.graphqlJwtSecret(),
+		"NHOST_JWT_SECRET":     escapeDollarSignForDockerCompose(c.graphqlJwtSecret()),
 	}
 }
 

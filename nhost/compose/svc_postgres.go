@@ -24,8 +24,8 @@ const (
 func (c Config) postgresServiceEnvs() envvars.Env {
 	return envvars.Env{
 		envPostgresData:     envPostgresDataDefaultValue,
-		envPostgresUser:     envPostgresUserDefaultValue,
-		envPostgresPassword: envPostgresPasswordDefaultValue,
+		envPostgresUser:     escapeDollarSignForDockerCompose(envPostgresUserDefaultValue),
+		envPostgresPassword: escapeDollarSignForDockerCompose(envPostgresPasswordDefaultValue),
 		envPostgresDb:       envPostgresDbDefaultValue,
 	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }

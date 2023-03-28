@@ -12,8 +12,8 @@ func (c Config) hasuraServiceEnvs() envvars.Env {
 
 	return envvars.Env{
 		"HASURA_GRAPHQL_DATABASE_URL":              c.postgresConnectionStringForUser("nhost_hasura"),
-		"HASURA_GRAPHQL_JWT_SECRET":                c.graphqlJwtSecret(),
-		"HASURA_GRAPHQL_ADMIN_SECRET":              hasuraConf.GetAdminSecret(),
+		"HASURA_GRAPHQL_JWT_SECRET":                escapeDollarSignForDockerCompose(c.graphqlJwtSecret()),
+		"HASURA_GRAPHQL_ADMIN_SECRET":              escapeDollarSignForDockerCompose(hasuraConf.GetAdminSecret()),
 		"HASURA_GRAPHQL_UNAUTHORIZED_ROLE":         "public",
 		"HASURA_GRAPHQL_DEV_MODE":                  "true",
 		"HASURA_GRAPHQL_LOG_LEVEL":                 generichelper.DerefPtr(hasuraConf.GetLogs().GetLevel()),

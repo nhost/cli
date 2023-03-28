@@ -20,12 +20,12 @@ func (c Config) storageServiceEnvs(apiRootPrefix string) envvars.Env {
 		"POSTGRES_MIGRATIONS":         "1",
 		"HASURA_METADATA":             "1",
 		"HASURA_ENDPOINT":             "http://graphql:8080/v1",
-		"HASURA_GRAPHQL_ADMIN_SECRET": hasuraConf.GetAdminSecret(),
-		"S3_ACCESS_KEY":               minioEnv[envMinioRootUser],
-		"S3_SECRET_KEY":               minioEnv[envMinioRootPassword],
+		"HASURA_GRAPHQL_ADMIN_SECRET": escapeDollarSignForDockerCompose(hasuraConf.GetAdminSecret()),
+		"S3_ACCESS_KEY":               escapeDollarSignForDockerCompose(minioEnv[envMinioRootUser]),
+		"S3_SECRET_KEY":               escapeDollarSignForDockerCompose(minioEnv[envMinioRootPassword]),
 		"S3_ENDPOINT":                 "http://minio:9000",
 		"S3_BUCKET":                   "nhost",
-		"HASURA_GRAPHQL_JWT_SECRET":   c.graphqlJwtSecret(),
+		"HASURA_GRAPHQL_JWT_SECRET":   escapeDollarSignForDockerCompose(c.graphqlJwtSecret()),
 		"POSTGRES_MIGRATIONS_SOURCE":  fmt.Sprintf("%s?sslmode=disable", c.postgresConnectionStringForUser("nhost_storage_admin")),
 	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 

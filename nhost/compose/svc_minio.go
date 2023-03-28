@@ -14,8 +14,8 @@ const (
 
 func (c Config) minioServiceEnvs() envvars.Env {
 	return envvars.Env{
-		envMinioRootUser:     nhost.MINIO_USER,
-		envMinioRootPassword: nhost.MINIO_PASSWORD,
+		envMinioRootUser:     escapeDollarSignForDockerCompose(nhost.MINIO_USER),
+		envMinioRootPassword: escapeDollarSignForDockerCompose(nhost.MINIO_PASSWORD),
 	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 

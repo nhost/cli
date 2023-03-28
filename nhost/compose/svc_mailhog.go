@@ -21,10 +21,10 @@ func (c Config) mailhogServiceEnvs() envvars.Env {
 	return envvars.Env{
 		"SMTP_HOST":   authEnv[envAuthSmtpHost],
 		"SMTP_PORT":   authEnv[envAuthSmtpPort],
-		"SMTP_PASS":   authEnv[envAuthSmtpPass],
-		"SMTP_USER":   authEnv[envAuthSmtpUser],
+		"SMTP_PASS":   escapeDollarSignForDockerCompose(authEnv[envAuthSmtpPass]),
+		"SMTP_USER":   escapeDollarSignForDockerCompose(authEnv[envAuthSmtpUser]),
 		"SMTP_SECURE": authEnv[envAuthSmtpSecure],
-		"SMTP_SENDER": authEnv[envAuthSmtpSender],
+		"SMTP_SENDER": escapeDollarSignForDockerCompose(authEnv[envAuthSmtpSender]),
 	}.Merge(c.nhostSystemEnvs(), c.globalEnvs)
 }
 
