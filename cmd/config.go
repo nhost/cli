@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/config"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/nhost/secrets"
@@ -46,7 +47,7 @@ var pullConfigCmd = &cobra.Command{
 			return fmt.Errorf("failed to marshal config: %v", err)
 		}
 
-		if err := os.WriteFile(filepath.Join(util.WORKING_DIR, ".secrets"), config.DumpSecrets(appSecrets), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(util.WORKING_DIR, ".secrets"), config.DumpSecrets(anonymizeAppSecrets(appSecrets)), 0644); err != nil {
 			return fmt.Errorf("failed to write secrets file: %w", err)
 		}
 
@@ -154,4 +155,29 @@ func init() {
 	validateConfigCmd.Flags().Bool("local", false, "Validate local configuration")
 	validateConfigCmd.Flags().Bool("remote", false, "Validate remote configuration")
 	validateConfigCmd.MarkFlagsMutuallyExclusive("local", "remote")
+}
+
+func anonymizeAppSecrets(secrets model.Secrets) model.Secrets {
+	defaultSecretsMapping := map[string]string{}
+	defaultSecrets := config.DefaultSecrets()
+	for _, defaultSecret := range defaultSecrets {
+		defaultSecretsMapping[defaultSecret.GetName()] = defaultSecret.GetValue()
+	}
+
+	anonymized := model.Secrets{}
+	for _, v := range secrets {
+		if defaultSecretValue, ok := defaultSecretsMapping[v.GetName()]; ok {
+			anonymized = append(anonymized, &model.ConfigEnvironmentVariable{
+				Name:  v.GetName(),
+				Value: defaultSecretValue,
+			})
+			continue
+		}
+
+		anonymized = append(anonymized, &model.ConfigEnvironmentVariable{
+			Name:  v.GetName(),
+			Value: "FIXME",
+		})
+	}
+	return anonymized
 }

@@ -54,7 +54,7 @@ func DefaultConfigAndSecrets() (confData *model.ConfigConfig, secretsData model.
 		return nil, nil, fmt.Errorf("failed to generate default config: %w", err)
 	}
 
-	return defaultConf, defaultSecrets(), nil
+	return defaultConf, DefaultSecrets(), nil
 }
 
 func defaultConfig() (*model.ConfigConfig, error) {
@@ -78,7 +78,7 @@ func defaultConfig() (*model.ConfigConfig, error) {
 	return c, nil
 }
 
-func defaultSecrets() model.Secrets {
+func DefaultSecrets() model.Secrets {
 	return model.Secrets{
 		{
 			Name:  "HASURA_GRAPHQL_ADMIN_SECRET",

@@ -226,7 +226,7 @@ in the following manner:
 		}
 
 		// save .secrets
-		if err := os.WriteFile(filepath.Join(util.WORKING_DIR, ".secrets"), config.DumpSecrets(appSecrets), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(util.WORKING_DIR, ".secrets"), config.DumpSecrets(anonymizeAppSecrets(appSecrets)), 0644); err != nil {
 			log.WithError(err).Fatal("Failed to save .secrets file")
 		}
 
