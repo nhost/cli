@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"io"
 	"net/http"
+	"regexp"
 )
 
 var secretsCmd = &cobra.Command{
@@ -155,10 +156,51 @@ func handleSecretOperation(op, secretName, secretValue string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to %s secret: %s", op, string(respBody))
+		// try to extract error message from response body
+		msg, err := extractFailedResponseMessage(respBody)
+		if err != nil {
+			return fmt.Errorf("failed to %s secret", op)
+		}
+
+		return fmt.Errorf("failed to %s secret: %s", op, msg)
 	}
 
 	return nil
+}
+
+func extractFailedResponseMessage(body []byte) (string, error) {
+	type errorStruct struct {
+		Message string `json:"message"`
+	}
+
+	type response struct {
+		Errors []errorStruct `json:"errors"`
+	}
+
+	type responseBody struct {
+		Response response `json:"response"`
+	}
+
+	// extract JSON from response body
+	re := regexp.MustCompile(`({.*})`)
+	match := re.FindStringSubmatch(string(body))
+	if len(match) != 2 {
+		return "", fmt.Errorf("failed to extract JSON from response")
+	}
+
+	jsonResponse := match[1]
+
+	var resp responseBody
+	err := json.Unmarshal([]byte(jsonResponse), &resp)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to unmarshal response body")
+	}
+
+	if len(resp.Response.Errors) == 0 {
+		return "", fmt.Errorf("failed to extract error message from response")
+	}
+
+	return resp.Response.Errors[0].Message, nil
 }
 
 func makeSecretPayload(userId, appId, cliToken, secretName, secretValue string) ([]byte, error) {
