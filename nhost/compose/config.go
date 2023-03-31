@@ -2,13 +2,13 @@ package compose
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/internal/generichelper"
 	"github.com/nhost/cli/internal/ports"
 	"github.com/nhost/cli/nhost/envvars"
 	"gopkg.in/yaml.v3"
-
-	"strings"
 
 	"github.com/compose-spec/compose-go/types"
 )
