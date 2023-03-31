@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+
 	"github.com/compose-spec/compose-go/types"
 	"github.com/nhost/cli/nhost/envvars"
 )
@@ -22,7 +23,7 @@ func (c Config) dashboardServiceEnvs() envvars.Env {
 func (c Config) dashboardService() *types.ServiceConfig {
 	return &types.ServiceConfig{
 		Name:        SvcDashboard,
-		Image:       "nhost/dashboard:0.13.9",
+		Image:       "nhost/dashboard:0.14.1",
 		Environment: c.dashboardServiceEnvs().ToDockerServiceConfigEnv(),
 		Ports: []types.ServicePortConfig{
 			{
