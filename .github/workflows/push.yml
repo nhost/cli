@@ -11,14 +11,14 @@ jobs:
 #    runs-on: ubuntu-latest
 #    steps:
 #      -
-#        uses: actions/checkout@v3.3.0
+#        uses: actions/checkout@v3.5.0
 #      -
 #        name: Get go.mod details
 #        uses: Eun/go-mod-details@v1.0.6
 #        id: go-mod-details
 #      -
 #        name: Install Go
-#        uses: actions/setup-go@v3
+#        uses: actions/setup-go@v4
 #        with:
 #          go-version: ${{ steps.go-mod-details.outputs.go_version }}
 #      -
@@ -35,9 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3.5.0
       -
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
       # we cannot use nancy-github-action because it is outdated, so it's better to use the latest
       # docker image for the validation
       -
@@ -53,14 +53,14 @@ jobs:
     steps:
       -
         name: Checkout code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3.5.0
       -
         name: Get go.mod details
         uses: Eun/go-mod-details@v1.0.6
         id: go-mod-details
       -
         name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ steps.go-mod-details.outputs.go_version }}
       -
@@ -72,19 +72,19 @@ jobs:
     steps:
       -
         name: Checkout code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3.5.0
       -
         name: Get go.mod details
         uses: Eun/go-mod-details@v1.0.6
         id: go-mod-details
       -
         name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ steps.go-mod-details.outputs.go_version }}
       -
         name: GoReleaser
-        uses: goreleaser/goreleaser-action@v4.1.0
+        uses: goreleaser/goreleaser-action@v4.2.0
         with:
           version: latest
           args: build --snapshot
