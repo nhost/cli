@@ -23,7 +23,7 @@ jobs:
         with:
           go-version: ${{ steps.go-mod-details.outputs.go_version }}
       - name: Configure aws
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::796351718684:role/github-actions-nhost-cli
           aws-region: eu-central-1
