@@ -1,6 +1,5 @@
 # .github/workflows/release.yaml
 on:
-  push:
   release:
     types: [published]
 
