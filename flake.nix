@@ -14,19 +14,44 @@
 
             golangci-lint = prev.golangci-lint.override rec {
               buildGoModule = args: prev.buildGoModule.override { go = go; } (args // rec {
-                version = "1.46.2";
+                version = "1.52.2";
                 src = prev.fetchFromGitHub {
                   owner = "golangci";
                   repo = "golangci-lint";
                   rev = "v${version}";
-                  sha256 = "sha256-7sDAwWz+qoB/ngeH35tsJ5FZUfAQvQsU6kU9rUHIHMk=";
+                  sha256 = "sha256-FmNXjOMDDdGxMQvy5f1NoaqrKFpmlPWclXooMxXP8zg";
                 };
-                vendorHash = "sha256-w38OKN6HPoz37utG/2QSPMai55IRDXCIIymeMe6ogIU=";
+                vendorHash = "sha256-BhD3a0LNc3hpiH4QC8FpmNn3swx3to8+6gfcgZT8TLg=";
 
                 meta = with final.lib; args.meta // {
                   broken = false;
                 };
               });
+            };
+
+            gqlgenc = final.buildGoModule rec {
+              pname = "gqlgenc";
+              version = "0.13.5";
+
+              src = final.fetchFromGitHub {
+                owner = "Yamashou";
+                repo = pname;
+                rev = "v${version}";
+                sha256 = "sha256-f4JkVYNLe93EO570k9MiBzOoGDSeJzY2dmM1yXbIE4k=";
+              };
+
+              vendorHash = "sha256-Up7Wi6z0Cbp9RHKAsjj/kd50UqcXtsS+ETRYuxRfGuA=";
+
+              doCheck = false;
+
+              subPackages = [ "./." ];
+
+              meta = with final.lib; {
+                description = "This is Go library for building GraphQL client with gqlgen";
+                homepage = "https://github.com/Yamashou/gqlgenc";
+                license = licenses.mit;
+                maintainers = [ "@nhost" ];
+              };
             };
 
           })
@@ -68,6 +93,7 @@
           default = pkgs.mkShell {
             buildInputs = with pkgs; [
               golangci-lint
+              gqlgenc
             ] ++ buildInputs ++ nativeBuildInputs;
           };
         };
