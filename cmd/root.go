@@ -26,19 +26,25 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/nhost/cli/logger"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
+	v2cmd "github.com/nhost/cli/v2/cmd"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"github.com/spf13/viper"
-	"os"
-	"path/filepath"
 )
 
 const (
 	ErrNotLoggedIn = "Please login with `nhost login`"
 	ErrLoggedIn    = "You are already logged in, first logout with `nhost logout`"
+)
+
+const (
+	flagDomain = "domain"
 )
 
 var (
@@ -75,23 +81,20 @@ var (
 	}
 )
 
-//  Initialize common constants and variables used by multiple commands
-//  Execute adds all child commands to the root command and sets flags appropriately.
-//  This is called by main.main(). It only needs to happen once to the rootCmd.
+// Initialize common constants and variables used by multiple commands
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 
 	//  un-comment the following to auto-generate documentation
 	//	generateDocumentation()
-
 }
 
-//  auto-generate utility documentation in all required formats
+// auto-generate utility documentation in all required formats
 func generateDocumentation() {
-
 	docsDir := filepath.Join(util.WORKING_DIR, "docs")
 
 	//  Generate Markdown docs
@@ -111,16 +114,16 @@ func init() {
 	//	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.nhost.yaml)")
 
 	rootCmd.PersistentFlags().BoolVarP(&logger.JSON, "json", "j", false, "Print JSON formatted logs")
-	rootCmd.PersistentFlags().StringVar(&nhost.DOMAIN, "domain", "nhost.run", "Auth domain - for internal testing")
-	//rootCmd.PersistentFlags().StringVarP(&userLicense, "license", "l", "", "name of license for the project")
-	//rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
-	//viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
-	//viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
+	rootCmd.PersistentFlags().StringVar(&nhost.DOMAIN, flagDomain, "nhost.run", "Auth domain - for internal testing")
+	// rootCmd.PersistentFlags().StringVarP(&userLicense, "license", "l", "", "name of license for the project")
+	// rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
+	// viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
+	// viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
 	viper.SetDefault("author", "Mrinal Wahal wahal@nhost.io")
 	viper.SetDefault("license", "MIT")
 
-	//rootCmd.AddCommand(versionCmd)
-	//rootCmd.AddCommand(initCmd)
+	// rootCmd.AddCommand(versionCmd)
+	// rootCmd.AddCommand(initCmd)
 
 	//  Cobra also supports local flags, which will only run
 	//  when this action is called directly.
@@ -128,6 +131,8 @@ func init() {
 
 	path, _ := os.Getwd()
 	rootCmd.PersistentFlags().StringVar(&path, "path", path, "Current working directory to execute CLI in")
+
+	v2cmd.Register(rootCmd)
 }
 
 /*
@@ -141,7 +146,7 @@ func resetUmask() {
 }
 */
 
-//  initConfig reads in config file and ENV variables if set.
+// initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" {
 		//  Use config file from the flag.

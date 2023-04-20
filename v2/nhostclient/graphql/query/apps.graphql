@@ -1,0 +1,9 @@
+query GetWorkspacesApps {
+  workspaces {
+    name
+    apps {
+      name
+    }
+  }
+}
+

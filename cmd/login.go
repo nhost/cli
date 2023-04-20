@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) Nhost
+# Copyright (c) Nhost
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -41,23 +41,23 @@ import (
 	"golang.org/x/term"
 )
 
-var email string
-var password string
+var (
+	email    string
+	password string
+)
 
-//  loginCmd represents the login command
+// loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:        "login",
 	SuggestFor: []string{"logout"},
 	Short:      "Log in to your Nhost account",
 	PreRun: func(cmd *cobra.Command, args []string) {
-
 		//  if user is already logged in, ask to logout
 		if _, err := getUser(nhost.AUTH_PATH); err == nil {
 			status.Fatal(ErrLoggedIn)
 		}
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		if email == "" {
 			readEmail, err := readInput("email", false)
 			if err != nil {
@@ -108,7 +108,6 @@ var loginCmd = &cobra.Command{
 		//  write auth file
 		output, _ := json.Marshal(credentials)
 		return writeToFile(nhost.AUTH_PATH, string(output), "end")
-
 	},
 	PostRun: func(cmd *cobra.Command, args []string) {
 		status.Info("Email verified, and you are logged in!")
@@ -116,9 +115,8 @@ var loginCmd = &cobra.Command{
 	},
 }
 
-//  take email input from user
+// take email input from user
 func readInput(key string, hide bool) (string, error) {
-
 	reader := bufio.NewReader(os.Stdin)
 	var response string
 	var err error
@@ -137,9 +135,8 @@ func readInput(key string, hide bool) (string, error) {
 	return strings.TrimSpace(response), err
 }
 
-//	Gets user's details using specified token
+// Gets user's details using specified token
 func getUser(authFile string) (nhost.User, error) {
-
 	var response nhost.User
 	if !util.PathExists(authFile) {
 		return response, errors.New("auth source not found")
@@ -156,7 +153,7 @@ func getUser(authFile string) (nhost.User, error) {
 	postBody, _ := json.Marshal(credentials)
 	responseBody := bytes.NewBuffer(postBody)
 
-	//Leverage Go's HTTP Post function to make request
+	// Leverage Go's HTTP Post function to make request
 	resp, err := http.Post(nhost.API+"/custom/cli/user", "application/json", responseBody)
 	if err != nil {
 		return response, err
@@ -175,9 +172,8 @@ func getUser(authFile string) (nhost.User, error) {
 	return response, err
 }
 
-//  signs the user in with email and returns verification token
+// signs the user in with email and returns verification token
 func login(url, email, password string) (nhost.Credentials, error) {
-
 	log.Debug("Authenticating with ", email)
 
 	var response nhost.Credentials
@@ -212,15 +208,4 @@ func login(url, email, password string) (nhost.Credentials, error) {
 	*/
 
 	return response, err
-}
-
-func init() {
-	rootCmd.AddCommand(loginCmd)
-
-	//  Here you will define your flags and configuration settings.
-
-	//  Add Persistent Flags which will work for this command
-	//  and all subcommands
-	loginCmd.PersistentFlags().StringVarP(&email, "email", "e", "", "Email of your Nhost account")
-	loginCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Password of your Nhost account")
 }
