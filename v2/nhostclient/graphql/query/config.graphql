@@ -1,0 +1,9 @@
+query GetConfigRawJSON($appID: uuid!) {
+  configRawJSON(appID: $appID, resolve: false)
+}
+
+query GetSecrets($appID: uuid!) {
+  appSecrets(appID: $appID) {
+    name
+  }
+}

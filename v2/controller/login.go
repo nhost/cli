@@ -1,4 +1,4 @@
-package workflows
+package controller
 
 import (
 	"context"
@@ -6,31 +6,28 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nhost/cli/v2/nhostclient"
 	"github.com/nhost/cli/v2/tui"
 )
 
-func Login(
+func (c *Controller) Login(
 	ctx context.Context,
-	printer func(i ...any),
 	authWr io.Writer,
 	email string,
 	password string,
-	cl *nhostclient.Client,
 ) error {
-	printer(tui.Info("Authenticating\n"))
-	loginResp, err := cl.Login(ctx, email, password)
+	c.p.Println(tui.Info("Authenticating"))
+	loginResp, err := c.cl.Login(ctx, email, password)
 	if err != nil {
 		return fmt.Errorf("failed to login: %w", err)
 	}
 
-	printer(tui.Info("Successfully logged in, creating PAT\n"))
-	patRes, err := cl.CreatePAT(ctx, loginResp.Session.AccessToken)
+	c.p.Println(tui.Info("Successfully logged in, creating PAT"))
+	patRes, err := c.cl.CreatePAT(ctx, loginResp.Session.AccessToken)
 	if err != nil {
 		return fmt.Errorf("failed to create PAT: %w", err)
 	}
-	printer(tui.Info("Successfully created PAT\n"))
-	printer(tui.Info("Storing PAT for future user\n"))
+	c.p.Println(tui.Info("Successfully created PAT"))
+	c.p.Println(tui.Info("Storing PAT for future user"))
 
 	b, err := json.Marshal(patRes)
 	if err != nil {

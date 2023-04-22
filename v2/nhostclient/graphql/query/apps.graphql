@@ -2,7 +2,12 @@ query GetWorkspacesApps {
   workspaces {
     name
     apps {
+      id
       name
+      subdomain
+      region {
+        awsName
+      }
     }
   }
 }

@@ -148,15 +148,15 @@ var showFullExampleConfigCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	rootCmd.AddCommand(configCmd)
-	configCmd.AddCommand(pullConfigCmd)
-	configCmd.AddCommand(validateConfigCmd)
-	configCmd.AddCommand(showFullExampleConfigCmd)
-	validateConfigCmd.Flags().Bool("local", false, "Validate local configuration")
-	validateConfigCmd.Flags().Bool("remote", false, "Validate remote configuration")
-	validateConfigCmd.MarkFlagsMutuallyExclusive("local", "remote")
-}
+// func init() {
+// 	rootCmd.AddCommand(configCmd)
+// 	configCmd.AddCommand(pullConfigCmd)
+// 	configCmd.AddCommand(validateConfigCmd)
+// 	configCmd.AddCommand(showFullExampleConfigCmd)
+// 	validateConfigCmd.Flags().Bool("local", false, "Validate local configuration")
+// 	validateConfigCmd.Flags().Bool("remote", false, "Validate remote configuration")
+// 	validateConfigCmd.MarkFlagsMutuallyExclusive("local", "remote")
+// }
 
 func anonymizeAppSecrets(secrets model.Secrets) model.Secrets {
 	defaultSecretsMapping := map[string]string{}

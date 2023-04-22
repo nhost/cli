@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/nhost/cli/v2/nhostclient/credentials"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 )
 
@@ -19,17 +20,8 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-type LoginResponse struct {
-	Session struct {
-		AccessToken          string `json:"accessToken"`
-		AccessTokenExpiresIn int    `json:"accessTokenExpiresIn"`
-		RefreshToken         string `json:"refreshToken"`
-	} `json:"session"`
-	Mfa any `json:"mfa"`
-}
-
-func (n *Client) Login(ctx context.Context, email, password string) (LoginResponse, error) {
-	var resp LoginResponse
+func (n *Client) Login(ctx context.Context, email, password string) (credentials.Session, error) {
+	var resp credentials.Session
 	if err := MakeJSONRequest(
 		ctx,
 		n.client,
@@ -50,7 +42,7 @@ func (n *Client) Login(ctx context.Context, email, password string) (LoginRespon
 		},
 		n.retryer,
 	); err != nil {
-		return LoginResponse{}, fmt.Errorf("failed to login: %w", err)
+		return credentials.Session{}, fmt.Errorf("failed to login: %w", err)
 	}
 
 	return resp, nil
@@ -60,8 +52,8 @@ type LoginPATRequest struct {
 	PersonalAccessToken string `json:"personalAccessToken"`
 }
 
-func (n *Client) LoginPAT(ctx context.Context, pat string) (LoginResponse, error) {
-	var resp LoginResponse
+func (n *Client) LoginPAT(ctx context.Context, pat string) (credentials.Session, error) {
+	var resp credentials.Session
 	if err := MakeJSONRequest(
 		ctx,
 		n.client,
@@ -81,7 +73,7 @@ func (n *Client) LoginPAT(ctx context.Context, pat string) (LoginResponse, error
 		},
 		n.retryer,
 	); err != nil {
-		return LoginResponse{}, fmt.Errorf("failed to login: %w", err)
+		return credentials.Session{}, fmt.Errorf("failed to login: %w", err)
 	}
 
 	return resp, nil
@@ -92,12 +84,8 @@ type CreatePATRequest struct {
 	Metadata  map[string]any `json:"metadata"`
 }
 
-type CreatePATResponse struct {
-	PersonalAccessToken string `json:"personalAccessToken"`
-}
-
-func (n *Client) CreatePAT(ctx context.Context, accessToken string) (CreatePATResponse, error) {
-	var resp CreatePATResponse
+func (n *Client) CreatePAT(ctx context.Context, accessToken string) (credentials.Credentials, error) {
+	var resp credentials.Credentials
 	if err := MakeJSONRequest(
 		ctx,
 		n.client,
@@ -122,14 +110,14 @@ func (n *Client) CreatePAT(ctx context.Context, accessToken string) (CreatePATRe
 		},
 		n.retryer,
 	); err != nil {
-		return CreatePATResponse{}, fmt.Errorf("failed to create PAT: %w", err)
+		return credentials.Credentials{}, fmt.Errorf("failed to create PAT: %w", err)
 	}
 
 	return resp, nil
 }
 
 func (n *Client) Logout(ctx context.Context, refreshToken string, accessToken string) error {
-	if _, err := n.Graphql.DeleteRefreshToken(
+	if _, err := n.DeleteRefreshToken(
 		ctx,
 		//nolint:exhaustruct
 		graphql.AuthRefreshTokensBoolExp{
@@ -137,7 +125,7 @@ func (n *Client) Logout(ctx context.Context, refreshToken string, accessToken st
 				Eq: &refreshToken,
 			},
 		},
-		WithAccessToken(accessToken),
+		graphql.WithAccessToken(accessToken),
 	); err != nil {
 		return fmt.Errorf("failed to delete refresh token: %w", err)
 	}

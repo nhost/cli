@@ -73,6 +73,7 @@ type QueryRoot struct {
 	CliTokens                               []*CliTokens                            "json:\"cliTokens\" graphql:\"cliTokens\""
 	CliTokensAggregate                      CliTokensAggregate                      "json:\"cliTokensAggregate\" graphql:\"cliTokensAggregate\""
 	Config                                  *ConfigConfig                           "json:\"config,omitempty\" graphql:\"config\""
+	ConfigRawJSON                           string                                  "json:\"configRawJSON\" graphql:\"configRawJSON\""
 	Configs                                 []*ConfigAppConfig                      "json:\"configs\" graphql:\"configs\""
 	Continents                              []*Continents                           "json:\"continents\" graphql:\"continents\""
 	ContinentsAggregate                     ContinentsAggregate                     "json:\"continents_aggregate\" graphql:\"continents_aggregate\""
@@ -387,15 +388,47 @@ type MutationRoot struct {
 	ZzzDonotuseUpdateManyBillingDedicatedComputeReports []*BillingDedicatedComputeReportsMutationResponse "json:\"zzzDONOTUSE_update_many_billing_dedicated_compute_reports,omitempty\" graphql:\"zzzDONOTUSE_update_many_billing_dedicated_compute_reports\""
 	ZzzDonotuseUpdateManyBillingSubscriptions           []*BillingSubscriptionsMutationResponse           "json:\"zzzDONOTUSE_update_many_billing_subscriptions,omitempty\" graphql:\"zzzDONOTUSE_update_many_billing_subscriptions\""
 }
-type GetWorkspacesApps_Workspaces_Apps struct {
-	Name string "json:\"name\" graphql:\"name\""
+type GetWorkspacesApps_Workspaces_Apps_Region struct {
+	AwsName string "json:\"awsName\" graphql:\"awsName\""
 }
 
+func (t *GetWorkspacesApps_Workspaces_Apps_Region) GetAwsName() string {
+	if t == nil {
+		t = &GetWorkspacesApps_Workspaces_Apps_Region{}
+	}
+	return t.AwsName
+}
+
+type GetWorkspacesApps_Workspaces_Apps struct {
+	ID        string                                   "json:\"id\" graphql:\"id\""
+	Name      string                                   "json:\"name\" graphql:\"name\""
+	Subdomain string                                   "json:\"subdomain\" graphql:\"subdomain\""
+	Region    GetWorkspacesApps_Workspaces_Apps_Region "json:\"region\" graphql:\"region\""
+}
+
+func (t *GetWorkspacesApps_Workspaces_Apps) GetID() string {
+	if t == nil {
+		t = &GetWorkspacesApps_Workspaces_Apps{}
+	}
+	return t.ID
+}
 func (t *GetWorkspacesApps_Workspaces_Apps) GetName() string {
 	if t == nil {
 		t = &GetWorkspacesApps_Workspaces_Apps{}
 	}
 	return t.Name
+}
+func (t *GetWorkspacesApps_Workspaces_Apps) GetSubdomain() string {
+	if t == nil {
+		t = &GetWorkspacesApps_Workspaces_Apps{}
+	}
+	return t.Subdomain
+}
+func (t *GetWorkspacesApps_Workspaces_Apps) GetRegion() *GetWorkspacesApps_Workspaces_Apps_Region {
+	if t == nil {
+		t = &GetWorkspacesApps_Workspaces_Apps{}
+	}
+	return &t.Region
 }
 
 type GetWorkspacesApps_Workspaces struct {
@@ -414,6 +447,17 @@ func (t *GetWorkspacesApps_Workspaces) GetApps() []*GetWorkspacesApps_Workspaces
 		t = &GetWorkspacesApps_Workspaces{}
 	}
 	return t.Apps
+}
+
+type GetSecrets_AppSecrets struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *GetSecrets_AppSecrets) GetName() string {
+	if t == nil {
+		t = &GetSecrets_AppSecrets{}
+	}
+	return t.Name
 }
 
 type DeleteRefreshToken_DeleteAuthRefreshTokens_Returning struct {
@@ -456,6 +500,28 @@ func (t *GetWorkspacesApps) GetWorkspaces() []*GetWorkspacesApps_Workspaces {
 	return t.Workspaces
 }
 
+type GetConfigRawJSON struct {
+	ConfigRawJSON string "json:\"configRawJSON\" graphql:\"configRawJSON\""
+}
+
+func (t *GetConfigRawJSON) GetConfigRawJSON() string {
+	if t == nil {
+		t = &GetConfigRawJSON{}
+	}
+	return t.ConfigRawJSON
+}
+
+type GetSecrets struct {
+	AppSecrets []*GetSecrets_AppSecrets "json:\"appSecrets\" graphql:\"appSecrets\""
+}
+
+func (t *GetSecrets) GetAppSecrets() []*GetSecrets_AppSecrets {
+	if t == nil {
+		t = &GetSecrets{}
+	}
+	return t.AppSecrets
+}
+
 type DeleteRefreshToken struct {
 	DeleteAuthRefreshTokens *DeleteRefreshToken_DeleteAuthRefreshTokens "json:\"deleteAuthRefreshTokens,omitempty\" graphql:\"deleteAuthRefreshTokens\""
 }
@@ -471,7 +537,12 @@ const GetWorkspacesAppsDocument = `query GetWorkspacesApps {
 	workspaces {
 		name
 		apps {
+			id
 			name
+			subdomain
+			region {
+				awsName
+			}
 		}
 	}
 }
@@ -482,6 +553,44 @@ func (c *Client) GetWorkspacesApps(ctx context.Context, interceptors ...clientv2
 
 	var res GetWorkspacesApps
 	if err := c.Client.Post(ctx, "GetWorkspacesApps", GetWorkspacesAppsDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetConfigRawJSONDocument = `query GetConfigRawJSON ($appID: uuid!) {
+	configRawJSON(appID: $appID, resolve: false)
+}
+`
+
+func (c *Client) GetConfigRawJSON(ctx context.Context, appID string, interceptors ...clientv2.RequestInterceptor) (*GetConfigRawJSON, error) {
+	vars := map[string]interface{}{
+		"appID": appID,
+	}
+
+	var res GetConfigRawJSON
+	if err := c.Client.Post(ctx, "GetConfigRawJSON", GetConfigRawJSONDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetSecretsDocument = `query GetSecrets ($appID: uuid!) {
+	appSecrets(appID: $appID) {
+		name
+	}
+}
+`
+
+func (c *Client) GetSecrets(ctx context.Context, appID string, interceptors ...clientv2.RequestInterceptor) (*GetSecrets, error) {
+	vars := map[string]interface{}{
+		"appID": appID,
+	}
+
+	var res GetSecrets
+	if err := c.Client.Post(ctx, "GetSecrets", GetSecretsDocument, &res, vars, interceptors...); err != nil {
 		return nil, err
 	}
 

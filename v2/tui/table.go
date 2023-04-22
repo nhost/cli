@@ -13,9 +13,8 @@ func Table(columns ...Column) string {
 	list := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder(), false, true, false, false).
 		BorderForeground(ANSIColorGray).
-		MarginLeft(1).
-		MarginRight(1).
-		Width(30 + 1) //nolint:gomnd
+		Padding(1)
+	// Width(30 + 1) //nolint:gomnd
 
 	listHeader := lipgloss.NewStyle().
 		Foreground(ANSIColorPurple).

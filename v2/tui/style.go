@@ -1,7 +1,11 @@
 //nolint:gochecknoglobals
 package tui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"fmt"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 const (
 	ANSIColorWhite  = lipgloss.Color("15")
@@ -19,8 +23,27 @@ const (
 	IconWarn = "⚠"
 )
 
-var Info = lipgloss.NewStyle().
-	Foreground(ANSIColorCyan).Render
+var info = lipgloss.NewStyle().
+	Foreground(ANSIColorCyan).
+	Render
 
-var Warn = lipgloss.NewStyle().
-	Foreground(ANSIColorYellow).Render
+func Info(msg string, a ...any) string {
+	return info(fmt.Sprintf(msg, a...))
+}
+
+var warn = lipgloss.NewStyle().
+	Foreground(ANSIColorYellow).
+	Render
+
+func Warn(msg string, a ...any) string {
+	return warn(fmt.Sprintf(msg, a...))
+}
+
+var promptMessage = lipgloss.NewStyle().
+	Foreground(ANSIColorCyan).
+	Bold(true).
+	Render
+
+func PromptMessage(msg string, a ...any) string {
+	return promptMessage("- " + fmt.Sprintf(msg, a...))
+}

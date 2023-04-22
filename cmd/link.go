@@ -48,11 +48,9 @@ var linkCmd = &cobra.Command{
 	Short:      "Link local app to a remote one",
 	Long:       `Connect your already hosted Nhost app to local environment and start development or testings.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-
 		//  validate authentication
 		response, err := getUser(nhost.AUTH_PATH)
 		if err != nil {
-
 			//  begin the login procedure
 			if err := loginCmd.RunE(cmd, args); err != nil {
 				log.Debug(err)
@@ -68,7 +66,6 @@ var linkCmd = &cobra.Command{
 		User = response
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-
 		//  concatenate personal and team projects
 		projects := prepareAppList(User)
 
@@ -86,7 +83,7 @@ var linkCmd = &cobra.Command{
 
 		//  configure interactive prompt template
 		templates := promptui.SelectTemplates{
-			//Label:    "{{ . }}?",
+			// Label:    "{{ . }}?",
 			Active:   `{{ "✔" | green | bold }} {{ .Name | cyan | bold }} {{ .Workspace | faint }}`,
 			Inactive: `   {{ .Name | cyan }}  {{ .Workspace | faint }}`,
 			Selected: `{{ "✔" | green | bold }} {{ "Selected" | bold }}: {{ .Name | cyan }}  {{ .Workspace | faint }}`,
@@ -152,7 +149,7 @@ var linkCmd = &cobra.Command{
 
 			//  configure interactive prompt template
 			templates := promptui.SelectTemplates{
-				//Label:    "{{ . }}?",
+				// Label:    "{{ . }}?",
 				Active:   `{{ "✔" | green | bold }} {{ .Name | cyan | bold }}`,
 				Inactive: `   {{ .Name | cyan }}`,
 				Selected: `{{ "✔" | green | bold }} {{ "Selected" | bold }}: {{ .Name | cyan }}`,
@@ -261,7 +258,6 @@ func updateNhostProject(app nhost.App) error {
 	app.AppSecrets = nil
 	//  create .nhost, if it doesn't exists
 	if util.PathExists(nhost.INFO_PATH) {
-
 		//  first delete any existing nhost.yaml file
 		if err := util.DeletePath(nhost.INFO_PATH); err != nil {
 			return err
@@ -294,12 +290,11 @@ func updateNhostProject(app nhost.App) error {
 
 // creates a new remote project
 func createProject(name, server, User, team string) (string, error) {
-
 	log.Debugf("Creating project '%s'", name)
 
 	var response nhost.Response
 
-	//Encode the data
+	// Encode the data
 	reqBody := map[string]string{
 		"name":               name,
 		"User_id":            User,
@@ -313,7 +308,7 @@ func createProject(name, server, User, team string) (string, error) {
 	postBody, _ := json.Marshal(reqBody)
 	responseBody := bytes.NewBuffer(postBody)
 
-	//Leverage Go's HTTP Post function to make request
+	// Leverage Go's HTTP Post function to make request
 	resp, err := http.Post(nhost.API+"/custom/cli/create-project", "application/json", responseBody)
 	if err != nil {
 		return "", err
@@ -333,18 +328,4 @@ func createProject(name, server, User, team string) (string, error) {
 	}
 
 	return response.Project.ID, nil
-}
-
-func init() {
-	rootCmd.AddCommand(linkCmd)
-
-	//  Here you will define your flags and configuration settings.
-
-	//  Cobra supports Persistent Flags which will work for this command
-	//  and all subcommands, e.g.:
-	//  linkCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	//  Cobra supports local flags which will only run when this command
-	//  is called directly, e.g.:
-	//  linkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

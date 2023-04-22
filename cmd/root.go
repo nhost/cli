@@ -54,8 +54,10 @@ var (
 	log     = &logger.Log
 	//  rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
-		Use:   "nhost",
-		Short: "Nhost: The Open Source Firebase Alternative with GraphQL",
+		Use:           "nhost",
+		Short:         "Nhost: The Open Source Firebase Alternative with GraphQL",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		Long: fmt.Sprintf(`
       _   ____               __
      / | / / /_  ____  _____/ /_
@@ -119,7 +121,7 @@ func init() {
 	// rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
 	// viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 	// viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
-	viper.SetDefault("author", "Mrinal Wahal wahal@nhost.io")
+	viper.SetDefault("author", "Nhost Team")
 	viper.SetDefault("license", "MIT")
 
 	// rootCmd.AddCommand(versionCmd)
