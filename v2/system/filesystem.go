@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func PathConfigToml() string {
+func PathConfig() string {
 	return filepath.Join("nhost", "nhost.toml")
 }
 
@@ -19,7 +19,7 @@ func PathExists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-func GetLocalNhostFolder() string {
+func GetNhostFolder() string {
 	const path = ".nhost"
 
 	if err := os.MkdirAll(path, 0o755); err != nil { //nolint:gomnd
@@ -29,8 +29,8 @@ func GetLocalNhostFolder() string {
 	return path
 }
 
-func GetConfigToml() (*os.File, error) {
-	f, err := os.OpenFile(PathConfigToml(), os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
+func GetConfigFile() (*os.File, error) {
+	f, err := os.OpenFile(PathConfig(), os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
 	if err != nil {
 		return nil, fmt.Errorf("failed to open project file: %w", err)
 	}
@@ -45,9 +45,9 @@ func GetSecretsFile() (*os.File, error) {
 	return f, nil
 }
 
-func GetNhostProjectFile() (*os.File, error) {
+func GetNhostProjectInfoFile() (*os.File, error) {
 	f, err := os.OpenFile(
-		filepath.Join(GetLocalNhostFolder(), "project.json"), os.O_RDWR|os.O_CREATE, 0o600, //nolint:gomnd
+		filepath.Join(GetNhostFolder(), "project.json"), os.O_RDWR|os.O_CREATE, 0o600, //nolint:gomnd
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open project file: %w", err)
@@ -55,7 +55,7 @@ func GetNhostProjectFile() (*os.File, error) {
 	return f, nil
 }
 
-func GetGitignore() (*os.File, error) {
+func GetGitignoreFile() (*os.File, error) {
 	f, err := os.OpenFile(".gitignore", os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
 	if err != nil {
 		return nil, fmt.Errorf("failed to open .gitignore file: %w", err)

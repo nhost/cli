@@ -7,12 +7,10 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/Yamashou/gqlgenc/clientv2"
 	"github.com/nhost/cli/v2/nhostclient/credentials"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
-	"github.com/nhost/cli/v2/system"
 )
 
 type Printer interface {
@@ -63,13 +61,4 @@ func (c *Controller) GetNhostSession(ctx context.Context) (credentials.Session, 
 	}
 
 	return session, nil
-}
-
-func (c *Controller) GetNhostProject(r io.Reader) (*graphql.GetWorkspacesApps_Workspaces_Apps, error) {
-	var project *graphql.GetWorkspacesApps_Workspaces_Apps
-	err := system.UnmarshalJSON(r, &project)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal project information: %w", err)
-	}
-	return project, nil
 }

@@ -10,41 +10,44 @@ import (
 
 var ErrNoContent = fmt.Errorf("no content")
 
-func UnmarshalJSON(r io.Reader, v any) error {
-	b, err := io.ReadAll(r)
+func Marshal(v any, w io.Writer, f func(any) ([]byte, error)) error {
+	b, err := f(v)
 	if err != nil {
-		return fmt.Errorf("failed to read auth file: %w", err)
+		return fmt.Errorf("error marshalling object: %w", err)
 	}
 
-	if len(b) == 0 {
-		return ErrNoContent
-	}
-
-	if err := json.Unmarshal(b, &v); err != nil {
-		return fmt.Errorf("failed to unmarshal auth file: %w", err)
+	if _, err := w.Write(b); err != nil {
+		return fmt.Errorf("error writing marshalled object: %w", err)
 	}
 
 	return nil
 }
 
 func MarshalTOML(v any, w io.Writer) error {
-	b, err := toml.Marshal(v)
+	return Marshal(v, w, toml.Marshal)
+}
+
+func MarshalJSON(v any, w io.Writer) error {
+	return Marshal(v, w, json.Marshal)
+}
+
+func Unmarshal(r io.Reader, v any, f func([]byte, any) error) error {
+	b, err := io.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("failed to marshal toml: %w", err)
+		return fmt.Errorf("failed to read contents of reader: %w", err)
 	}
 
-	if _, err := w.Write(b); err != nil {
-		return fmt.Errorf("failed to write toml: %w", err)
+	if err := f(b, v); err != nil {
+		return fmt.Errorf("failed to unmarshal object: %w", err)
 	}
 
 	return nil
 }
 
-func MarshalEnv(v map[string]string, w io.Writer) error {
-	for k, v := range v {
-		if _, err := fmt.Fprintf(w, "%s=%s", k, v); err != nil {
-			return fmt.Errorf("failed to write env: %w", err)
-		}
-	}
-	return nil
+func UnmarshalJSON(r io.Reader, v any) error {
+	return Unmarshal(r, v, json.Unmarshal)
+}
+
+func UnmarshalTOML(r io.Reader, v any) error {
+	return Unmarshal(r, v, toml.Unmarshal)
 }

@@ -2,11 +2,11 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 
 	"github.com/nhost/cli/v2/nhostclient/graphql"
+	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/tui"
 )
 
@@ -49,7 +49,7 @@ func confirmApp(app *graphql.GetWorkspacesApps_Workspaces_Apps, p Printer) error
 	return nil
 }
 
-func (c *Controller) Link(ctx context.Context, configFile io.Writer) error {
+func (c *Controller) Link(ctx context.Context, projectf io.Writer) error {
 	session, err := c.GetNhostSession(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get nhost session: %w", err)
@@ -86,13 +86,8 @@ func (c *Controller) Link(ctx context.Context, configFile io.Writer) error {
 		return err
 	}
 
-	b, err := json.MarshalIndent(app, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal app: %w", err)
-	}
-
-	if _, err := configFile.Write(b); err != nil {
-		return fmt.Errorf("failed to write app: %w", err)
+	if err := project.MarshalProjectInfo(app, projectf); err != nil {
+		return fmt.Errorf("failed to marshal project information: %w", err)
 	}
 
 	return nil

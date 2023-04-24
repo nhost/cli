@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/nhost/cli/v2/nhostclient/graphql"
+	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
 )
@@ -17,23 +18,6 @@ const (
 	DefaultNhostWebhookSecret       = "nhost-webhook-secret" //nolint:gosec
 )
 
-func secretsToEnv(secrets []*graphql.GetSecrets_AppSecrets) map[string]string {
-	env := make(map[string]string)
-	for _, secret := range secrets {
-		switch secret.Name {
-		case "HASURA_GRAPHQL_ADMIN_SECRET":
-			env[secret.Name] = DefaultHasuraGraphqlAdminSecret
-		case "HASURA_GRAPHQL_JWT_SECRET":
-			env[secret.Name] = DefaultGraphqlJWTSecret
-		case "NHOST_WEBHOOK_SECRET":
-			env[secret.Name] = DefaultNhostWebhookSecret
-		default:
-			env[secret.Name] = "FIXME"
-		}
-	}
-	return env
-}
-
 func (c *Controller) ConfigPull(
 	ctx context.Context,
 	projectf io.Reader,
@@ -41,9 +25,9 @@ func (c *Controller) ConfigPull(
 	secretsf io.Writer,
 	gitignoref io.ReadWriter,
 ) error {
-	proj, err := c.GetNhostProject(projectf)
+	proj, err := project.UnmarshalProjectInfo(projectf)
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck
 	}
 
 	session, err := c.GetNhostSession(ctx)
@@ -67,12 +51,12 @@ func (c *Controller) ConfigPull(
 	}
 
 	c.p.Println(tui.Info("Getting secrets list from Nhost..."))
-	secrets, err := c.cl.GetSecrets(ctx, proj.ID, graphql.WithAccessToken(session.Session.AccessToken))
+	resp, err := c.cl.GetSecrets(ctx, proj.ID, graphql.WithAccessToken(session.Session.AccessToken))
 	if err != nil {
 		return fmt.Errorf("failed to get secrets: %w", err)
 	}
 
-	if err := system.MarshalEnv(secretsToEnv(secrets.GetAppSecrets()), secretsf); err != nil {
+	if err := project.MarshalSecrets(respToSecrets(resp.GetAppSecrets()), secretsf); err != nil {
 		return fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 

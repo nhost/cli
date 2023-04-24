@@ -19,7 +19,7 @@ func linkCmd() *cobra.Command {
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
 			ctrl := controller.New(cmd, cl, GetNhostCredentials)
 
-			f, err := system.GetNhostProjectFile()
+			f, err := system.GetNhostProjectInfoFile()
 			if err != nil {
 				return fmt.Errorf("failed to get config app file: %w", err)
 			}

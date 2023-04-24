@@ -10,6 +10,7 @@ import (
 
 const (
 	flagDomain = "domain"
+	flagRemote = "remote"
 )
 
 func GetNhostCredentials() (credentials.Credentials, error) {
@@ -32,6 +33,12 @@ func Register(rootCmd *cobra.Command) {
 
 	configPullCmd := configPullCmd()
 	configCmd.AddCommand(configPullCmd)
+
+	configValidateCmd := configValidateCmd()
+	configCmd.AddCommand(configValidateCmd)
+	configValidateCmd.Flags().Bool(
+		flagRemote, false, "Validate remote configuration. Defaults to validation of local config.",
+	)
 
 	loginCmd := logincCmd()
 	rootCmd.AddCommand(loginCmd)

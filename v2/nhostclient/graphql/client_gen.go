@@ -450,7 +450,8 @@ func (t *GetWorkspacesApps_Workspaces) GetApps() []*GetWorkspacesApps_Workspaces
 }
 
 type GetSecrets_AppSecrets struct {
-	Name string "json:\"name\" graphql:\"name\""
+	Name  string "json:\"name\" graphql:\"name\""
+	Value string "json:\"value\" graphql:\"value\""
 }
 
 func (t *GetSecrets_AppSecrets) GetName() string {
@@ -458,6 +459,12 @@ func (t *GetSecrets_AppSecrets) GetName() string {
 		t = &GetSecrets_AppSecrets{}
 	}
 	return t.Name
+}
+func (t *GetSecrets_AppSecrets) GetValue() string {
+	if t == nil {
+		t = &GetSecrets_AppSecrets{}
+	}
+	return t.Value
 }
 
 type DeleteRefreshToken_DeleteAuthRefreshTokens_Returning struct {
@@ -580,6 +587,7 @@ func (c *Client) GetConfigRawJSON(ctx context.Context, appID string, interceptor
 const GetSecretsDocument = `query GetSecrets ($appID: uuid!) {
 	appSecrets(appID: $appID) {
 		name
+		value
 	}
 }
 `

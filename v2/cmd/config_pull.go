@@ -26,38 +26,46 @@ func verifyFile(cmd *cobra.Command, name string) error {
 	return nil
 }
 
+// to be deleted.
+func ConfigPullCmd() *cobra.Command {
+	return configPullCmd()
+}
+
 func configPullCmd() *cobra.Command {
 	return &cobra.Command{ //nolint:exhaustruct
 		Use:  "pull",
 		Long: `Get cloud configuration`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := verifyFile(cmd, system.PathConfigToml()); err != nil {
+			if err := verifyFile(cmd, system.PathConfig()); err != nil {
 				return err
 			}
 			if err := verifyFile(cmd, system.PathSecretsFile()); err != nil {
 				return err
 			}
 
-			projectf, err := system.GetNhostProjectFile()
+			projectf, err := system.GetNhostProjectInfoFile()
 			if err != nil {
 				return fmt.Errorf("failed to get config app file: %w", err)
 			}
 			defer projectf.Close()
 
-			tomlf, err := system.GetConfigToml()
+			tomlf, err := system.GetConfigFile()
 			if err != nil {
 				return fmt.Errorf("failed to get config app file: %w", err)
 			}
+			defer tomlf.Close()
 
 			secretsf, err := system.GetSecretsFile()
 			if err != nil {
 				return fmt.Errorf("failed to get config app file: %w", err)
 			}
+			defer secretsf.Close()
 
-			gitignoref, err := system.GetGitignore()
+			gitignoref, err := system.GetGitignoreFile()
 			if err != nil {
 				return fmt.Errorf("failed to get config app file: %w", err)
 			}
+			defer gitignoref.Close()
 
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
 			ctrl := controller.New(cmd, cl, GetNhostCredentials)
