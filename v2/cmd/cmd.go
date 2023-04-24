@@ -34,6 +34,9 @@ func Register(rootCmd *cobra.Command) {
 	configPullCmd := configPullCmd()
 	configCmd.AddCommand(configPullCmd)
 
+	configShowFullExampleCmd := configShowFullExampleCmd()
+	configCmd.AddCommand(configShowFullExampleCmd)
+
 	configValidateCmd := configValidateCmd()
 	configCmd.AddCommand(configValidateCmd)
 	configValidateCmd.Flags().Bool(

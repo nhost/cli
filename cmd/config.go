@@ -1,31 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/config"
-	"github.com/spf13/cobra"
 )
-
-var configCmd = &cobra.Command{
-	Use:   "config",
-	Short: "Manage your Nhost configuration",
-}
-
-var showFullExampleConfigCmd = &cobra.Command{
-	Use:  "show-full-example",
-	Long: `Show full example configuration`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		exampleConf, err := config.FullExampleConfig()
-		if err != nil {
-			return fmt.Errorf("failed to get full example config: %v", err)
-		}
-
-		fmt.Println(string(exampleConf))
-		return nil
-	},
-}
 
 // func init() {
 // 	rootCmd.AddCommand(configCmd)
