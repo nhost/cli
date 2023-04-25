@@ -28,7 +28,7 @@ Specifying --remote flag will initialize a local app from app.nhost.io
 				return fmt.Errorf("failed to create nhost folder: %w", err)
 			}
 
-			if err := os.MkdirAll(system.PathDotNhostFolder(), 0o755); err != nil { //nolint:gomnd
+			if err := os.MkdirAll(system.PathDotNhost(), 0o755); err != nil { //nolint:gomnd
 				return fmt.Errorf("failed to create .nhost folder: %w", err)
 			}
 
