@@ -6,8 +6,16 @@ import (
 	"path/filepath"
 )
 
+func PathNhost() string {
+	return "nhost"
+}
+
+func PathHasura() string {
+	return filepath.Join(PathNhost(), "config.yaml")
+}
+
 func PathConfig() string {
-	return filepath.Join("nhost", "nhost.toml")
+	return filepath.Join(PathNhost(), "nhost.toml")
 }
 
 func PathSecretsFile() string {
@@ -19,14 +27,16 @@ func PathExists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-func GetNhostFolder() string {
-	const path = ".nhost"
+func PathDotNhost() string {
+	return ".nhost"
+}
 
-	if err := os.MkdirAll(path, 0o755); err != nil { //nolint:gomnd
-		return ""
+func GetHasuraConfigFile() (*os.File, error) {
+	f, err := os.OpenFile(PathHasura(), os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
+	if err != nil {
+		return nil, fmt.Errorf("failed to open hasura config file: %w", err)
 	}
-
-	return path
+	return f, nil
 }
 
 func GetConfigFile() (*os.File, error) {
@@ -47,7 +57,7 @@ func GetSecretsFile() (*os.File, error) {
 
 func GetNhostProjectInfoFile() (*os.File, error) {
 	f, err := os.OpenFile(
-		filepath.Join(GetNhostFolder(), "project.json"), os.O_RDWR|os.O_CREATE, 0o600, //nolint:gomnd
+		filepath.Join(PathDotNhost(), "project.json"), os.O_RDWR|os.O_CREATE, 0o600, //nolint:gomnd
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open project file: %w", err)
@@ -69,10 +79,6 @@ func GetStateHome() string {
 		path = filepath.Join(os.Getenv("XDG_STATE_HOME"), "nhost")
 	} else {
 		path = filepath.Join(os.Getenv("HOME"), ".nhost", "state")
-	}
-
-	if err := os.MkdirAll(path, 0o755); err != nil { //nolint:gomnd
-		return ""
 	}
 
 	return path

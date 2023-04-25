@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func LinkCmd() *cobra.Command {
+	return linkCmd()
+}
+
 func linkCmd() *cobra.Command {
 	return &cobra.Command{ //nolint:exhaustruct
 		Use:        "link",

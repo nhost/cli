@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/pelletier/go-toml/v2"
+	"gopkg.in/yaml.v2"
 )
 
 var ErrNoContent = fmt.Errorf("no content")
@@ -29,6 +30,10 @@ func MarshalTOML(v any, w io.Writer) error {
 
 func MarshalJSON(v any, w io.Writer) error {
 	return Marshal(v, w, json.Marshal)
+}
+
+func MarshalYAML(v any, w io.Writer) error {
+	return Marshal(v, w, yaml.Marshal)
 }
 
 func Unmarshal(r io.Reader, v any, f func([]byte, any) error) error {

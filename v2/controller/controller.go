@@ -31,6 +31,15 @@ type NhostClient interface {
 	GetSecrets(
 		ctx context.Context, appID string, interceptors ...clientv2.RequestInterceptor,
 	) (*graphql.GetSecrets, error)
+	UpdateSecret(
+		ctx context.Context, appID string, name string, value string, interceptors ...clientv2.RequestInterceptor,
+	) (*graphql.UpdateSecret, error)
+	CreateSecret(
+		ctx context.Context, appID string, name string, value string, interceptors ...clientv2.RequestInterceptor,
+	) (*graphql.CreateSecret, error)
+	DeleteSecret(
+		ctx context.Context, appID string, name string, interceptors ...clientv2.RequestInterceptor,
+	) (*graphql.DeleteSecret, error)
 }
 
 type CredentialsFunc func() (credentials.Credentials, error)

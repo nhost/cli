@@ -25,10 +25,12 @@ SOFTWARE.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/Yamashou/gqlgenc/clientv2"
 	"github.com/nhost/cli/logger"
 	"github.com/nhost/cli/nhost"
 	"github.com/nhost/cli/util"
@@ -87,7 +89,14 @@ var (
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	err := rootCmd.Execute()
+
+	var graphqlErr *clientv2.ErrorResponse
+
+	switch {
+	case errors.As(err, &graphqlErr):
+		log.Fatal(graphqlErr.GqlErrors)
+	case err != nil:
 		log.Fatal(err)
 	}
 

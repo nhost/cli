@@ -28,32 +28,61 @@ func GetNhostCredentials() (credentials.Credentials, error) {
 }
 
 func Register(rootCmd *cobra.Command) {
-	configCmd := configCmd()
-	rootCmd.AddCommand(configCmd)
+	{
+		configCmd := configCmd()
+		rootCmd.AddCommand(configCmd)
 
-	configPullCmd := configPullCmd()
-	configCmd.AddCommand(configPullCmd)
+		configPullCmd := configPullCmd()
+		configCmd.AddCommand(configPullCmd)
 
-	configShowFullExampleCmd := configShowFullExampleCmd()
-	configCmd.AddCommand(configShowFullExampleCmd)
+		configShowFullExampleCmd := configShowFullExampleCmd()
+		configCmd.AddCommand(configShowFullExampleCmd)
 
-	configValidateCmd := configValidateCmd()
-	configCmd.AddCommand(configValidateCmd)
-	configValidateCmd.Flags().Bool(
-		flagRemote, false, "Validate remote configuration. Defaults to validation of local config.",
-	)
+		configValidateCmd := configValidateCmd()
+		configCmd.AddCommand(configValidateCmd)
+		configValidateCmd.Flags().Bool(
+			flagRemote, false, "Validate remote configuration. Defaults to validation of local config.",
+		)
+	}
 
-	loginCmd := logincCmd()
-	rootCmd.AddCommand(loginCmd)
-	loginCmd.PersistentFlags().StringP(flagEmail, "e", "", "Email of your Nhost account")
-	loginCmd.PersistentFlags().StringP(flagPassword, "p", "", "Password of your Nhost account")
+	{
+		initCmd := initCmd()
+		rootCmd.AddCommand(initCmd)
+	}
 
-	logoutCmd := logoutCmd()
-	rootCmd.AddCommand(logoutCmd)
+	{
+		loginCmd := logincCmd()
+		rootCmd.AddCommand(loginCmd)
+		loginCmd.PersistentFlags().StringP(flagEmail, "e", "", "Email of your Nhost account")
+		loginCmd.PersistentFlags().StringP(flagPassword, "p", "", "Password of your Nhost account")
+	}
 
-	linkCmd := linkCmd()
-	rootCmd.AddCommand(linkCmd)
+	{
+		logoutCmd := logoutCmd()
+		rootCmd.AddCommand(logoutCmd)
+	}
 
-	listCmd := listCmd()
-	rootCmd.AddCommand(listCmd)
+	{
+		linkCmd := linkCmd()
+		rootCmd.AddCommand(linkCmd)
+	}
+
+	{
+		listCmd := listCmd()
+		rootCmd.AddCommand(listCmd)
+	}
+
+	{
+		secretsCmd := secretsCmd()
+		rootCmd.AddCommand(secretsCmd)
+
+		secretsListCmd := secretsListCmd()
+		secretsCmd.AddCommand(secretsListCmd)
+		secretsCreateCmd := secretsCreateCmd()
+		secretsCmd.AddCommand(secretsCreateCmd)
+		secretsDeleteCmd := secretsDeleteCmd()
+		secretsCmd.AddCommand(secretsDeleteCmd)
+		secretsUpdateCmd := secretsUpdateCmd()
+		secretsCmd.AddCommand(secretsUpdateCmd)
+	}
 }

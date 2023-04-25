@@ -15,6 +15,10 @@ const (
 	flagPassword = "password"
 )
 
+func LoginCmd() *cobra.Command {
+	return logincCmd()
+}
+
 // loginCmd represents the login command.
 func logincCmd() *cobra.Command {
 	return &cobra.Command{ //nolint:exhaustruct
@@ -26,8 +30,9 @@ func logincCmd() *cobra.Command {
 
 			email := cmd.Flag(flagEmail).Value.String()
 			if email == "" {
-				cmd.Println(tui.PromptMessage("email: "))
+				cmd.Print(tui.PromptMessage("email: "))
 				email, err = tui.PromptInput(false)
+				cmd.Println()
 				if err != nil {
 					return fmt.Errorf("failed to read email: %w", err)
 				}
@@ -35,8 +40,9 @@ func logincCmd() *cobra.Command {
 
 			password := cmd.Flag(flagPassword).Value.String()
 			if password == "" {
-				cmd.Println(tui.PromptMessage("password: "))
-				password, err = tui.PromptInput(false)
+				cmd.Print(tui.PromptMessage("password: "))
+				password, err = tui.PromptInput(true)
+				cmd.Println()
 				if err != nil {
 					return fmt.Errorf("failed to read password: %w", err)
 				}

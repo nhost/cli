@@ -449,24 +449,6 @@ func (t *GetWorkspacesApps_Workspaces) GetApps() []*GetWorkspacesApps_Workspaces
 	return t.Apps
 }
 
-type GetSecrets_AppSecrets struct {
-	Name  string "json:\"name\" graphql:\"name\""
-	Value string "json:\"value\" graphql:\"value\""
-}
-
-func (t *GetSecrets_AppSecrets) GetName() string {
-	if t == nil {
-		t = &GetSecrets_AppSecrets{}
-	}
-	return t.Name
-}
-func (t *GetSecrets_AppSecrets) GetValue() string {
-	if t == nil {
-		t = &GetSecrets_AppSecrets{}
-	}
-	return t.Value
-}
-
 type DeleteRefreshToken_DeleteAuthRefreshTokens_Returning struct {
 	RefreshToken string "json:\"refreshToken\" graphql:\"refreshToken\""
 }
@@ -496,6 +478,71 @@ func (t *DeleteRefreshToken_DeleteAuthRefreshTokens) GetReturning() []*DeleteRef
 	return t.Returning
 }
 
+type GetSecrets_AppSecrets struct {
+	Name  string "json:\"name\" graphql:\"name\""
+	Value string "json:\"value\" graphql:\"value\""
+}
+
+func (t *GetSecrets_AppSecrets) GetName() string {
+	if t == nil {
+		t = &GetSecrets_AppSecrets{}
+	}
+	return t.Name
+}
+func (t *GetSecrets_AppSecrets) GetValue() string {
+	if t == nil {
+		t = &GetSecrets_AppSecrets{}
+	}
+	return t.Value
+}
+
+type CreateSecret_InsertSecret struct {
+	Name  string "json:\"name\" graphql:\"name\""
+	Value string "json:\"value\" graphql:\"value\""
+}
+
+func (t *CreateSecret_InsertSecret) GetName() string {
+	if t == nil {
+		t = &CreateSecret_InsertSecret{}
+	}
+	return t.Name
+}
+func (t *CreateSecret_InsertSecret) GetValue() string {
+	if t == nil {
+		t = &CreateSecret_InsertSecret{}
+	}
+	return t.Value
+}
+
+type DeleteSecret_DeleteSecret struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *DeleteSecret_DeleteSecret) GetName() string {
+	if t == nil {
+		t = &DeleteSecret_DeleteSecret{}
+	}
+	return t.Name
+}
+
+type UpdateSecret_UpdateSecret struct {
+	Name  string "json:\"name\" graphql:\"name\""
+	Value string "json:\"value\" graphql:\"value\""
+}
+
+func (t *UpdateSecret_UpdateSecret) GetName() string {
+	if t == nil {
+		t = &UpdateSecret_UpdateSecret{}
+	}
+	return t.Name
+}
+func (t *UpdateSecret_UpdateSecret) GetValue() string {
+	if t == nil {
+		t = &UpdateSecret_UpdateSecret{}
+	}
+	return t.Value
+}
+
 type GetWorkspacesApps struct {
 	Workspaces []*GetWorkspacesApps_Workspaces "json:\"workspaces\" graphql:\"workspaces\""
 }
@@ -518,6 +565,17 @@ func (t *GetConfigRawJSON) GetConfigRawJSON() string {
 	return t.ConfigRawJSON
 }
 
+type DeleteRefreshToken struct {
+	DeleteAuthRefreshTokens *DeleteRefreshToken_DeleteAuthRefreshTokens "json:\"deleteAuthRefreshTokens,omitempty\" graphql:\"deleteAuthRefreshTokens\""
+}
+
+func (t *DeleteRefreshToken) GetDeleteAuthRefreshTokens() *DeleteRefreshToken_DeleteAuthRefreshTokens {
+	if t == nil {
+		t = &DeleteRefreshToken{}
+	}
+	return t.DeleteAuthRefreshTokens
+}
+
 type GetSecrets struct {
 	AppSecrets []*GetSecrets_AppSecrets "json:\"appSecrets\" graphql:\"appSecrets\""
 }
@@ -529,15 +587,37 @@ func (t *GetSecrets) GetAppSecrets() []*GetSecrets_AppSecrets {
 	return t.AppSecrets
 }
 
-type DeleteRefreshToken struct {
-	DeleteAuthRefreshTokens *DeleteRefreshToken_DeleteAuthRefreshTokens "json:\"deleteAuthRefreshTokens,omitempty\" graphql:\"deleteAuthRefreshTokens\""
+type CreateSecret struct {
+	InsertSecret CreateSecret_InsertSecret "json:\"insertSecret\" graphql:\"insertSecret\""
 }
 
-func (t *DeleteRefreshToken) GetDeleteAuthRefreshTokens() *DeleteRefreshToken_DeleteAuthRefreshTokens {
+func (t *CreateSecret) GetInsertSecret() *CreateSecret_InsertSecret {
 	if t == nil {
-		t = &DeleteRefreshToken{}
+		t = &CreateSecret{}
 	}
-	return t.DeleteAuthRefreshTokens
+	return &t.InsertSecret
+}
+
+type DeleteSecret struct {
+	DeleteSecret DeleteSecret_DeleteSecret "json:\"deleteSecret\" graphql:\"deleteSecret\""
+}
+
+func (t *DeleteSecret) GetDeleteSecret() *DeleteSecret_DeleteSecret {
+	if t == nil {
+		t = &DeleteSecret{}
+	}
+	return &t.DeleteSecret
+}
+
+type UpdateSecret struct {
+	UpdateSecret UpdateSecret_UpdateSecret "json:\"updateSecret\" graphql:\"updateSecret\""
+}
+
+func (t *UpdateSecret) GetUpdateSecret() *UpdateSecret_UpdateSecret {
+	if t == nil {
+		t = &UpdateSecret{}
+	}
+	return &t.UpdateSecret
 }
 
 const GetWorkspacesAppsDocument = `query GetWorkspacesApps {
@@ -584,6 +664,29 @@ func (c *Client) GetConfigRawJSON(ctx context.Context, appID string, interceptor
 	return &res, nil
 }
 
+const DeleteRefreshTokenDocument = `mutation DeleteRefreshToken ($where: authRefreshTokens_bool_exp!) {
+	deleteAuthRefreshTokens(where: $where) {
+		affected_rows
+		returning {
+			refreshToken
+		}
+	}
+}
+`
+
+func (c *Client) DeleteRefreshToken(ctx context.Context, where AuthRefreshTokensBoolExp, interceptors ...clientv2.RequestInterceptor) (*DeleteRefreshToken, error) {
+	vars := map[string]interface{}{
+		"where": where,
+	}
+
+	var res DeleteRefreshToken
+	if err := c.Client.Post(ctx, "DeleteRefreshToken", DeleteRefreshTokenDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 const GetSecretsDocument = `query GetSecrets ($appID: uuid!) {
 	appSecrets(appID: $appID) {
 		name
@@ -605,23 +708,67 @@ func (c *Client) GetSecrets(ctx context.Context, appID string, interceptors ...c
 	return &res, nil
 }
 
-const DeleteRefreshTokenDocument = `mutation DeleteRefreshToken ($where: authRefreshTokens_bool_exp!) {
-	deleteAuthRefreshTokens(where: $where) {
-		affected_rows
-		returning {
-			refreshToken
-		}
+const CreateSecretDocument = `mutation CreateSecret ($appID: uuid!, $name: String!, $value: String!) {
+	insertSecret(appID: $appID, secret: {name:$name,value:$value}) {
+		name
+		value
 	}
 }
 `
 
-func (c *Client) DeleteRefreshToken(ctx context.Context, where AuthRefreshTokensBoolExp, interceptors ...clientv2.RequestInterceptor) (*DeleteRefreshToken, error) {
+func (c *Client) CreateSecret(ctx context.Context, appID string, name string, value string, interceptors ...clientv2.RequestInterceptor) (*CreateSecret, error) {
 	vars := map[string]interface{}{
-		"where": where,
+		"appID": appID,
+		"name":  name,
+		"value": value,
 	}
 
-	var res DeleteRefreshToken
-	if err := c.Client.Post(ctx, "DeleteRefreshToken", DeleteRefreshTokenDocument, &res, vars, interceptors...); err != nil {
+	var res CreateSecret
+	if err := c.Client.Post(ctx, "CreateSecret", CreateSecretDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const DeleteSecretDocument = `mutation DeleteSecret ($appID: uuid!, $name: String!) {
+	deleteSecret(appID: $appID, key: $name) {
+		name
+	}
+}
+`
+
+func (c *Client) DeleteSecret(ctx context.Context, appID string, name string, interceptors ...clientv2.RequestInterceptor) (*DeleteSecret, error) {
+	vars := map[string]interface{}{
+		"appID": appID,
+		"name":  name,
+	}
+
+	var res DeleteSecret
+	if err := c.Client.Post(ctx, "DeleteSecret", DeleteSecretDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdateSecretDocument = `mutation UpdateSecret ($appID: uuid!, $name: String!, $value: String!) {
+	updateSecret(appID: $appID, secret: {name:$name,value:$value}) {
+		name
+		value
+	}
+}
+`
+
+func (c *Client) UpdateSecret(ctx context.Context, appID string, name string, value string, interceptors ...clientv2.RequestInterceptor) (*UpdateSecret, error) {
+	vars := map[string]interface{}{
+		"appID": appID,
+		"name":  name,
+		"value": value,
+	}
+
+	var res UpdateSecret
+	if err := c.Client.Post(ctx, "UpdateSecret", UpdateSecretDocument, &res, vars, interceptors...); err != nil {
 		return nil, err
 	}
 
