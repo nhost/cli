@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/project"
@@ -49,13 +48,13 @@ func confirmApp(app *graphql.GetWorkspacesApps_Workspaces_Apps, p Printer) error
 	return nil
 }
 
-func (c *Controller) Link(ctx context.Context, projectf io.Writer) error {
-	session, err := c.GetNhostSession(ctx)
+func Link(ctx context.Context, p Printer, cl NhostClient) error {
+	session, err := GetNhostSession(ctx, cl)
 	if err != nil {
 		return fmt.Errorf("failed to get nhost session: %w", err)
 	}
 
-	workspaces, err := c.cl.GetWorkspacesApps(
+	workspaces, err := cl.GetWorkspacesApps(
 		ctx,
 		graphql.WithAccessToken(session.Session.AccessToken),
 	)
@@ -67,11 +66,11 @@ func (c *Controller) Link(ctx context.Context, projectf io.Writer) error {
 		return fmt.Errorf("no workspaces found") //nolint:goerr113
 	}
 
-	if err := c.list(workspaces.GetWorkspaces()); err != nil {
+	if err := list(p, workspaces.GetWorkspaces()); err != nil {
 		return err
 	}
 
-	c.p.Print(tui.PromptMessage("Select # the workspace to link: "))
+	p.Print(tui.PromptMessage("Select # the workspace to link: "))
 	idx, err := tui.PromptInput(false)
 	if err != nil {
 		return fmt.Errorf("failed to read workspace: %w", err)
@@ -82,11 +81,11 @@ func (c *Controller) Link(ctx context.Context, projectf io.Writer) error {
 		return err
 	}
 
-	if err := confirmApp(app, c.p); err != nil {
+	if err := confirmApp(app, p); err != nil {
 		return err
 	}
 
-	if err := project.MarshalProjectInfo(app, projectf); err != nil {
+	if err := project.InfoToDisk(app); err != nil {
 		return fmt.Errorf("failed to marshal project information: %w", err)
 	}
 

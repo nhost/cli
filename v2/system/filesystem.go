@@ -6,6 +6,10 @@ import (
 	"path/filepath"
 )
 
+func PathAuthFile() string {
+	return filepath.Join(GetStateHome(), "auth.json")
+}
+
 func PathNhost() string {
 	return "nhost"
 }
@@ -18,7 +22,7 @@ func PathConfig() string {
 	return filepath.Join(PathNhost(), "nhost.toml")
 }
 
-func PathSecretsFile() string {
+func PathSecrets() string {
 	return ".secrets"
 }
 
@@ -31,7 +35,7 @@ func PathDotNhost() string {
 	return ".nhost"
 }
 
-func GetHasuraConfigFile() (*os.File, error) {
+func GetHasuraFile() (*os.File, error) {
 	f, err := os.OpenFile(PathHasura(), os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
 	if err != nil {
 		return nil, fmt.Errorf("failed to open hasura config file: %w", err)
@@ -48,9 +52,9 @@ func GetConfigFile() (*os.File, error) {
 }
 
 func GetSecretsFile() (*os.File, error) {
-	f, err := os.OpenFile(PathSecretsFile(), os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
+	f, err := os.OpenFile(PathSecrets(), os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
 	if err != nil {
-		return nil, fmt.Errorf("failed to open project file: %w", err)
+		return nil, fmt.Errorf("failed to open secrets file: %w", err)
 	}
 	return f, nil
 }
@@ -85,9 +89,7 @@ func GetStateHome() string {
 }
 
 func GetStateAuthFile() (*os.File, error) {
-	f, err := os.OpenFile(
-		filepath.Join(GetStateHome(), "auth.json"), os.O_RDWR|os.O_CREATE, 0o600, //nolint:gomnd
-	)
+	f, err := os.OpenFile(PathAuthFile(), os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
 	if err != nil {
 		return nil, fmt.Errorf("failed to open auth file: %w", err)
 	}

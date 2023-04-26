@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	flagDomain = "domain"
-	flagRemote = "remote"
+	flagDomain            = "domain"
+	flagRemote            = "remote"
+	flagUserDefinedHasura = "hasuracli"
 )
 
 func GetNhostCredentials() (credentials.Credentials, error) {
@@ -27,7 +28,7 @@ func GetNhostCredentials() (credentials.Credentials, error) {
 	return creds, nil
 }
 
-func Register(rootCmd *cobra.Command) {
+func Register(rootCmd *cobra.Command) { //nolint:funlen
 	{
 		configCmd := configCmd()
 		rootCmd.AddCommand(configCmd)
@@ -48,6 +49,10 @@ func Register(rootCmd *cobra.Command) {
 	{
 		initCmd := initCmd()
 		rootCmd.AddCommand(initCmd)
+		initCmd.Flags().Bool(
+			flagRemote, false, "Validate remote configuration. Defaults to validation of local config.",
+		)
+		initCmd.Flags().StringP(flagUserDefinedHasura, "", "", "User-defined path for hasura-cli binary")
 	}
 
 	{

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v2"
@@ -11,8 +12,14 @@ import (
 
 var ErrNoContent = fmt.Errorf("no content")
 
-func Marshal(v any, w io.Writer, f func(any) ([]byte, error)) error {
-	b, err := f(v)
+func Marshal(v any, w io.Writer, fn func(any) ([]byte, error)) error {
+	if f, ok := w.(*os.File); ok {
+		if err := f.Truncate(0); err != nil {
+			return fmt.Errorf("error truncating file: %w", err)
+		}
+	}
+
+	b, err := fn(v)
 	if err != nil {
 		return fmt.Errorf("error marshalling object: %w", err)
 	}

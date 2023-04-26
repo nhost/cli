@@ -5,7 +5,6 @@ import (
 
 	"github.com/nhost/cli/v2/controller"
 	"github.com/nhost/cli/v2/nhostclient"
-	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
 	"github.com/spf13/cobra"
 )
@@ -48,16 +47,8 @@ func logincCmd() *cobra.Command {
 				}
 			}
 
-			f, err := system.GetStateAuthFile()
-			if err != nil {
-				return fmt.Errorf("failed to get auth file: %w", err)
-			}
-			defer f.Close()
-
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			ctrl := controller.New(cmd, cl, GetNhostCredentials)
-
-			return ctrl.Login(cmd.Context(), f, email, password) //nolint:wrapcheck
+			return controller.Login(cmd.Context(), cmd, cl, email, password) //nolint:wrapcheck
 		},
 	}
 }

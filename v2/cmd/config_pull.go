@@ -39,38 +39,13 @@ func configPullCmd() *cobra.Command {
 			if err := verifyFile(cmd, system.PathConfig()); err != nil {
 				return err
 			}
-			if err := verifyFile(cmd, system.PathSecretsFile()); err != nil {
+			if err := verifyFile(cmd, system.PathSecrets()); err != nil {
 				return err
 			}
 
-			projectf, err := system.GetNhostProjectInfoFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer projectf.Close()
-
-			tomlf, err := system.GetConfigFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer tomlf.Close()
-
-			secretsf, err := system.GetSecretsFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer secretsf.Close()
-
-			gitignoref, err := system.GetGitignoreFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer gitignoref.Close()
-
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			ctrl := controller.New(cmd, cl, GetNhostCredentials)
 
-			return ctrl.ConfigPull(cmd.Context(), projectf, tomlf, secretsf, gitignoref) //nolint:wrapcheck
+			return controller.ConfigPull(cmd.Context(), cmd, cl) //nolint:wrapcheck
 		},
 	}
 }

@@ -3,10 +3,10 @@ package project
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/nhost/be/services/mimir/model"
+	"github.com/nhost/cli/v2/system"
 )
 
 func DefaultSecrets() model.Secrets {
@@ -34,10 +34,16 @@ func (e *InvalidSecretError) Error() string {
 	return fmt.Sprintf("invalid secret on line %d", e.line)
 }
 
-func UnmarshalSecrets(r io.Reader) (model.Secrets, error) {
+func SecretsFromDisk() (model.Secrets, error) {
 	secrets := model.Secrets{}
 
-	scanner := bufio.NewScanner(r)
+	f, err := system.GetSecretsFile()
+	if err != nil {
+		return nil, err //nolint:wrapcheck
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanLines)
 
 	i := 1
@@ -68,9 +74,15 @@ func UnmarshalSecrets(r io.Reader) (model.Secrets, error) {
 	return secrets, nil
 }
 
-func MarshalSecrets(secrets model.Secrets, w io.Writer) error {
+func SecretsToDisk(secrets model.Secrets) error {
+	f, err := system.GetSecretsFile()
+	if err != nil {
+		return err //nolint:wrapcheck
+	}
+	defer f.Close()
+
 	for _, v := range secrets {
-		if _, err := fmt.Fprintf(w, "%s=%s\n", v.Name, v.Value); err != nil {
+		if _, err := fmt.Fprintf(f, "%s=%s\n", v.Name, v.Value); err != nil {
 			return fmt.Errorf("failed to write env: %w", err)
 		}
 	}

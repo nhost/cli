@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/nhost/cli/v2/controller"
+	"github.com/nhost/cli/v2/nhostclient"
 	"github.com/nhost/cli/v2/system"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +21,11 @@ Without specifying --remote flag, only a blank Nhost app will be initialized.
 Specifying --remote flag will initialize a local app from app.nhost.io
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			remote, err := cmd.Flags().GetBool(flagRemote)
+			if err != nil {
+				return fmt.Errorf("failed to get local flag: %w", err)
+			}
+
 			if system.PathExists(system.PathNhost()) {
 				return fmt.Errorf("nhost folder already exists in this directory") //nolint:goerr113
 			}
@@ -32,33 +38,13 @@ Specifying --remote flag will initialize a local app from app.nhost.io
 				return fmt.Errorf("failed to create .nhost folder: %w", err)
 			}
 
-			ctrl := controller.New(cmd, nil, GetNhostCredentials)
-
-			tomlf, err := system.GetConfigFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
+			if remote {
+				domain := cmd.Flag(flagDomain).Value.String()
+				cl := nhostclient.New(domain)
+				userDefinedHasura := cmd.Flag(flagUserDefinedHasura).Value.String()
+				return controller.InitRemote(cmd.Context(), cmd, cl, domain, userDefinedHasura) //nolint:wrapcheck
 			}
-			defer tomlf.Close()
-
-			secretsf, err := system.GetSecretsFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer secretsf.Close()
-
-			gitignoref, err := system.GetGitignoreFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer gitignoref.Close()
-
-			hasuraConfigF, err := system.GetHasuraConfigFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer hasuraConfigF.Close()
-
-			return ctrl.Init(cmd.Context(), tomlf, secretsf, gitignoref, hasuraConfigF) //nolint:wrapcheck
+			return controller.Init(cmd.Context()) //nolint:wrapcheck
 		},
 	}
 }

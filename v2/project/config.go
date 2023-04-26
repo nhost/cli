@@ -2,15 +2,37 @@ package project
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/be/services/mimir/schema"
 	"github.com/nhost/cli/v2/system"
 )
 
-func MarshalConfig(config *model.ConfigConfig, w io.Writer) error {
-	return system.MarshalTOML(config, w) //nolint:wrapcheck
+func ConfigToDisk(config *model.ConfigConfig) error {
+	f, err := system.GetConfigFile()
+	if err != nil {
+		return err //nolint:wrapcheck
+	}
+	defer f.Close()
+
+	if err := system.MarshalTOML(config, f); err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+	return nil
+}
+
+func ConfigFromDisk() (*model.ConfigConfig, error) {
+	f, err := system.GetConfigFile()
+	if err != nil {
+		return nil, err //nolint:wrapcheck
+	}
+	defer f.Close()
+
+	config := &model.ConfigConfig{}
+	if err = system.UnmarshalTOML(f, config); err != nil {
+		return nil, fmt.Errorf("failed to parse config.toml: %w", err)
+	}
+	return config, err
 }
 
 func DefaultConfig() (*model.ConfigConfig, error) {

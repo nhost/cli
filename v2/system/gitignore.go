@@ -3,11 +3,18 @@ package system
 import (
 	"fmt"
 	"io"
+	"os"
 	"strings"
 )
 
-func AddToGitignore(g io.ReadWriter, l string) error {
-	b, err := io.ReadAll(g)
+func AddToGitignore(l string) error {
+	f, err := os.OpenFile(".gitignore", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0o644) //nolint:gomnd
+	if err != nil {
+		return fmt.Errorf("failed to open gitignore: %w", err)
+	}
+	defer f.Close()
+
+	b, err := io.ReadAll(f)
 	if err != nil {
 		return fmt.Errorf("failed to read gitignore: %w", err)
 	}
@@ -16,7 +23,7 @@ func AddToGitignore(g io.ReadWriter, l string) error {
 		return nil
 	}
 
-	if _, err := g.Write([]byte(l)); err != nil {
+	if _, err := f.Write([]byte(l)); err != nil {
 		return fmt.Errorf("failed to write gitignore: %w", err)
 	}
 

@@ -8,7 +8,7 @@ import (
 	"github.com/nhost/cli/v2/tui"
 )
 
-func (c *Controller) list(workspaces []*graphql.GetWorkspacesApps_Workspaces) error {
+func list(p Printer, workspaces []*graphql.GetWorkspacesApps_Workspaces) error {
 	if len(workspaces) == 0 {
 		return fmt.Errorf("no workspaces found") //nolint:goerr113
 	}
@@ -44,18 +44,18 @@ func (c *Controller) list(workspaces []*graphql.GetWorkspacesApps_Workspaces) er
 		}
 	}
 
-	c.p.Println(tui.Table(num, subdomain, project, workspace, region))
+	p.Println(tui.Table(num, subdomain, project, workspace, region))
 
 	return nil
 }
 
-func (c *Controller) List(ctx context.Context) error {
-	session, err := c.GetNhostSession(ctx)
+func List(ctx context.Context, p Printer, cl NhostClient) error {
+	session, err := GetNhostSession(ctx, cl)
 	if err != nil {
 		return fmt.Errorf("failed to get nhost session: %w", err)
 	}
 
-	workspaces, err := c.cl.GetWorkspacesApps(
+	workspaces, err := cl.GetWorkspacesApps(
 		ctx,
 		graphql.WithAccessToken(session.Session.AccessToken),
 	)
@@ -63,5 +63,5 @@ func (c *Controller) List(ctx context.Context) error {
 		return fmt.Errorf("failed to get workspaces: %w", err)
 	}
 
-	return c.list(workspaces.Workspaces)
+	return list(p, workspaces.Workspaces)
 }

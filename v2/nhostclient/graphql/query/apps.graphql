@@ -12,3 +12,13 @@ query GetWorkspacesApps {
   }
 }
 
+query GetHasuraAdminSecret($appID: uuid!) {
+  app(id: $appID) {
+    config(resolve: true) {
+      hasura {
+        version
+        adminSecret
+      }
+    }
+  }
+}

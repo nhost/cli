@@ -3,27 +3,27 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/project"
 )
 
-func (c *Controller) SecretsList(
+func SecretsList(
 	ctx context.Context,
-	projectf io.Reader,
+	p Printer,
+	cl NhostClient,
 ) error {
-	proj, err := project.UnmarshalProjectInfo(projectf)
+	proj, err := project.InfoFromDisk()
 	if err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	session, err := c.GetNhostSession(ctx)
+	session, err := GetNhostSession(ctx, cl)
 	if err != nil {
 		return err
 	}
 
-	secrets, err := c.cl.GetSecrets(
+	secrets, err := cl.GetSecrets(
 		ctx,
 		proj.ID,
 		graphql.WithAccessToken(session.Session.AccessToken),
@@ -33,7 +33,7 @@ func (c *Controller) SecretsList(
 	}
 
 	for _, secret := range secrets.GetAppSecrets() {
-		c.p.Println(secret.Name)
+		p.Println(secret.Name)
 	}
 
 	return nil

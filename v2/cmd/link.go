@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/nhost/cli/v2/controller"
 	"github.com/nhost/cli/v2/nhostclient"
@@ -20,15 +21,12 @@ func linkCmd() *cobra.Command {
 		Short:      "Link local app to a remote one",
 		Long:       `Connect your already hosted Nhost app to local environment and start development or testings.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			ctrl := controller.New(cmd, cl, GetNhostCredentials)
-
-			f, err := system.GetNhostProjectInfoFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
+			if err := os.MkdirAll(system.PathDotNhost(), 0o755); err != nil { //nolint:gomnd
+				return fmt.Errorf("failed to create .nhost folder: %w", err)
 			}
 
-			return ctrl.Link(cmd.Context(), f) //nolint:wrapcheck
+			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
+			return controller.Link(cmd.Context(), cmd, cl) //nolint:wrapcheck
 		},
 	}
 }

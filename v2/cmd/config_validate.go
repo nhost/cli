@@ -19,32 +19,18 @@ func configValidateCmd() *cobra.Command {
 				return fmt.Errorf("failed to get local flag: %w", err)
 			}
 
-			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			ctrl := controller.New(cmd, cl, GetNhostCredentials)
-
-			tomlf, err := system.GetConfigFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer tomlf.Close()
-
 			if validateRemote {
+				cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
 				projsf, err := system.GetNhostProjectInfoFile()
 				if err != nil {
 					return fmt.Errorf("failed to get project's file: %w", err)
 				}
 				defer projsf.Close()
 
-				return ctrl.ConfigValidateRemote(cmd.Context(), tomlf, projsf) //nolint:wrapcheck
+				return controller.ConfigValidateRemote(cmd.Context(), cmd, cl) //nolint:wrapcheck
 			}
 
-			secretsf, err := system.GetSecretsFile()
-			if err != nil {
-				return fmt.Errorf("failed to get config app file: %w", err)
-			}
-			defer secretsf.Close()
-
-			return ctrl.ConfigValidate(tomlf, secretsf) //nolint:wrapcheck
+			return controller.ConfigValidate(cmd) //nolint:wrapcheck
 		},
 	}
 }

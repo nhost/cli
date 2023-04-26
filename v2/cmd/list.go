@@ -16,9 +16,7 @@ func listCmd() *cobra.Command {
 for the logged in user from Nhost console.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			ctrl := controller.New(cmd, cl, GetNhostCredentials)
-
-			return ctrl.List(cmd.Context()) //nolint:wrapcheck
+			return controller.List(cmd.Context(), cmd, cl) //nolint:wrapcheck
 		},
 	}
 }

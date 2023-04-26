@@ -3,14 +3,12 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/be/services/mimir/schema"
 	"github.com/nhost/be/services/mimir/schema/appconfig"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/project"
-	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
 )
 
@@ -25,28 +23,20 @@ func respToSecrets(env []*graphql.GetSecrets_AppSecrets) model.Secrets {
 	return secrets
 }
 
-func (c *Controller) ConfigValidate(
-	tomlf io.Reader,
-	secretsf io.Reader,
-) error {
-	var v any
-	if err := system.UnmarshalTOML(tomlf, &v); err != nil {
-		return fmt.Errorf("failed to parse config.toml: %w", err)
+func ConfigValidate(p Printer) error {
+	cfg, err := project.ConfigFromDisk()
+	if err != nil {
+		return err //nolint:wrapcheck
+	}
+
+	secrets, err := project.SecretsFromDisk()
+	if err != nil {
+		return fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
 	schema, err := schema.New()
 	if err != nil {
 		return fmt.Errorf("failed to create schema: %w", err)
-	}
-
-	cfg, err := schema.Fill(v)
-	if err != nil {
-		return fmt.Errorf("failed to apply config to the schema: %w", err)
-	}
-
-	secrets, err := project.UnmarshalSecrets(secretsf)
-	if err != nil {
-		return fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
 	_, err = appconfig.Config(schema, cfg, secrets)
@@ -54,19 +44,19 @@ func (c *Controller) ConfigValidate(
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	c.p.Println(tui.Info("Config is valid!"))
+	p.Println(tui.Info("Config is valid!"))
 
 	return nil
 }
 
-func (c *Controller) ConfigValidateRemote(
+func ConfigValidateRemote(
 	ctx context.Context,
-	tomlf io.Reader,
-	projectf io.Reader,
+	p Printer,
+	cl NhostClient,
 ) error {
-	var v any
-	if err := system.UnmarshalTOML(tomlf, &v); err != nil {
-		return fmt.Errorf("failed to parse config.toml: %w", err)
+	cfg, err := project.ConfigFromDisk()
+	if err != nil {
+		return err //nolint:wrapcheck
 	}
 
 	schema, err := schema.New()
@@ -74,23 +64,18 @@ func (c *Controller) ConfigValidateRemote(
 		return fmt.Errorf("failed to create schema: %w", err)
 	}
 
-	cfg, err := schema.Fill(v)
-	if err != nil {
-		return fmt.Errorf("failed to apply config to the schema: %w", err)
-	}
-
-	proj, err := project.UnmarshalProjectInfo(projectf)
+	proj, err := project.InfoFromDisk()
 	if err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	session, err := c.GetNhostSession(ctx)
+	session, err := GetNhostSession(ctx, cl)
 	if err != nil {
 		return err
 	}
 
-	c.p.Println(tui.Info("Getting secrets..."))
-	secrets, err := c.cl.GetSecrets(
+	p.Println(tui.Info("Getting secrets..."))
+	secrets, err := cl.GetSecrets(
 		ctx,
 		proj.ID,
 		graphql.WithAccessToken(session.Session.AccessToken),
@@ -104,7 +89,7 @@ func (c *Controller) ConfigValidateRemote(
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	c.p.Println(tui.Info("Config is valid!"))
+	p.Println(tui.Info("Config is valid!"))
 
 	return nil
 }

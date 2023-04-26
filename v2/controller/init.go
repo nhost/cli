@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -14,31 +13,7 @@ import (
 
 const hasuraVersion = 3
 
-func (c *Controller) Init(
-	ctx context.Context,
-	configf io.Writer,
-	secretsf io.Writer,
-	gitignoref io.ReadWriter,
-	hasuraConfigf io.Writer,
-) error {
-	config, err := project.DefaultConfig()
-	if err != nil {
-		return fmt.Errorf("failed to create default config: %w", err)
-	}
-	if err := project.MarshalConfig(config, configf); err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
-	}
-
-	secrets := project.DefaultSecrets()
-	if err := project.MarshalSecrets(secrets, secretsf); err != nil {
-		return fmt.Errorf("failed to save secrets: %w", err)
-	}
-
-	hasuraConf := map[string]any{"version": hasuraVersion}
-	if err := system.MarshalYAML(hasuraConf, hasuraConfigf); err != nil {
-		return fmt.Errorf("failed to save hasura config: %w", err)
-	}
-
+func initFolders() error {
 	folders := []string{
 		system.PathDotNhost(),
 		filepath.Join(system.PathNhost(), "migrations"),
@@ -46,15 +21,38 @@ func (c *Controller) Init(
 		filepath.Join(system.PathNhost(), "seeds"),
 		filepath.Join(system.PathNhost(), "emails"),
 	}
-
 	for _, f := range folders {
 		if err := os.MkdirAll(f, 0o755); err != nil { //nolint:gomnd
 			return fmt.Errorf("failed to create folder %s: %w", f, err)
 		}
 	}
 
-	// add .nhost, .secrets node_modules
-	if err := system.AddToGitignore(gitignoref, system.PathSecretsFile()); err != nil {
+	return nil
+}
+
+func initInit(
+	ctx context.Context,
+) error {
+	hasuraConf := map[string]any{"version": hasuraVersion}
+	hasuraConfigf, err := system.GetHasuraFile()
+	if err != nil {
+		return fmt.Errorf("failed to get hasura file: %w", err)
+	}
+	defer hasuraConfigf.Close()
+	if err := system.MarshalYAML(hasuraConf, hasuraConfigf); err != nil {
+		return fmt.Errorf("failed to save hasura config: %w", err)
+	}
+
+	if err := initFolders(); err != nil {
+		return err
+	}
+
+	gitingoref, err := system.GetGitignoreFile()
+	if err != nil {
+		return fmt.Errorf("failed to get .gitignore file: %w", err)
+	}
+	defer gitingoref.Close()
+	if err := system.AddToGitignore(system.PathSecrets()); err != nil {
 		return fmt.Errorf("failed to add secrets to .gitignore: %w", err)
 	}
 
@@ -73,4 +71,21 @@ func (c *Controller) Init(
 	}
 
 	return nil
+}
+
+func Init(ctx context.Context) error {
+	config, err := project.DefaultConfig()
+	if err != nil {
+		return fmt.Errorf("failed to create default config: %w", err)
+	}
+	if err := project.ConfigToDisk(config); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	secrets := project.DefaultSecrets()
+	if err := project.SecretsToDisk(secrets); err != nil {
+		return fmt.Errorf("failed to save secrets: %w", err)
+	}
+
+	return initInit(ctx)
 }

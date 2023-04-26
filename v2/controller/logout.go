@@ -5,26 +5,29 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
 )
 
-func (c *Controller) Logout(
+func Logout(
 	ctx context.Context,
+	p Printer,
+	cl NhostClient,
 ) error {
-	c.p.Println(tui.Info("Retrieving credentials from local storage"))
+	p.Println(tui.Info("Retrieving credentials from local storage"))
 
-	creds, err := c.credsFunc()
+	creds, err := project.AuthFromDisk()
 	switch {
 	case errors.Is(err, system.ErrNoContent):
-		c.p.Println(tui.Info("No credentials found in local storage"))
+		p.Println(tui.Info("No credentials found in local storage"))
 		return err
 	case err != nil:
 		return fmt.Errorf("failed to get credentials: %w", err)
 	}
 
-	c.p.Println(tui.Info("Getting an access token"))
-	loginResp, err := c.cl.LoginPAT(
+	p.Println(tui.Info("Getting an access token"))
+	loginResp, err := cl.LoginPAT(
 		ctx,
 		creds.PersonalAccessToken,
 	)
@@ -32,8 +35,8 @@ func (c *Controller) Logout(
 		return fmt.Errorf("failed to login: %w", err)
 	}
 
-	c.p.Println(tui.Info("Invalidating PAT"))
-	if err := c.cl.Logout(
+	p.Println(tui.Info("Invalidating PAT"))
+	if err := cl.Logout(
 		ctx,
 		creds.PersonalAccessToken,
 		loginResp.Session.AccessToken,

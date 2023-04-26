@@ -449,6 +449,46 @@ func (t *GetWorkspacesApps_Workspaces) GetApps() []*GetWorkspacesApps_Workspaces
 	return t.Apps
 }
 
+type GetHasuraAdminSecret_App_Config_Hasura struct {
+	Version     *string "json:\"version,omitempty\" graphql:\"version\""
+	AdminSecret string  "json:\"adminSecret\" graphql:\"adminSecret\""
+}
+
+func (t *GetHasuraAdminSecret_App_Config_Hasura) GetVersion() *string {
+	if t == nil {
+		t = &GetHasuraAdminSecret_App_Config_Hasura{}
+	}
+	return t.Version
+}
+func (t *GetHasuraAdminSecret_App_Config_Hasura) GetAdminSecret() string {
+	if t == nil {
+		t = &GetHasuraAdminSecret_App_Config_Hasura{}
+	}
+	return t.AdminSecret
+}
+
+type GetHasuraAdminSecret_App_Config struct {
+	Hasura GetHasuraAdminSecret_App_Config_Hasura "json:\"hasura\" graphql:\"hasura\""
+}
+
+func (t *GetHasuraAdminSecret_App_Config) GetHasura() *GetHasuraAdminSecret_App_Config_Hasura {
+	if t == nil {
+		t = &GetHasuraAdminSecret_App_Config{}
+	}
+	return &t.Hasura
+}
+
+type GetHasuraAdminSecret_App struct {
+	Config *GetHasuraAdminSecret_App_Config "json:\"config,omitempty\" graphql:\"config\""
+}
+
+func (t *GetHasuraAdminSecret_App) GetConfig() *GetHasuraAdminSecret_App_Config {
+	if t == nil {
+		t = &GetHasuraAdminSecret_App{}
+	}
+	return t.Config
+}
+
 type DeleteRefreshToken_DeleteAuthRefreshTokens_Returning struct {
 	RefreshToken string "json:\"refreshToken\" graphql:\"refreshToken\""
 }
@@ -554,6 +594,17 @@ func (t *GetWorkspacesApps) GetWorkspaces() []*GetWorkspacesApps_Workspaces {
 	return t.Workspaces
 }
 
+type GetHasuraAdminSecret struct {
+	App *GetHasuraAdminSecret_App "json:\"app,omitempty\" graphql:\"app\""
+}
+
+func (t *GetHasuraAdminSecret) GetApp() *GetHasuraAdminSecret_App {
+	if t == nil {
+		t = &GetHasuraAdminSecret{}
+	}
+	return t.App
+}
+
 type GetConfigRawJSON struct {
 	ConfigRawJSON string "json:\"configRawJSON\" graphql:\"configRawJSON\""
 }
@@ -640,6 +691,31 @@ func (c *Client) GetWorkspacesApps(ctx context.Context, interceptors ...clientv2
 
 	var res GetWorkspacesApps
 	if err := c.Client.Post(ctx, "GetWorkspacesApps", GetWorkspacesAppsDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetHasuraAdminSecretDocument = `query GetHasuraAdminSecret ($appID: uuid!) {
+	app(id: $appID) {
+		config(resolve: true) {
+			hasura {
+				version
+				adminSecret
+			}
+		}
+	}
+}
+`
+
+func (c *Client) GetHasuraAdminSecret(ctx context.Context, appID string, interceptors ...clientv2.RequestInterceptor) (*GetHasuraAdminSecret, error) {
+	vars := map[string]interface{}{
+		"appID": appID,
+	}
+
+	var res GetHasuraAdminSecret
+	if err := c.Client.Post(ctx, "GetHasuraAdminSecret", GetHasuraAdminSecretDocument, &res, vars, interceptors...); err != nil {
 		return nil, err
 	}
 

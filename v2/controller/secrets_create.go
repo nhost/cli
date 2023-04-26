@@ -3,30 +3,30 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
 
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/tui"
 )
 
-func (c *Controller) SecretsCreate(
+func SecretsCreate(
 	ctx context.Context,
-	projectf io.Reader,
+	p Printer,
+	cl NhostClient,
 	name string,
 	value string,
 ) error {
-	proj, err := project.UnmarshalProjectInfo(projectf)
+	proj, err := project.InfoFromDisk()
 	if err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	session, err := c.GetNhostSession(ctx)
+	session, err := GetNhostSession(ctx, cl)
 	if err != nil {
 		return err
 	}
 
-	if _, err := c.cl.CreateSecret(
+	if _, err := cl.CreateSecret(
 		ctx,
 		proj.ID,
 		name,
@@ -36,7 +36,7 @@ func (c *Controller) SecretsCreate(
 		return fmt.Errorf("failed to get secrets: %w", err)
 	}
 
-	c.p.Println(tui.Info("Secret created successfully!"))
+	p.Println(tui.Info("Secret created successfully!"))
 
 	return nil
 }
