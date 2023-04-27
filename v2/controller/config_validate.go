@@ -14,17 +14,6 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-func respToSecrets(env []*graphql.GetSecrets_AppSecrets) model.Secrets {
-	secrets := make(model.Secrets, len(env))
-	for i, s := range env {
-		secrets[i] = &model.ConfigEnvironmentVariable{
-			Name:  s.Name,
-			Value: s.Value,
-		}
-	}
-	return secrets
-}
-
 func ConfigValidate(p Printer) error {
 	var cfg *model.ConfigConfig
 	if err := UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
@@ -86,7 +75,7 @@ func ConfigValidateRemote(
 		return fmt.Errorf("failed to get secrets: %w", err)
 	}
 
-	_, err = appconfig.Config(schema, cfg, respToSecrets(secrets.GetAppSecrets()))
+	_, err = appconfig.Config(schema, cfg, respToSecrets(secrets.GetAppSecrets(), false))
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}

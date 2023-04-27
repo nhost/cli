@@ -21,6 +21,29 @@ const (
 	DefaultNhostWebhookSecret       = "nhost-webhook-secret" //nolint:gosec
 )
 
+func respToSecrets(env []*graphql.GetSecrets_AppSecrets, anonymize bool) model.Secrets {
+	secrets := make(model.Secrets, len(env))
+	for i, s := range env {
+		if anonymize {
+			switch s.Name {
+			case "HASURA_GRAPHQL_ADMIN_SECRET":
+				s.Value = DefaultHasuraGraphqlAdminSecret
+			case "HASURA_GRAPHQL_JWT_SECRET":
+				s.Value = DefaultGraphqlJWTSecret
+			case "NHOST_WEBHOOK_SECRET":
+				s.Value = DefaultNhostWebhookSecret
+			default:
+				s.Value = "FIXME"
+			}
+		}
+		secrets[i] = &model.ConfigEnvironmentVariable{
+			Name:  s.Name,
+			Value: s.Value,
+		}
+	}
+	return secrets
+}
+
 func configPull(
 	ctx context.Context,
 	p Printer,
@@ -53,7 +76,7 @@ func configPull(
 		return fmt.Errorf("failed to get secrets: %w", err)
 	}
 
-	secrets := respToSecrets(resp.GetAppSecrets())
+	secrets := respToSecrets(resp.GetAppSecrets(), true)
 	if err := MarshalFile(&secrets, system.PathSecrets(), env.Marshal); err != nil {
 		return fmt.Errorf("failed to save nhost.toml: %w", err)
 	}

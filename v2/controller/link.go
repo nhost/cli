@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/system"
@@ -86,6 +87,10 @@ func Link(
 
 	if err := confirmApp(app, p); err != nil {
 		return nil, err
+	}
+
+	if err := os.MkdirAll(system.PathDotNhost(), 0o755); err != nil { //nolint:gomnd
+		return nil, fmt.Errorf("failed to create .nhost folder: %w", err)
 	}
 
 	if err := MarshalFile(app, system.PathProject(), json.Marshal); err != nil {

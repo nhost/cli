@@ -23,12 +23,13 @@ func logoutCmd() *cobra.Command {
 			case errors.Is(err, controller.ErrNoContent):
 				return nil
 			case err != nil:
-				cmd.Print(tui.Warn("%s\n", err.Error()))
+				cmd.Println(tui.Warn("%s", err.Error()))
 			}
-			cmd.Print(tui.Info("Deleting PAT from local storage\n"))
+			cmd.Println(tui.Info("Deleting PAT from local storage"))
 			if err := os.Remove(system.PathAuthFile()); err != nil {
-				cmd.Print(tui.Warn("failed to remove auth file: %s\n", err.Error()))
+				cmd.Println(tui.Warn("failed to remove auth file: %s", err.Error()))
 			}
+			cmd.Println(tui.Info("Logout successful"))
 
 			return nil
 		},
