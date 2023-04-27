@@ -77,6 +77,12 @@ func Marshal(v any) ([]byte, error) {
 				return nil, fmt.Errorf("failed to write env: %w", err)
 			}
 		}
+	case model.Secrets:
+		for _, v := range secrets {
+			if _, err := fmt.Fprintf(buf, "%s=%s\n", v.Name, v.Value); err != nil {
+				return nil, fmt.Errorf("failed to write env: %w", err)
+			}
+		}
 	default:
 		return nil, &UnsupportedTypeError{v}
 	}
