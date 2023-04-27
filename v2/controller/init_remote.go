@@ -10,8 +10,8 @@ import (
 
 	"github.com/nhost/cli/hasura"
 	"github.com/nhost/cli/nhost"
+	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
-	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/tui"
 )
 
@@ -22,14 +22,14 @@ func InitRemote(
 	domain string,
 	userDefinedHasura string,
 ) error {
-	proj, err := project.InfoFromDisk()
+	proj, err := workflows.GetAppInfo(ctx, p, cl)
 	if err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	session, err := GetNhostSession(ctx, cl)
+	session, err := workflows.LoadSession(ctx, p, cl)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load session: %w", err)
 	}
 
 	if err := configPull(ctx, p, cl, proj, session); err != nil {
@@ -68,10 +68,93 @@ func InitRemote(
 	return nil
 }
 
+func createInitialMigration(
+	p Printer,
+	client *hasura.Client,
+	migration hasura.Migration,
+	schemas []string,
+	enumTables []hasura.TableEntry,
+) ([]byte, error) {
+	p.Println(tui.Info("Creating initial migration"))
+
+	migrationData, err := client.Migration(pgDumpSchemasFlags(schemas))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get migration data: %w", err)
+	}
+
+	b := wrapFunctionsDump(migrationData)
+
+	if err := os.MkdirAll(migration.Location, os.ModePerm); err != nil {
+		return nil, fmt.Errorf("failed to create migration directory: %w", err)
+	}
+
+	f, err := os.Create(filepath.Join(migration.Location, "up.sql"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create migration file: %w", err)
+	}
+	defer f.Close()
+
+	if len(enumTables) > 0 {
+		seeds, err := client.ApplySeeds(enumTables)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply seeds: %w", err)
+		}
+
+		// append the fetched seed data
+		b = append(b, seeds...)
+	}
+
+	if _, err = f.Write(migration.Data); err != nil {
+		return nil, fmt.Errorf("failed to write migration file: %w", err)
+	}
+
+	return b, nil
+}
+
+func migrateApply(p Printer, client *hasura.Client, sourceName string) error {
+	p.Println(tui.Info("Clearing remote migration for source: %s", sourceName))
+
+	if err := client.ClearMigration(sourceName); err != nil {
+		return fmt.Errorf("failed to clear migration: %w", err)
+	}
+
+	args := []string{client.CLI, "migrate", "apply", "--skip-execution"}
+	args = append(args, client.CommonOptions...)
+
+	execute := exec.Cmd{ //nolint:exhaustruct
+		Path: client.CLI,
+		Args: args,
+		Dir:  nhost.NHOST_DIR,
+	}
+
+	if _, err := execute.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to verify migrations: %w", err)
+	}
+
+	return nil
+}
+
+func exportMetadata(p Printer, client *hasura.Client) error {
+	p.Println(tui.Info("Exporting metadata"))
+
+	args := []string{client.CLI, "metadata", "export"}
+	args = append(args, client.CommonOptionsWithoutDB...)
+
+	execute := exec.Cmd{ //nolint:exhaustruct
+		Path: client.CLI,
+		Args: args,
+		Dir:  nhost.NHOST_DIR,
+	}
+
+	if _, err := execute.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to export metadata: %w", err)
+	}
+
+	return nil
+}
+
 func pullMigration(p Printer, client *hasura.Client, name string) (hasura.Migration, error) {
-	var args []string
 	var migration hasura.Migration
-	var execute exec.Cmd
 
 	p.Println(tui.Info("Creating migration '%s'", name))
 
@@ -100,85 +183,28 @@ func pullMigration(p Printer, client *hasura.Client, name string) (hasura.Migrat
 	var enumTables []hasura.TableEntry
 	var migrationTables []string
 	for _, source := range metadata.Sources {
-
 		//  Filter enum tables
 		enumTables = append(enumTables, filterEnumTables(source.Tables)...)
 
 		//	Filter migration tables
 		migrationTables = append(migrationTables, getMigrationTables(schemas, source.Tables)...)
-
 	}
 
 	//  fetch migrations
 	if len(migrationTables) > 0 {
-		p.Println(tui.Info("Creating initial migration"))
-
-		migrationData, err := client.Migration(pgDumpSchemasFlags(schemas))
+		b, err := createInitialMigration(p, client, migration, migrationTables, enumTables)
 		if err != nil {
-			return migration, fmt.Errorf("failed to get migration data: %w", err)
+			return migration, err
 		}
-
-		migration.Data = wrapFunctionsDump(migrationData)
-
-		if err := os.MkdirAll(migration.Location, os.ModePerm); err != nil {
-			return migration, fmt.Errorf("failed to create migration directory: %w", err)
-		}
-
-		f, err := os.Create(filepath.Join(migration.Location, "up.sql"))
-		if err != nil {
-			return migration, fmt.Errorf("failed to create migration file: %w", err)
-		}
-		defer f.Close()
-
-		if len(enumTables) > 0 {
-			seeds, err := client.ApplySeeds(enumTables)
-			if err != nil {
-				return migration, fmt.Errorf("failed to apply seeds: %w", err)
-			}
-
-			// append the fetched seed data
-			migration.Data = append(migration.Data, seeds...)
-		}
-
-		if _, err = f.Write(migration.Data); err != nil {
-			return migration, fmt.Errorf("failed to write migration file: %w", err)
-		}
+		migration.Data = b
 	}
 
-	p.Println(tui.Info("Clearing remote migration for source: %s", metadata.Sources[0].Name))
-
-	if err := client.ClearMigration(metadata.Sources[0].Name); err != nil {
-		return migration, fmt.Errorf("failed to clear migration: %w", err)
+	if err := migrateApply(p, client, sourceName); err != nil {
+		return migration, err
 	}
 
-	args = []string{client.CLI, "migrate", "apply", "--skip-execution"}
-	args = append(args, client.CommonOptions...)
-
-	execute = exec.Cmd{
-		Path: client.CLI,
-		Args: args,
-		Dir:  nhost.NHOST_DIR,
-	}
-
-	_, err = execute.CombinedOutput()
-	if err != nil {
-		return migration, fmt.Errorf("failed to verify migrations: %w", err)
-	}
-
-	p.Println(tui.Info("Exporting metadata"))
-
-	args = []string{client.CLI, "metadata", "export"}
-	args = append(args, client.CommonOptionsWithoutDB...)
-
-	execute = exec.Cmd{
-		Path: client.CLI,
-		Args: args,
-		Dir:  nhost.NHOST_DIR,
-	}
-
-	_, err = execute.CombinedOutput()
-	if err != nil {
-		return migration, fmt.Errorf("failed to export metadata: %w", err)
+	if err := exportMetadata(p, client); err != nil {
+		return migration, err
 	}
 
 	return migration, nil
@@ -224,7 +250,7 @@ func getMigrationTables(schemas []string, tables []hasura.TableEntry) []string {
 }
 
 func pgDumpSchemasFlags(schemas []string) []string {
-	var schemasFlags []string
+	schemasFlags := make([]string, 0, len(schemas)*2) //nolint:gomnd
 
 	for _, schema := range schemas {
 		schemasFlags = append(schemasFlags, "--schema", schema)

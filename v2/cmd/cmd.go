@@ -1,10 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/nhost/cli/v2/nhostclient/credentials"
-	"github.com/nhost/cli/v2/system"
 	"github.com/spf13/cobra"
 )
 
@@ -13,20 +9,6 @@ const (
 	flagRemote            = "remote"
 	flagUserDefinedHasura = "hasuracli"
 )
-
-func GetNhostCredentials() (credentials.Credentials, error) {
-	f, err := system.GetStateAuthFile()
-	if err != nil {
-		return credentials.Credentials{}, fmt.Errorf("failed to get auth file: %w", err)
-	}
-	defer f.Close()
-
-	creds, err := credentials.FromReader(f)
-	if err != nil {
-		return credentials.Credentials{}, fmt.Errorf("failed to get credentials: %w", err)
-	}
-	return creds, nil
-}
 
 func Register(rootCmd *cobra.Command) { //nolint:funlen
 	{

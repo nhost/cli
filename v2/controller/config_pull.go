@@ -2,15 +2,18 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
+	"os"
 
 	"github.com/nhost/be/services/mimir/model"
+	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/credentials"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
-	"github.com/nhost/cli/v2/project"
+	"github.com/nhost/cli/v2/project/env"
 	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
+	"github.com/pelletier/go-toml/v2"
 )
 
 const (
@@ -33,17 +36,15 @@ func configPull(
 	}
 
 	var v model.ConfigConfig
-	if err := system.UnmarshalJSON(strings.NewReader(cfg.ConfigRawJSON), &v); err != nil {
+	if err := json.Unmarshal([]byte(cfg.ConfigRawJSON), &v); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	tomlf, err := system.GetConfigFile()
-	if err != nil {
-		return err //nolint:wrapcheck
+	if err := os.MkdirAll(system.PathNhost(), 0o755); err != nil { //nolint:gomnd
+		return fmt.Errorf("failed to create nhost directory: %w", err)
 	}
-	defer tomlf.Close()
 
-	if err := system.MarshalTOML(v, tomlf); err != nil {
+	if err := workflows.MarshalFile(v, system.PathConfig(), toml.Marshal); err != nil {
 		return fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 
@@ -53,7 +54,8 @@ func configPull(
 		return fmt.Errorf("failed to get secrets: %w", err)
 	}
 
-	if err := project.SecretsToDisk(respToSecrets(resp.GetAppSecrets())); err != nil {
+	secrets := respToSecrets(resp.GetAppSecrets())
+	if err := workflows.MarshalFile(&secrets, system.PathSecrets(), env.Marshal); err != nil {
 		return fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 
@@ -75,14 +77,14 @@ func ConfigPull(
 	p Printer,
 	cl NhostClient,
 ) error {
-	proj, err := project.InfoFromDisk()
+	proj, err := workflows.GetAppInfo(ctx, p, cl)
 	if err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	session, err := GetNhostSession(ctx, cl)
+	session, err := workflows.LoadSession(ctx, p, cl)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load session: %w", err)
 	}
 
 	return configPull(ctx, p, cl, proj, session)

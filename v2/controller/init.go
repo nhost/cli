@@ -7,8 +7,12 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/go-getter"
+	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/project"
+	"github.com/nhost/cli/v2/project/env"
 	"github.com/nhost/cli/v2/system"
+	"github.com/pelletier/go-toml/v2"
+	"gopkg.in/yaml.v2"
 )
 
 const hasuraVersion = 3
@@ -34,12 +38,7 @@ func initInit(
 	ctx context.Context,
 ) error {
 	hasuraConf := map[string]any{"version": hasuraVersion}
-	hasuraConfigf, err := system.GetHasuraFile()
-	if err != nil {
-		return fmt.Errorf("failed to get hasura file: %w", err)
-	}
-	defer hasuraConfigf.Close()
-	if err := system.MarshalYAML(hasuraConf, hasuraConfigf); err != nil {
+	if err := workflows.MarshalFile(hasuraConf, system.PathHasura(), yaml.Marshal); err != nil {
 		return fmt.Errorf("failed to save hasura config: %w", err)
 	}
 
@@ -47,11 +46,12 @@ func initInit(
 		return err
 	}
 
-	gitingoref, err := system.GetGitignoreFile()
+	gitingoref, err := os.OpenFile(".gitignore", os.O_RDWR|os.O_CREATE, 0o600) //nolint:gomnd
 	if err != nil {
-		return fmt.Errorf("failed to get .gitignore file: %w", err)
+		return fmt.Errorf("failed to open .gitignore file: %w", err)
 	}
 	defer gitingoref.Close()
+
 	if err := system.AddToGitignore(system.PathSecrets()); err != nil {
 		return fmt.Errorf("failed to add secrets to .gitignore: %w", err)
 	}
@@ -78,12 +78,12 @@ func Init(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create default config: %w", err)
 	}
-	if err := project.ConfigToDisk(config); err != nil {
+	if err := workflows.MarshalFile(config, system.PathConfig(), toml.Marshal); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
 	secrets := project.DefaultSecrets()
-	if err := project.SecretsToDisk(secrets); err != nil {
+	if err := workflows.MarshalFile(secrets, system.PathSecrets(), env.Marshal); err != nil {
 		return fmt.Errorf("failed to save secrets: %w", err)
 	}
 

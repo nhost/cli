@@ -6,12 +6,10 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Yamashou/gqlgenc/clientv2"
 	"github.com/nhost/cli/v2/nhostclient/credentials"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
-	"github.com/nhost/cli/v2/project"
 )
 
 type Printer interface {
@@ -56,17 +54,3 @@ type NhostClient interface {
 }
 
 type CredentialsFunc func() (credentials.Credentials, error)
-
-func GetNhostSession(ctx context.Context, cl NhostClient) (credentials.Session, error) {
-	creds, err := project.AuthFromDisk()
-	if err != nil {
-		return credentials.Session{}, err
-	}
-
-	session, err := cl.LoginPAT(ctx, creds.PersonalAccessToken)
-	if err != nil {
-		return credentials.Session{}, fmt.Errorf("failed to login: %w", err)
-	}
-
-	return session, nil
-}

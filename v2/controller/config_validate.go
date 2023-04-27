@@ -7,9 +7,12 @@ import (
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/be/services/mimir/schema"
 	"github.com/nhost/be/services/mimir/schema/appconfig"
+	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
-	"github.com/nhost/cli/v2/project"
+	"github.com/nhost/cli/v2/project/env"
+	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
+	"github.com/pelletier/go-toml/v2"
 )
 
 func respToSecrets(env []*graphql.GetSecrets_AppSecrets) model.Secrets {
@@ -24,13 +27,13 @@ func respToSecrets(env []*graphql.GetSecrets_AppSecrets) model.Secrets {
 }
 
 func ConfigValidate(p Printer) error {
-	cfg, err := project.ConfigFromDisk()
-	if err != nil {
+	var cfg *model.ConfigConfig
+	if err := workflows.UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	secrets, err := project.SecretsFromDisk()
-	if err != nil {
+	var secrets model.Secrets
+	if err := workflows.UnmarshalFile(system.PathSecrets(), &secrets, env.Unmarshal); err != nil {
 		return fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
@@ -54,8 +57,8 @@ func ConfigValidateRemote(
 	p Printer,
 	cl NhostClient,
 ) error {
-	cfg, err := project.ConfigFromDisk()
-	if err != nil {
+	var cfg *model.ConfigConfig
+	if err := workflows.UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
 		return err //nolint:wrapcheck
 	}
 
@@ -64,14 +67,14 @@ func ConfigValidateRemote(
 		return fmt.Errorf("failed to create schema: %w", err)
 	}
 
-	proj, err := project.InfoFromDisk()
+	proj, err := workflows.GetAppInfo(ctx, p, cl)
 	if err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	session, err := GetNhostSession(ctx, cl)
+	session, err := workflows.LoadSession(ctx, p, cl)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load session: %w", err)
 	}
 
 	p.Println(tui.Info("Getting secrets..."))

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
-	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/tui"
 )
 
@@ -16,14 +16,14 @@ func SecretsCreate(
 	name string,
 	value string,
 ) error {
-	proj, err := project.InfoFromDisk()
+	proj, err := workflows.GetAppInfo(ctx, p, cl)
 	if err != nil {
 		return err //nolint:wrapcheck
 	}
 
-	session, err := GetNhostSession(ctx, cl)
+	session, err := workflows.LoadSession(ctx, p, cl)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load session: %w", err)
 	}
 
 	if _, err := cl.CreateSecret(

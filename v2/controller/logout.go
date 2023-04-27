@@ -2,10 +2,12 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/nhost/cli/v2/project"
+	"github.com/nhost/cli/v2/controller/workflows"
+	"github.com/nhost/cli/v2/nhostclient/credentials"
 	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
 )
@@ -16,12 +18,12 @@ func Logout(
 	cl NhostClient,
 ) error {
 	p.Println(tui.Info("Retrieving credentials from local storage"))
-
-	creds, err := project.AuthFromDisk()
+	var creds credentials.Credentials
+	err := workflows.UnmarshalFile(system.PathAuthFile(), &creds, json.Unmarshal)
 	switch {
-	case errors.Is(err, system.ErrNoContent):
+	case errors.Is(err, workflows.ErrNoContent):
 		p.Println(tui.Info("No credentials found in local storage"))
-		return err
+		return err //nolint:wrapcheck
 	case err != nil:
 		return fmt.Errorf("failed to get credentials: %w", err)
 	}

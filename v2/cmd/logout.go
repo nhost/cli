@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/nhost/cli/v2/controller"
+	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient"
 	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
@@ -20,7 +21,7 @@ func logoutCmd() *cobra.Command {
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
 			err := controller.Logout(cmd.Context(), cmd, cl)
 			switch {
-			case errors.Is(err, system.ErrNoContent):
+			case errors.Is(err, workflows.ErrNoContent):
 				return nil
 			case err != nil:
 				cmd.Print(tui.Warn("%s\n", err.Error()))

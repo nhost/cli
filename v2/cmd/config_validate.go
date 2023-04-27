@@ -5,7 +5,6 @@ import (
 
 	"github.com/nhost/cli/v2/controller"
 	"github.com/nhost/cli/v2/nhostclient"
-	"github.com/nhost/cli/v2/system"
 	"github.com/spf13/cobra"
 )
 
@@ -21,12 +20,6 @@ func configValidateCmd() *cobra.Command {
 
 			if validateRemote {
 				cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-				projsf, err := system.GetNhostProjectInfoFile()
-				if err != nil {
-					return fmt.Errorf("failed to get project's file: %w", err)
-				}
-				defer projsf.Close()
-
 				return controller.ConfigValidateRemote(cmd.Context(), cmd, cl) //nolint:wrapcheck
 			}
 

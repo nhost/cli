@@ -1,12 +1,11 @@
-package project_test
+package env_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/nhost/be/services/mimir/model"
-	"github.com/nhost/cli/v2/project"
+	"github.com/nhost/cli/v2/project/env"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -50,7 +49,8 @@ func TestUnmarshal(t *testing.T) {
 			t.Parallel()
 			tc := tc
 
-			secrets, err := project.UnmarshalSecrets(bytes.NewReader(tc.data))
+			var secrets model.Secrets
+			err := env.Unmarshal(tc.data, &secrets)
 			if err != nil {
 				t.Fatalf("got error: %v", err)
 			}

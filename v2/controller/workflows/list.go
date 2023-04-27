@@ -1,10 +1,8 @@
-package controller
+package workflows
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/tui"
 )
@@ -48,21 +46,4 @@ func list(p Printer, workspaces []*graphql.GetWorkspacesApps_Workspaces) error {
 	p.Println(tui.Table(num, subdomain, project, workspace, region))
 
 	return nil
-}
-
-func List(ctx context.Context, p Printer, cl NhostClient) error {
-	session, err := workflows.LoadSession(ctx, p, cl)
-	if err != nil {
-		return fmt.Errorf("failed to load session: %w", err)
-	}
-
-	workspaces, err := cl.GetWorkspacesApps(
-		ctx,
-		graphql.WithAccessToken(session.Session.AccessToken),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to get workspaces: %w", err)
-	}
-
-	return list(p, workspaces.Workspaces)
 }

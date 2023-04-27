@@ -1,11 +1,10 @@
-package controller
+package workflows
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
@@ -50,10 +49,12 @@ func confirmApp(app *graphql.GetWorkspacesApps_Workspaces_Apps, p Printer) error
 	return nil
 }
 
-func Link(ctx context.Context, p Printer, cl NhostClient) error {
-	session, err := workflows.LoadSession(ctx, p, cl)
+func Link(
+	ctx context.Context, p Printer, cl NhostClientAuth,
+) (*graphql.GetWorkspacesApps_Workspaces_Apps, error) {
+	session, err := LoadSession(ctx, p, cl)
 	if err != nil {
-		return fmt.Errorf("failed to load session: %w", err)
+		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
 	workspaces, err := cl.GetWorkspacesApps(
@@ -61,35 +62,35 @@ func Link(ctx context.Context, p Printer, cl NhostClient) error {
 		graphql.WithAccessToken(session.Session.AccessToken),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to get workspaces: %w", err)
+		return nil, fmt.Errorf("failed to get workspaces: %w", err)
 	}
 
 	if len(workspaces.GetWorkspaces()) == 0 {
-		return fmt.Errorf("no workspaces found") //nolint:goerr113
+		return nil, fmt.Errorf("no workspaces found") //nolint:goerr113
 	}
 
 	if err := list(p, workspaces.GetWorkspaces()); err != nil {
-		return err
+		return nil, err
 	}
 
 	p.Print(tui.PromptMessage("Select # the workspace to link: "))
 	idx, err := tui.PromptInput(false)
 	if err != nil {
-		return fmt.Errorf("failed to read workspace: %w", err)
+		return nil, fmt.Errorf("failed to read workspace: %w", err)
 	}
 
 	app, err := getApp(workspaces.GetWorkspaces(), idx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := confirmApp(app, p); err != nil {
-		return err
+		return nil, err
 	}
 
-	if err := workflows.MarshalFile(app, system.PathProject(), json.Marshal); err != nil {
-		return fmt.Errorf("failed to marshal project information: %w", err)
+	if err := MarshalFile(app, system.PathProject(), json.Marshal); err != nil {
+		return nil, fmt.Errorf("failed to marshal project information: %w", err)
 	}
 
-	return nil
+	return app, nil
 }
