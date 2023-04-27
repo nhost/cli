@@ -10,7 +10,6 @@ import (
 
 	"github.com/nhost/cli/hasura"
 	"github.com/nhost/cli/nhost"
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/tui"
 )
@@ -22,12 +21,12 @@ func InitRemote(
 	domain string,
 	userDefinedHasura string,
 ) error {
-	proj, err := workflows.GetAppInfo(ctx, p, cl)
+	proj, err := GetAppInfo(ctx, p, cl)
 	if err != nil {
-		return err //nolint:wrapcheck
+		return err
 	}
 
-	session, err := workflows.LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}

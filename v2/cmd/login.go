@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/nhost/cli/v2/controller"
 	"github.com/nhost/cli/v2/nhostclient"
-	"github.com/nhost/cli/v2/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,27 +25,11 @@ func logincCmd() *cobra.Command {
 			var err error
 
 			email := cmd.Flag(flagEmail).Value.String()
-			if email == "" {
-				cmd.Print(tui.PromptMessage("email: "))
-				email, err = tui.PromptInput(false)
-				cmd.Println()
-				if err != nil {
-					return fmt.Errorf("failed to read email: %w", err)
-				}
-			}
-
 			password := cmd.Flag(flagPassword).Value.String()
-			if password == "" {
-				cmd.Print(tui.PromptMessage("password: "))
-				password, err = tui.PromptInput(true)
-				cmd.Println()
-				if err != nil {
-					return fmt.Errorf("failed to read password: %w", err)
-				}
-			}
 
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			return controller.Login(cmd.Context(), cmd, cl, email, password) //nolint:wrapcheck
+			_, err = controller.Login(cmd.Context(), cmd, cl, email, password)
+			return err //nolint:wrapcheck
 		},
 	}
 }

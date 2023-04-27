@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/go-getter"
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/project/env"
 	"github.com/nhost/cli/v2/system"
@@ -38,7 +37,7 @@ func initInit(
 	ctx context.Context,
 ) error {
 	hasuraConf := map[string]any{"version": hasuraVersion}
-	if err := workflows.MarshalFile(hasuraConf, system.PathHasura(), yaml.Marshal); err != nil {
+	if err := MarshalFile(hasuraConf, system.PathHasura(), yaml.Marshal); err != nil {
 		return fmt.Errorf("failed to save hasura config: %w", err)
 	}
 
@@ -78,12 +77,12 @@ func Init(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create default config: %w", err)
 	}
-	if err := workflows.MarshalFile(config, system.PathConfig(), toml.Marshal); err != nil {
+	if err := MarshalFile(config, system.PathConfig(), toml.Marshal); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
 	secrets := project.DefaultSecrets()
-	if err := workflows.MarshalFile(secrets, system.PathSecrets(), env.Marshal); err != nil {
+	if err := MarshalFile(secrets, system.PathSecrets(), env.Marshal); err != nil {
 		return fmt.Errorf("failed to save secrets: %w", err)
 	}
 

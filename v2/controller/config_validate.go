@@ -7,7 +7,6 @@ import (
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/be/services/mimir/schema"
 	"github.com/nhost/be/services/mimir/schema/appconfig"
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/project/env"
 	"github.com/nhost/cli/v2/system"
@@ -28,12 +27,12 @@ func respToSecrets(env []*graphql.GetSecrets_AppSecrets) model.Secrets {
 
 func ConfigValidate(p Printer) error {
 	var cfg *model.ConfigConfig
-	if err := workflows.UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
-		return err //nolint:wrapcheck
+	if err := UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
+		return err
 	}
 
 	var secrets model.Secrets
-	if err := workflows.UnmarshalFile(system.PathSecrets(), &secrets, env.Unmarshal); err != nil {
+	if err := UnmarshalFile(system.PathSecrets(), &secrets, env.Unmarshal); err != nil {
 		return fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
@@ -58,8 +57,8 @@ func ConfigValidateRemote(
 	cl NhostClient,
 ) error {
 	var cfg *model.ConfigConfig
-	if err := workflows.UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
-		return err //nolint:wrapcheck
+	if err := UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
+		return err
 	}
 
 	schema, err := schema.New()
@@ -67,12 +66,12 @@ func ConfigValidateRemote(
 		return fmt.Errorf("failed to create schema: %w", err)
 	}
 
-	proj, err := workflows.GetAppInfo(ctx, p, cl)
+	proj, err := GetAppInfo(ctx, p, cl)
 	if err != nil {
-		return err //nolint:wrapcheck
+		return err
 	}
 
-	session, err := workflows.LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}

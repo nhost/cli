@@ -26,7 +26,8 @@ func linkCmd() *cobra.Command {
 			}
 
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			return controller.Link(cmd.Context(), cmd, cl) //nolint:wrapcheck
+			_, err := controller.Link(cmd.Context(), cmd, cl)
+			return err //nolint:wrapcheck
 		},
 	}
 }

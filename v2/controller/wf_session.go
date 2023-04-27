@@ -1,4 +1,4 @@
-package workflows
+package controller
 
 import (
 	"context"
@@ -13,13 +13,13 @@ import (
 func LoadSession(
 	ctx context.Context,
 	p Printer,
-	cl NhostClientAuth,
+	cl NhostClient,
 ) (credentials.Session, error) {
 	var creds credentials.Credentials
 	if err := UnmarshalFile(system.PathAuthFile(), &creds, json.Unmarshal); err != nil {
 		p.Println(tui.Warn("Failed to load valid credentials: %v", err))
 		p.Println(tui.Info("Please login again"))
-		creds, err = Login(ctx, p, "", "", cl)
+		creds, err = Login(ctx, p, cl, "", "")
 		if err != nil {
 			return credentials.Session{}, err
 		}

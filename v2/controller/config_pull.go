@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/nhost/be/services/mimir/model"
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/credentials"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/project/env"
@@ -44,7 +43,7 @@ func configPull(
 		return fmt.Errorf("failed to create nhost directory: %w", err)
 	}
 
-	if err := workflows.MarshalFile(v, system.PathConfig(), toml.Marshal); err != nil {
+	if err := MarshalFile(v, system.PathConfig(), toml.Marshal); err != nil {
 		return fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 
@@ -55,7 +54,7 @@ func configPull(
 	}
 
 	secrets := respToSecrets(resp.GetAppSecrets())
-	if err := workflows.MarshalFile(&secrets, system.PathSecrets(), env.Marshal); err != nil {
+	if err := MarshalFile(&secrets, system.PathSecrets(), env.Marshal); err != nil {
 		return fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 
@@ -77,12 +76,12 @@ func ConfigPull(
 	p Printer,
 	cl NhostClient,
 ) error {
-	proj, err := workflows.GetAppInfo(ctx, p, cl)
+	proj, err := GetAppInfo(ctx, p, cl)
 	if err != nil {
-		return err //nolint:wrapcheck
+		return err
 	}
 
-	session, err := workflows.LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}

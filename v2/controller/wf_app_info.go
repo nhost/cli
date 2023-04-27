@@ -1,4 +1,4 @@
-package workflows
+package controller
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 func GetAppInfo(
-	ctx context.Context, p Printer, cl NhostClientAuth,
+	ctx context.Context, p Printer, cl NhostClient,
 ) (*graphql.GetWorkspacesApps_Workspaces_Apps, error) {
 	var project *graphql.GetWorkspacesApps_Workspaces_Apps
 	if err := UnmarshalFile(system.PathProject(), &project, json.Unmarshal); err != nil {

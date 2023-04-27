@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/tui"
 )
@@ -51,7 +50,7 @@ func list(p Printer, workspaces []*graphql.GetWorkspacesApps_Workspaces) error {
 }
 
 func List(ctx context.Context, p Printer, cl NhostClient) error {
-	session, err := workflows.LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}

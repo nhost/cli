@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 )
 
@@ -13,12 +12,12 @@ func SecretsList(
 	p Printer,
 	cl NhostClient,
 ) error {
-	proj, err := workflows.GetAppInfo(ctx, p, cl)
+	proj, err := GetAppInfo(ctx, p, cl)
 	if err != nil {
-		return err //nolint:wrapcheck
+		return err
 	}
 
-	session, err := workflows.LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nhost/cli/v2/controller/workflows"
 	"github.com/nhost/cli/v2/nhostclient/credentials"
 	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
@@ -19,11 +18,11 @@ func Logout(
 ) error {
 	p.Println(tui.Info("Retrieving credentials from local storage"))
 	var creds credentials.Credentials
-	err := workflows.UnmarshalFile(system.PathAuthFile(), &creds, json.Unmarshal)
+	err := UnmarshalFile(system.PathAuthFile(), &creds, json.Unmarshal)
 	switch {
-	case errors.Is(err, workflows.ErrNoContent):
+	case errors.Is(err, ErrNoContent):
 		p.Println(tui.Info("No credentials found in local storage"))
-		return err //nolint:wrapcheck
+		return err
 	case err != nil:
 		return fmt.Errorf("failed to get credentials: %w", err)
 	}
