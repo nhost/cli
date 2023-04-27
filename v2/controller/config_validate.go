@@ -15,7 +15,7 @@ import (
 )
 
 func ConfigValidate(p Printer) error {
-	var cfg *model.ConfigConfig
+	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
 		return err
 	}
