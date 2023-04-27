@@ -44,7 +44,10 @@ type NhostClient interface {
 	NhostClientAuth
 	NhostClientSecrets
 
-	GetWorkspacesApps(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*graphql.GetWorkspacesApps, error)
+	GetWorkspacesApps(
+		ctx context.Context,
+		interceptors ...clientv2.RequestInterceptor,
+	) (*graphql.GetWorkspacesApps, error)
 	GetConfigRawJSON(
 		ctx context.Context, appID string, interceptors ...clientv2.RequestInterceptor,
 	) (*graphql.GetConfigRawJSON, error)

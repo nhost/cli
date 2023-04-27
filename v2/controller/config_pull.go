@@ -52,7 +52,11 @@ func configPull(
 	session credentials.Session,
 ) error {
 	p.Println(tui.Info("Pulling config from Nhost..."))
-	cfg, err := cl.GetConfigRawJSON(ctx, proj.ID, graphql.WithAccessToken(session.Session.AccessToken))
+	cfg, err := cl.GetConfigRawJSON(
+		ctx,
+		proj.ID,
+		graphql.WithAccessToken(session.Session.AccessToken),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -87,7 +91,11 @@ func configPull(
 	}
 
 	p.Println(tui.Info("Success!"))
-	p.Println(tui.Warn("- Review `nhost/nhost.toml` and make sure there are no secrets before you commit it to git."))
+	p.Println(
+		tui.Warn(
+			"- Review `nhost/nhost.toml` and make sure there are no secrets before you commit it to git.",
+		),
+	)
 	p.Println(tui.Warn("- Review `.secrets` file and set your development secrets"))
 	p.Println(tui.Warn("- Review `.secrets` was added to .gitignore"))
 

@@ -13,7 +13,13 @@ func secretsCreateCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(2), //nolint:gomnd
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-			return controller.SecretsCreate(cmd.Context(), cmd, cl, args[0], args[1]) //nolint:wrapcheck
+			return controller.SecretsCreate(
+				cmd.Context(),
+				cmd,
+				cl,
+				args[0],
+				args[1],
+			) //nolint:wrapcheck
 		},
 	}
 }

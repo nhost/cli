@@ -12,6 +12,25 @@
           (final: prev: rec {
             go = final.go_1_20;
 
+            golines = final.buildGoModule rec {
+              name = "golines";
+              version = "0.11.0";
+              src = final.fetchFromGitHub {
+                owner = "dbarrosop";
+                repo = "golines";
+                rev = "b7e767e781863a30bc5a74610a46cc29485fb9cb";
+                sha256 = "sha256-pxFgPT6J0vxuWAWXZtuR06H9GoGuXTyg7ue+LFsRzOk=";
+              };
+              vendorHash = "sha256-rxYuzn4ezAxaeDhxd8qdOzt+CKYIh03A9zKNdzILq18=";
+
+              meta = with final.lib; {
+                description = "A golang formatter that fixes long lines";
+                homepage = "https://github.com/segmentio/golines";
+                maintainers = [ "nhost" ];
+                platforms = platforms.linux ++ platforms.darwin;
+              };
+            };
+
             golangci-lint = prev.golangci-lint.override rec {
               buildGoModule = args: prev.buildGoModule.override { go = go; } (args // rec {
                 version = "1.52.2";
@@ -94,6 +113,8 @@
             buildInputs = with pkgs; [
               golangci-lint
               gqlgenc
+              gofumpt
+              golines
             ] ++ buildInputs ++ nativeBuildInputs;
           };
         };

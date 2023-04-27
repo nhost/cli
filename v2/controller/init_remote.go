@@ -46,7 +46,12 @@ func InitRemote(
 		return fmt.Errorf("failed to get hasura admin secret: %w", err)
 	}
 
-	hasuraEndpoint := fmt.Sprintf("https://%s.hasura.%s.%s", proj.Subdomain, proj.Region.AwsName, domain)
+	hasuraEndpoint := fmt.Sprintf(
+		"https://%s.hasura.%s.%s",
+		proj.Subdomain,
+		proj.Region.AwsName,
+		domain,
+	)
 
 	hasuraClient, err := hasura.InitClient(
 		hasuraEndpoint,

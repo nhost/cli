@@ -34,7 +34,8 @@ func Register(rootCmd *cobra.Command) { //nolint:funlen
 		initCmd.Flags().Bool(
 			flagRemote, false, "Validate remote configuration. Defaults to validation of local config.",
 		)
-		initCmd.Flags().StringP(flagUserDefinedHasura, "", "", "User-defined path for hasura-cli binary")
+		initCmd.Flags().
+			StringP(flagUserDefinedHasura, "", "", "User-defined path for hasura-cli binary")
 	}
 
 	{

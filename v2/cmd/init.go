@@ -42,7 +42,13 @@ Specifying --remote flag will initialize a local app from app.nhost.io
 				domain := cmd.Flag(flagDomain).Value.String()
 				cl := nhostclient.New(domain)
 				userDefinedHasura := cmd.Flag(flagUserDefinedHasura).Value.String()
-				return controller.InitRemote(cmd.Context(), cmd, cl, domain, userDefinedHasura) //nolint:wrapcheck
+				return controller.InitRemote(
+					cmd.Context(),
+					cmd,
+					cl,
+					domain,
+					userDefinedHasura,
+				) //nolint:wrapcheck
 			}
 			return controller.Init(cmd.Context()) //nolint:wrapcheck
 		},

@@ -84,7 +84,10 @@ type CreatePATRequest struct {
 	Metadata  map[string]any `json:"metadata"`
 }
 
-func (n *Client) CreatePAT(ctx context.Context, accessToken string) (credentials.Credentials, error) {
+func (n *Client) CreatePAT(
+	ctx context.Context,
+	accessToken string,
+) (credentials.Credentials, error) {
 	var resp credentials.Credentials
 	if err := MakeJSONRequest(
 		ctx,
