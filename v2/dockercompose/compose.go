@@ -230,7 +230,11 @@ func auth(cfg *model.ConfigConfig, useTLS bool, nhostFolder string) *Service { /
 	}
 }
 
-func postgres(cfg *model.ConfigConfig, port uint, dataFolder string) (*Service, error) { //nolint:funlen
+func postgres(
+	cfg *model.ConfigConfig,
+	port uint,
+	dataFolder string,
+) (*Service, error) { //nolint:funlen
 	if err := os.MkdirAll(fmt.Sprintf("%s/db/pgdata", dataFolder), 0o755); err != nil { //nolint:gomnd
 		return nil, fmt.Errorf("failed to create postgres data folder: %w", err)
 	}
@@ -464,7 +468,12 @@ func graphql(cfg *model.ConfigConfig, useTLS bool) (*Service, error) { //nolint:
 	}, nil
 }
 
-func console(cfg *model.ConfigConfig, port uint, useTLS bool, nhostFolder string) (*Service, error) { //nolint:funlen
+func console(
+	cfg *model.ConfigConfig,
+	port uint,
+	useTLS bool,
+	nhostFolder string,
+) (*Service, error) { //nolint:funlen
 	graphql, err := graphql(cfg, useTLS)
 	if err != nil {
 		return nil, err
@@ -535,7 +544,10 @@ func console(cfg *model.ConfigConfig, port uint, useTLS bool, nhostFolder string
 	}.Labels()
 
 	graphql.HealthCheck = &HealthCheck{
-		Test:        []string{"CMD-SHELL", "timeout 1s bash -c ':> /dev/tcp/127.0.0.1/9695' || exit 1"},
+		Test: []string{
+			"CMD-SHELL",
+			"timeout 1s bash -c ':> /dev/tcp/127.0.0.1/9695' || exit 1",
+		},
 		Interval:    "5s",
 		StartPeriod: "60s",
 	}
@@ -577,7 +589,11 @@ func dashboard(cfg *model.ConfigConfig, useTLS bool) *Service {
 	}
 }
 
-func functions(cfg *model.ConfigConfig, useTLS bool, functionsFolder string) *Service { //nolint:funlen
+func functions(
+	cfg *model.ConfigConfig,
+	useTLS bool,
+	functionsFolder string,
+) *Service { //nolint:funlen
 	envVars := map[string]string{
 		"HASURA_GRAPHQL_ADMIN_SECRET": cfg.Hasura.AdminSecret,
 		"HASURA_GRAPHQL_DATABASE_URL": "postgres://nhost_auth_admin@local.db.nhost.run:5432/postgres",

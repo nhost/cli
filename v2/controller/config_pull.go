@@ -50,6 +50,7 @@ func configPull(
 	cl NhostClient,
 	proj *graphql.GetWorkspacesApps_Workspaces_Apps,
 	session credentials.Session,
+	fs *system.PathStructure,
 ) (*model.ConfigConfig, error) {
 	p.Println(tui.Info("Pulling config from Nhost..."))
 	cfg, err := cl.GetConfigRawJSON(
@@ -66,11 +67,11 @@ func configPull(
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	if err := os.MkdirAll(system.PathNhost(), 0o755); err != nil { //nolint:gomnd
+	if err := os.MkdirAll(fs.NhostFolder(), 0o755); err != nil { //nolint:gomnd
 		return nil, fmt.Errorf("failed to create nhost directory: %w", err)
 	}
 
-	if err := MarshalFile(v, system.PathConfig(), toml.Marshal); err != nil {
+	if err := MarshalFile(v, fs.NhostToml(), toml.Marshal); err != nil {
 		return nil, fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 
@@ -81,7 +82,7 @@ func configPull(
 	}
 
 	secrets := respToSecrets(resp.GetAppSecrets(), true)
-	if err := MarshalFile(&secrets, system.PathSecrets(), env.Marshal); err != nil {
+	if err := MarshalFile(&secrets, fs.Secrets(), env.Marshal); err != nil {
 		return nil, fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 
@@ -106,17 +107,18 @@ func ConfigPull(
 	ctx context.Context,
 	p Printer,
 	cl NhostClient,
+	fs *system.PathStructure,
 ) error {
-	proj, err := GetAppInfo(ctx, p, cl)
+	proj, err := GetAppInfo(ctx, p, cl, fs)
 	if err != nil {
 		return err
 	}
 
-	session, err := LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl, fs)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	_, err = configPull(ctx, p, cl, proj, session)
+	_, err = configPull(ctx, p, cl, proj, session, fs)
 	return err
 }

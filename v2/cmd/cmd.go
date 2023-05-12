@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/nhost/cli/v2/system"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +17,7 @@ const (
 	flagDisableTLS      = "disable-tls"
 	flagProjectName     = "project-name"
 	flagPostgresPort    = "postgres-port"
+	flagRootFolder      = "root-folder"
 	flagDataFolder      = "data-folder"
 	flagNhostFolder     = "nhost-folder"
 	flagDotNhostFolder  = "dot-nhost-folder"
@@ -42,28 +44,39 @@ func getGitBranchName() string {
 	return head.Name().Short()
 }
 
-func getFolders(cmd *cobra.Command) (string, string, string, string, error) {
+func getFolders(cmd *cobra.Command) (*system.PathStructure, error) {
+	rootFolder, err := cmd.Flags().GetString(flagRootFolder)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse root folder: %w", err)
+	}
+
 	dotNhostFolder, err := cmd.Flags().GetString(flagDotNhostFolder)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to parse .nhost folder: %w", err)
+		return nil, fmt.Errorf("failed to parse .nhost folder: %w", err)
 	}
 
 	dataFolder, err := cmd.Flags().GetString(flagDataFolder)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to parse data folder: %w", err)
+		return nil, fmt.Errorf("failed to parse data folder: %w", err)
 	}
 
 	nhostFolder, err := cmd.Flags().GetString(flagNhostFolder)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to parse nhost folder: %w", err)
+		return nil, fmt.Errorf("failed to parse nhost folder: %w", err)
 	}
 
 	functionsFolder, err := cmd.Flags().GetString(flagFunctionsFolder)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to parse functions folder: %w", err)
+		return nil, fmt.Errorf("failed to parse functions folder: %w", err)
 	}
 
-	return dotNhostFolder, dataFolder, nhostFolder, functionsFolder, nil
+	return system.NewPathStructure(
+		rootFolder,
+		dotNhostFolder,
+		dataFolder,
+		functionsFolder,
+		nhostFolder,
+	), nil
 }
 
 func Register(rootCmd *cobra.Command) { //nolint:funlen
@@ -77,8 +90,10 @@ func Register(rootCmd *cobra.Command) { //nolint:funlen
 	nhostFolder := filepath.Join(curDir, "nhost")
 	functionsFolder := filepath.Join(curDir, "functions")
 
+	rootCmd.Flags().StringP(flagRootFolder, "", "", "Root folder of project")
 	rootCmd.Flags().StringP(flagDotNhostFolder, "", dotNhostFolder, "Path to .nhost folder")
-	rootCmd.Flags().StringP(flagDataFolder, "", dataFolder, "Data folder to persist data. Defaults to ")
+	rootCmd.Flags().
+		StringP(flagDataFolder, "", dataFolder, "Data folder to persist data. Defaults to ")
 	rootCmd.Flags().StringP(flagNhostFolder, "", nhostFolder, "Path to nhost folder")
 	rootCmd.Flags().StringP(flagFunctionsFolder, "", functionsFolder, "Path to functions folder")
 
@@ -102,16 +117,21 @@ func Register(rootCmd *cobra.Command) { //nolint:funlen
 	{
 		devCmd := devCmd()
 		rootCmd.AddCommand(devCmd)
-		devCmd.Flags().UintP(flagHTTPPort, "", defaultHTTPSPort, "HTTP port for the local development server")
-		devCmd.Flags().BoolP(flagDisableTLS, "", false, "Disable TLS for the local development server")
-		devCmd.Flags().UintP(flagPostgresPort, "", defaultPostgresPort, "Postgres port for the local development server")
-		devCmd.Flags().StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
+		devCmd.Flags().
+			UintP(flagHTTPPort, "", defaultHTTPSPort, "HTTP port for the local development server")
+		devCmd.Flags().
+			BoolP(flagDisableTLS, "", false, "Disable TLS for the local development server")
+		devCmd.Flags().
+			UintP(flagPostgresPort, "", defaultPostgresPort, "Postgres port for the local development server")
+		devCmd.Flags().
+			StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
 	}
 
 	{
 		downCmd := downCmd()
 		rootCmd.AddCommand(downCmd)
-		downCmd.Flags().StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
+		downCmd.Flags().
+			StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
 	}
 
 	{

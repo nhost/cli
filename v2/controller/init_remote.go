@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/creack/pty"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
+	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
 )
 
@@ -16,25 +16,25 @@ func InitRemote(
 	ctx context.Context,
 	p Printer,
 	cl NhostClient,
-	nhostFolder string,
 	domain string,
+	fs *system.PathStructure,
 ) error {
-	proj, err := GetAppInfo(ctx, p, cl)
+	proj, err := GetAppInfo(ctx, p, cl, fs)
 	if err != nil {
 		return err
 	}
 
-	session, err := LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl, fs)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	cfg, err := configPull(ctx, p, cl, proj, session)
+	cfg, err := configPull(ctx, p, cl, proj, session, fs)
 	if err != nil {
 		return err
 	}
 
-	if err := initInit(ctx); err != nil {
+	if err := initInit(ctx, fs); err != nil {
 		return err
 	}
 
@@ -50,7 +50,7 @@ func InitRemote(
 	)
 
 	f, err := os.OpenFile(
-		filepath.Join(nhostFolder, "config.yaml"), os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0o644, //nolint:gomnd
+		fs.HasuraConfig(), os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0o644, //nolint:gomnd
 	)
 	if err != nil {
 		return fmt.Errorf("failed to open config.yaml: %w", err)
@@ -63,14 +63,14 @@ func InitRemote(
 
 	p.Println(tui.Info("Creating postgres migration"))
 	if err := createPostgresMigration(
-		ctx, nhostFolder, *cfg.Hasura.Version, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret, "public",
+		ctx, fs.NhostFolder(), *cfg.Hasura.Version, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret, "public",
 	); err != nil {
 		return fmt.Errorf("failed to create postgres migration: %w", err)
 	}
 
 	p.Println(tui.Info("Downloading metadata"))
 	if err := createMetada(
-		ctx, nhostFolder, *cfg.Hasura.Version, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret,
+		ctx, fs.NhostFolder(), *cfg.Hasura.Version, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret,
 	); err != nil {
 		return fmt.Errorf("failed to create metadata: %w", err)
 	}

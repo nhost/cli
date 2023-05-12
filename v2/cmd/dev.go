@@ -15,11 +15,18 @@ func devCmd() *cobra.Command {
 		SuggestFor: []string{"list", "init"},
 		Short:      "Start local development environment",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if !system.PathExists(system.PathConfig()) {
-				return fmt.Errorf("no nhost project found in current directory, please run `nhost init`") //nolint:goerr113
+			fs, err := getFolders(cmd.Parent())
+			if err != nil {
+				return err
 			}
-			if !system.PathExists(system.PathSecrets()) {
-				return fmt.Errorf("no secrets found in current directory, please run `nhost init`") //nolint:goerr113
+
+			if !system.PathExists(fs.NhostToml()) {
+				return fmt.Errorf(
+					"no nhost project found, please run `nhost init`",
+				) //nolint:goerr113
+			}
+			if !system.PathExists(fs.Secrets()) {
+				return fmt.Errorf("no secrets found, please run `nhost init`") //nolint:goerr113
 			}
 			httpPort, err := cmd.Flags().GetUint(flagHTTPPort)
 			if err != nil {
@@ -41,11 +48,6 @@ func devCmd() *cobra.Command {
 				return fmt.Errorf("failed to parse project name: %w", err)
 			}
 
-			_, dataFolder, nhostFolder, functionsFolder, err := getFolders(cmd)
-			if err != nil {
-				return err
-			}
-
 			return controller.Dev( //nolint:wrapcheck
 				cmd.Context(),
 				cmd,
@@ -53,9 +55,7 @@ func devCmd() *cobra.Command {
 				httpPort,
 				!disableTLS,
 				postgresPort,
-				dataFolder,
-				nhostFolder,
-				functionsFolder,
+				fs,
 			)
 		},
 	}

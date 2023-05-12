@@ -14,16 +14,16 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-func ConfigValidate(p Printer) (*model.ConfigConfig, error) {
+func ConfigValidate(p Printer, fs *system.PathStructure) (*model.ConfigConfig, error) {
 	p.Println(tui.Info("Verifying configuration..."))
 
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
-	if err := UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
+	if err := UnmarshalFile(fs.NhostToml(), cfg, toml.Unmarshal); err != nil {
 		return nil, err
 	}
 
 	var secrets model.Secrets
-	if err := UnmarshalFile(system.PathSecrets(), &secrets, env.Unmarshal); err != nil {
+	if err := UnmarshalFile(fs.Secrets(), &secrets, env.Unmarshal); err != nil {
 		return nil, fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
@@ -46,9 +46,10 @@ func ConfigValidateRemote(
 	ctx context.Context,
 	p Printer,
 	cl NhostClient,
+	fs *system.PathStructure,
 ) error {
 	var cfg *model.ConfigConfig
-	if err := UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
+	if err := UnmarshalFile(fs.NhostToml(), cfg, toml.Unmarshal); err != nil {
 		return err
 	}
 
@@ -57,12 +58,12 @@ func ConfigValidateRemote(
 		return fmt.Errorf("failed to create schema: %w", err)
 	}
 
-	proj, err := GetAppInfo(ctx, p, cl)
+	proj, err := GetAppInfo(ctx, p, cl, fs)
 	if err != nil {
 		return err
 	}
 
-	session, err := LoadSession(ctx, p, cl)
+	session, err := LoadSession(ctx, p, cl, fs)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}

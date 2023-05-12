@@ -13,6 +13,11 @@ func configValidateCmd() *cobra.Command {
 		Use:  "validate",
 		Long: `Validate configuration`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			fs, err := getFolders(cmd.Parent())
+			if err != nil {
+				return err
+			}
+
 			validateRemote, err := cmd.Flags().GetBool(flagRemote)
 			if err != nil {
 				return fmt.Errorf("failed to get local flag: %w", err)
@@ -20,10 +25,15 @@ func configValidateCmd() *cobra.Command {
 
 			if validateRemote {
 				cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-				return controller.ConfigValidateRemote(cmd.Context(), cmd, cl) //nolint:wrapcheck
+				return controller.ConfigValidateRemote(
+					cmd.Context(),
+					cmd,
+					cl,
+					fs,
+				) //nolint:wrapcheck
 			}
 
-			_, err = controller.ConfigValidate(cmd)
+			_, err = controller.ConfigValidate(cmd, fs)
 			return err //nolint:wrapcheck
 		},
 	}

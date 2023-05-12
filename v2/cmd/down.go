@@ -14,11 +14,18 @@ func downCmd() *cobra.Command {
 		SuggestFor: []string{"list", "init"},
 		Short:      "Stop local development environment",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if !system.PathExists(system.PathConfig()) {
-				return fmt.Errorf("no nhost project found in current directory, please run `nhost init`") //nolint:goerr113
+			fs, err := getFolders(cmd.Parent())
+			if err != nil {
+				return err
 			}
-			if !system.PathExists(system.PathSecrets()) {
-				return fmt.Errorf("no secrets found in current directory, please run `nhost init`") //nolint:goerr113
+
+			if !system.PathExists(fs.NhostToml()) {
+				return fmt.Errorf(
+					"no nhost project found, please run `nhost init`",
+				) //nolint:goerr113
+			}
+			if !system.PathExists(fs.Secrets()) {
+				return fmt.Errorf("no secrets found, please run `nhost init`") //nolint:goerr113
 			}
 
 			projecName, err := cmd.Flags().GetString(flagProjectName)

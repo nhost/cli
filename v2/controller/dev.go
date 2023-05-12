@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nhost/cli/v2/dockercompose"
+	"github.com/nhost/cli/v2/system"
 	"github.com/nhost/cli/v2/tui"
 )
 
@@ -25,9 +26,7 @@ func dev(
 	httpPort uint,
 	useTLS bool,
 	postgresPort uint,
-	dataFolder string,
-	nhostFolder string,
-	functionsFolder string,
+	fs *system.PathStructure,
 ) error {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -38,14 +37,15 @@ func dev(
 		cancel()
 	}()
 
-	cfg, err := ConfigValidate(p)
+	cfg, err := ConfigValidate(p, fs)
 	if err != nil {
 		return err
 	}
 
 	p.Println(tui.Info("Setting up Nhost development environment..."))
 	composeFile, err := dockercompose.ComposeFileFromConfig(
-		cfg, projectName, httpPort, useTLS, postgresPort, dataFolder, nhostFolder, functionsFolder,
+		cfg, projectName, httpPort, useTLS, postgresPort,
+		fs.DataFolder(), fs.NhostFolder(), fs.FunctionsFolder(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to generate docker-compose.yaml: %w", err)
@@ -114,14 +114,12 @@ func Dev(
 	httpPort uint,
 	useTLS bool,
 	postgresPort uint,
-	dataFolder string,
-	nhostFolder string,
-	functionsFolder string,
+	fs *system.PathStructure,
 ) error {
 	dc := dockercompose.New(dockerComposeFilepath, projectName)
 
 	if err := dev(
-		ctx, p, dc, projectName, httpPort, useTLS, postgresPort, dataFolder, nhostFolder, functionsFolder,
+		ctx, p, dc, projectName, httpPort, useTLS, postgresPort, fs,
 	); err != nil {
 		p.Println(tui.Warn(err.Error()))
 	}

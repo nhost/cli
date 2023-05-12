@@ -21,26 +21,22 @@ Without specifying --remote flag, only a blank Nhost app will be initialized.
 Specifying --remote flag will initialize a local app from app.nhost.io
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			fs, err := getFolders(cmd.Parent())
+			if err != nil {
+				return err
+			}
+
 			remote, err := cmd.Flags().GetBool(flagRemote)
 			if err != nil {
 				return fmt.Errorf("failed to get local flag: %w", err)
 			}
 
-			dotNhostFolder, _, nhostFolder, _, err := getFolders(cmd.Parent())
-			if err != nil {
-				return err
-			}
-
-			if system.PathExists(nhostFolder) {
+			if system.PathExists(fs.NhostFolder()) {
 				return fmt.Errorf("nhost folder already exists") //nolint:goerr113
 			}
 
-			if err := os.MkdirAll(nhostFolder, 0o755); err != nil { //nolint:gomnd
+			if err := os.MkdirAll(fs.NhostFolder(), 0o755); err != nil { //nolint:gomnd
 				return fmt.Errorf("failed to create nhost folder: %w", err)
-			}
-
-			if err := os.MkdirAll(dotNhostFolder, 0o755); err != nil { //nolint:gomnd
-				return fmt.Errorf("failed to create .nhost folder: %w", err)
 			}
 
 			if remote {
@@ -50,11 +46,11 @@ Specifying --remote flag will initialize a local app from app.nhost.io
 					cmd.Context(),
 					cmd,
 					cl,
-					nhostFolder,
 					domain,
+					fs,
 				)
 			}
-			return controller.Init(cmd.Context()) //nolint:wrapcheck
+			return controller.Init(cmd.Context(), fs) //nolint:wrapcheck
 		},
 	}
 }
