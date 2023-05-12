@@ -26,28 +26,32 @@ Specifying --remote flag will initialize a local app from app.nhost.io
 				return fmt.Errorf("failed to get local flag: %w", err)
 			}
 
-			if system.PathExists(system.PathNhost()) {
-				return fmt.Errorf("nhost folder already exists in this directory") //nolint:goerr113
+			dotNhostFolder, _, nhostFolder, _, err := getFolders(cmd.Parent())
+			if err != nil {
+				return err
 			}
 
-			if err := os.MkdirAll(system.PathNhost(), 0o755); err != nil { //nolint:gomnd
+			if system.PathExists(nhostFolder) {
+				return fmt.Errorf("nhost folder already exists") //nolint:goerr113
+			}
+
+			if err := os.MkdirAll(nhostFolder, 0o755); err != nil { //nolint:gomnd
 				return fmt.Errorf("failed to create nhost folder: %w", err)
 			}
 
-			if err := os.MkdirAll(system.PathDotNhost(), 0o755); err != nil { //nolint:gomnd
+			if err := os.MkdirAll(dotNhostFolder, 0o755); err != nil { //nolint:gomnd
 				return fmt.Errorf("failed to create .nhost folder: %w", err)
 			}
 
 			if remote {
 				domain := cmd.Flag(flagDomain).Value.String()
 				cl := nhostclient.New(domain)
-				userDefinedHasura := cmd.Flag(flagUserDefinedHasura).Value.String()
 				return controller.InitRemote( //nolint:wrapcheck
 					cmd.Context(),
 					cmd,
 					cl,
+					nhostFolder,
 					domain,
-					userDefinedHasura,
 				)
 			}
 			return controller.Init(cmd.Context()) //nolint:wrapcheck

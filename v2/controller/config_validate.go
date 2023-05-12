@@ -14,30 +14,32 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-func ConfigValidate(p Printer) error {
+func ConfigValidate(p Printer) (*model.ConfigConfig, error) {
+	p.Println(tui.Info("Verifying configuration..."))
+
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := UnmarshalFile(system.PathConfig(), cfg, toml.Unmarshal); err != nil {
-		return err
+		return nil, err
 	}
 
 	var secrets model.Secrets
 	if err := UnmarshalFile(system.PathSecrets(), &secrets, env.Unmarshal); err != nil {
-		return fmt.Errorf("failed to parse secrets: %w", err)
+		return nil, fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
 	schema, err := schema.New()
 	if err != nil {
-		return fmt.Errorf("failed to create schema: %w", err)
+		return nil, fmt.Errorf("failed to create schema: %w", err)
 	}
 
-	_, err = appconfig.Config(schema, cfg, secrets)
+	cfg, err = appconfig.Config(schema, cfg, secrets)
 	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	p.Println(tui.Info("Config is valid!"))
+	p.Println(tui.Info("Configuration is valid!"))
 
-	return nil
+	return cfg, nil
 }
 
 func ConfigValidateRemote(

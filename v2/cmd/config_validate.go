@@ -23,7 +23,8 @@ func configValidateCmd() *cobra.Command {
 				return controller.ConfigValidateRemote(cmd.Context(), cmd, cl) //nolint:wrapcheck
 			}
 
-			return controller.ConfigValidate(cmd) //nolint:wrapcheck
+			_, err = controller.ConfigValidate(cmd)
+			return err //nolint:wrapcheck
 		},
 	}
 }
