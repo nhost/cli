@@ -3,13 +3,13 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/creack/pty"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
+	"github.com/nhost/cli/v2/tui"
 )
 
 func InitRemote(
@@ -61,17 +61,21 @@ func InitRemote(
 		return fmt.Errorf("failed to write version.yaml: %w", err)
 	}
 
+	p.Println(tui.Info("Creating postgres migration"))
 	if err := createPostgresMigration(
 		ctx, nhostFolder, *cfg.Hasura.Version, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret, "public",
 	); err != nil {
 		return fmt.Errorf("failed to create postgres migration: %w", err)
 	}
 
+	p.Println(tui.Info("Downloading metadata"))
 	if err := createMetada(
 		ctx, nhostFolder, *cfg.Hasura.Version, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret,
 	); err != nil {
 		return fmt.Errorf("failed to create metadata: %w", err)
 	}
+
+	p.Println(tui.Info("Project initialized successfully!"))
 	return nil
 }
 
@@ -98,9 +102,6 @@ func createPostgresMigration(
 	}
 	defer f.Close()
 
-	if _, err := io.Copy(os.Stdout, f); err != nil {
-		return fmt.Errorf("failed to copy pty output: %w", err)
-	}
 	return nil
 }
 
@@ -126,8 +127,5 @@ func createMetada(
 	}
 	defer f.Close()
 
-	if _, err := io.Copy(os.Stdout, f); err != nil {
-		return fmt.Errorf("failed to copy pty output: %w", err)
-	}
 	return nil
 }

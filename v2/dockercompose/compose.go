@@ -119,11 +119,6 @@ func traefik(projectName string, port uint) *Service {
 				Target:   "/var/run/docker.sock",
 				ReadOnly: ptr(true),
 			},
-			{
-				Type:   "bind",
-				Source: "traefik",
-				Target: "/opt/traefik",
-			},
 		},
 		WorkingDir: nil,
 	}
