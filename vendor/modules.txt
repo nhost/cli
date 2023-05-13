@@ -200,33 +200,9 @@ github.com/cloudflare/circl/sign/ed448
 # github.com/cockroachdb/apd/v2 v2.0.2
 ## explicit
 github.com/cockroachdb/apd/v2
-# github.com/compose-spec/compose-go v1.13.2
-## explicit; go 1.19
-github.com/compose-spec/compose-go/dotenv
-github.com/compose-spec/compose-go/template
-github.com/compose-spec/compose-go/types
 # github.com/creack/pty v1.1.18
 ## explicit; go 1.13
 github.com/creack/pty
-# github.com/davecgh/go-spew v1.1.1
-## explicit
-github.com/davecgh/go-spew/spew
-# github.com/distribution/distribution/v3 v3.0.0-20230327091844-0c958010ace2
-## explicit; go 1.18
-github.com/distribution/distribution/v3/reference
-# github.com/docker/docker v23.0.2+incompatible
-## explicit
-github.com/docker/docker/api/types/blkiodev
-github.com/docker/docker/api/types/container
-github.com/docker/docker/api/types/mount
-github.com/docker/docker/api/types/strslice
-github.com/docker/docker/pkg/namesgenerator
-# github.com/docker/go-connections v0.4.0
-## explicit
-github.com/docker/go-connections/nat
-# github.com/docker/go-units v0.5.0
-## explicit
-github.com/docker/go-units
 # github.com/emirpasic/gods v1.18.1
 ## explicit; go 1.2
 github.com/emirpasic/gods/containers
@@ -384,9 +360,6 @@ github.com/lucasb-eyer/go-colorful
 # github.com/magiconair/properties v1.8.7
 ## explicit; go 1.19
 github.com/magiconair/properties
-# github.com/mattn/go-colorable v0.1.13
-## explicit; go 1.15
-github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.18
 ## explicit; go 1.15
 github.com/mattn/go-isatty
@@ -419,9 +392,6 @@ github.com/muesli/termenv
 github.com/nhost/be/services/mimir/model
 github.com/nhost/be/services/mimir/schema
 github.com/nhost/be/services/mimir/schema/appconfig
-# github.com/opencontainers/go-digest v1.0.0
-## explicit; go 1.13
-github.com/opencontainers/go-digest
 # github.com/pelletier/go-toml/v2 v2.0.7
 ## explicit; go 1.16
 github.com/pelletier/go-toml/v2
@@ -437,18 +407,12 @@ github.com/pjbgf/sha1cd/ubc
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/pmezard/go-difflib v1.0.0
-## explicit
-github.com/pmezard/go-difflib/difflib
 # github.com/rivo/uniseg v0.2.0
 ## explicit; go 1.12
 github.com/rivo/uniseg
 # github.com/sergi/go-diff v1.3.1
 ## explicit; go 1.12
 github.com/sergi/go-diff/diffmatchpatch
-# github.com/sirupsen/logrus v1.9.0
-## explicit; go 1.13
-github.com/sirupsen/logrus
 # github.com/skeema/knownhosts v1.1.0
 ## explicit; go 1.17
 github.com/skeema/knownhosts
@@ -480,9 +444,6 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/stretchr/testify v1.8.2
-## explicit; go 1.13
-github.com/stretchr/testify/assert
 # github.com/subosito/gotenv v1.4.2
 ## explicit; go 1.18
 github.com/subosito/gotenv
@@ -565,9 +526,6 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sync v0.1.0
-## explicit
-golang.org/x/sync/errgroup
 # golang.org/x/sys v0.7.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu

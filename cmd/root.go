@@ -7,8 +7,6 @@ import (
 	"os"
 
 	"github.com/Yamashou/gqlgenc/clientv2"
-	"github.com/nhost/cli/logger"
-	"github.com/nhost/cli/nhost"
 	v2cmd "github.com/nhost/cli/v2/cmd"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -62,13 +60,10 @@ func Execute() {
 }
 
 func init() { //nolint:gochecknoinits
-	rootCmd.PersistentFlags().BoolVarP(&logger.JSON, "json", "j", false, "Print JSON formatted logs")
-	rootCmd.PersistentFlags().StringVar(&nhost.DOMAIN, flagDomain, "nhost.run", "Auth domain - for internal testing")
+	// rootCmd.PersistentFlags().StringVar(&nhost.DOMAIN, flagDomain, "nhost.run", "Auth domain - for internal testing")
 
 	viper.SetDefault("author", "Nhost Team")
 	viper.SetDefault("license", "MIT")
-
-	rootCmd.PersistentFlags().BoolVarP(&logger.DEBUG, "debug", "d", false, "Show debugging level logs")
 
 	path, _ := os.Getwd()
 	rootCmd.PersistentFlags().StringVar(&path, "path", path, "Current working directory to execute CLI in")
