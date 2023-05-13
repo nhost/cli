@@ -17,12 +17,8 @@ const (
 	ErrLoggedIn    = "You are already logged in, first logout with `nhost logout`"
 )
 
-const (
-	flagDomain = "domain"
-)
-
 var (
-	Version string            //nolint:gochecknoglobals
+	Version string
 	rootCmd = &cobra.Command{ //nolint:exhaustruct,gochecknoglobals
 		Use:           "nhost",
 		Short:         "Nhost: The Open Source Firebase Alternative with GraphQL",
@@ -66,7 +62,8 @@ func init() { //nolint:gochecknoinits
 	viper.SetDefault("license", "MIT")
 
 	path, _ := os.Getwd()
-	rootCmd.PersistentFlags().StringVar(&path, "path", path, "Current working directory to execute CLI in")
+	rootCmd.PersistentFlags().
+		StringVar(&path, "path", path, "Current working directory to execute CLI in")
 
 	v2cmd.Register(rootCmd)
 }

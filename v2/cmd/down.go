@@ -20,9 +20,9 @@ func downCmd() *cobra.Command {
 			}
 
 			if !system.PathExists(fs.NhostToml()) {
-				return fmt.Errorf(
+				return fmt.Errorf( //nolint:goerr113
 					"no nhost project found, please run `nhost init`",
-				) //nolint:goerr113
+				)
 			}
 			if !system.PathExists(fs.Secrets()) {
 				return fmt.Errorf("no secrets found, please run `nhost init`") //nolint:goerr113

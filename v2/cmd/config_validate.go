@@ -25,12 +25,12 @@ func configValidateCmd() *cobra.Command {
 
 			if validateRemote {
 				cl := nhostclient.New(cmd.Flag(flagDomain).Value.String())
-				return controller.ConfigValidateRemote(
+				return controller.ConfigValidateRemote( //nolint:wrapcheck
 					cmd.Context(),
 					cmd,
 					cl,
 					fs,
-				) //nolint:wrapcheck
+				)
 			}
 
 			_, err = controller.ConfigValidate(cmd, fs)

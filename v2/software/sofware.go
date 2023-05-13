@@ -26,7 +26,12 @@ func NewManager() *Manager {
 func (mgr *Manager) GetReleases(ctx context.Context) (Releases, error) {
 	var releases Releases
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/repos/nhost/cli/releases", nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		"https://api.github.com/repos/nhost/cli/releases",
+		nil,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -108,12 +113,18 @@ func extractTarGz(gzipStream io.Reader) (io.Reader, error) {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			return nil, fmt.Errorf("expected a file inside tarball, found a directory instead") //nolint:goerr113
+			return nil, fmt.Errorf( //nolint:goerr113
+				"expected a file inside tarball, found a directory instead",
+			)
 		case tar.TypeReg:
 			return tarReader, nil
 
 		default:
-			return nil, fmt.Errorf("unknown type: %b in %s", header.Typeflag, header.Name) //nolint:goerr113
+			return nil, fmt.Errorf( //nolint:goerr113
+				"unknown type: %b in %s",
+				header.Typeflag,
+				header.Name,
+			)
 		}
 	}
 

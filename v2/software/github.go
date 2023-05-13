@@ -16,7 +16,12 @@ func GetReleases(ctx context.Context) (Releases, error) {
 	var releases Releases
 
 	client := &http.Client{} //nolint:exhaustruct
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/repos/nhost/cli/releases", nil)
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		"https://api.github.com/repos/nhost/cli/releases",
+		nil,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
