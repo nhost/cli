@@ -77,6 +77,23 @@ func (dc *DockerCompose) Stop(ctx context.Context) error {
 	return nil
 }
 
+func (dc *DockerCompose) Logs(ctx context.Context) error {
+	cmd := exec.CommandContext( //nolint:gosec
+		ctx,
+		"docker-compose",
+		"-f", dc.filepath,
+		"-p", dc.projectName,
+		"logs",
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to show logs from docker-compose: %w", err)
+	}
+	return nil
+}
+
 func (dc *DockerCompose) ApplyMetadata(ctx context.Context) error {
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,

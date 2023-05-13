@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
@@ -49,18 +50,6 @@ func InitRemote(
 		"https://%s.hasura.%s.%s", proj.Subdomain, proj.Region.AwsName, domain,
 	)
 
-	f, err := os.OpenFile(
-		fs.HasuraConfig(), os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0o644, //nolint:gomnd
-	)
-	if err != nil {
-		return fmt.Errorf("failed to open config.yaml: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := f.WriteString("version: 3\n"); err != nil {
-		return fmt.Errorf("failed to write version.yaml: %w", err)
-	}
-
 	p.Println(tui.Info("Creating postgres migration"))
 	if err := createPostgresMigration(
 		ctx, fs.NhostFolder(), *cfg.Hasura.Version, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret, "public",
@@ -94,6 +83,8 @@ func createPostgresMigration(
 		"--admin-secret", adminSecret,
 		"migrate", "create", "init", "--from-server", "--schema", schema,
 		"--database-name", "default",
+		"--skip-update-check",
+		"--log-level", "ERROR",
 	)
 
 	f, err := pty.Start(cmd)
@@ -101,6 +92,10 @@ func createPostgresMigration(
 		return fmt.Errorf("failed to start pty: %w", err)
 	}
 	defer f.Close()
+
+	if _, err := io.Copy(os.Stdout, f); err != nil {
+		return fmt.Errorf("failed to copy output: %w", err)
+	}
 
 	return nil
 }
@@ -119,6 +114,8 @@ func createMetada(
 		"--endpoint", hasuraEndpoint,
 		"--admin-secret", adminSecret,
 		"metadata", "export",
+		"--skip-update-check",
+		"--log-level", "ERROR",
 	)
 
 	f, err := pty.Start(cmd)
@@ -126,6 +123,10 @@ func createMetada(
 		return fmt.Errorf("failed to start pty: %w", err)
 	}
 	defer f.Close()
+
+	if _, err := io.Copy(os.Stdout, f); err != nil {
+		return fmt.Errorf("failed to copy output: %w", err)
+	}
 
 	return nil
 }

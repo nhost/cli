@@ -45,7 +45,7 @@ func dev(
 	p.Println(tui.Info("Setting up Nhost development environment..."))
 	composeFile, err := dockercompose.ComposeFileFromConfig(
 		cfg, projectName, httpPort, useTLS, postgresPort,
-		fs.DataFolder(), fs.NhostFolder(), fs.FunctionsFolder(),
+		fs.DataFolder(), fs.NhostFolder(), fs.DotNhostFolder(), fs.FunctionsFolder(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to generate docker-compose.yaml: %w", err)
@@ -74,7 +74,10 @@ func dev(
 
 	printInfo(p, httpPort, useTLS)
 
-	<-ctx.Done()
+	p.Println()
+	p.Println("Run `nhost up` to reload the development environment")
+	p.Println("Run `nhost down` to stop the development environment")
+	p.Println("Run `nhost logs` to watch the logs")
 	return nil
 }
 
@@ -122,25 +125,27 @@ func Dev(
 		ctx, p, dc, projectName, httpPort, useTLS, postgresPort, fs,
 	); err != nil {
 		p.Println(tui.Warn(err.Error()))
+
+		p.Print(tui.PromptMessage("Do you want to stop Nhost development environment it? [y/N] "))
+		resp, err := tui.PromptInput(false)
+		if err != nil {
+			p.Print(tui.Warn("failed to read input: %s", err))
+			return nil
+		}
+		if resp != "y" {
+			return nil
+		}
+
+		p.Println(tui.Info("Stopping Nhost development environment..."))
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		if err := dc.Stop(ctx); err != nil { //nolint:contextcheck
+			p.Print(tui.Warn("failed to stop Nhost development environment: %s", err))
+		}
+
+		return err //nolint:wrapcheck
 	}
 
-	p.Print(tui.PromptMessage("Do you want to stop Nhost development environment it? [y/N] "))
-	resp, err := tui.PromptInput(false)
-	if err != nil {
-		p.Print(tui.Warn("failed to read input: %s", err))
-		return nil
-	}
-	if resp != "y" {
-		return nil
-	}
-
-	p.Println(tui.Info("Stopping Nhost development environment..."))
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	if err := dc.Stop(ctx); err != nil { //nolint:contextcheck
-		p.Print(tui.Warn("failed to stop Nhost development environment: %s", err))
-	}
-
-	return err //nolint:wrapcheck
+	return nil
 }

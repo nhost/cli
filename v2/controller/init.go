@@ -14,15 +14,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const hasuraVersion = 3
+const hasuraMetadataVersion = 3
 
-func initFolders(dotNhostFolder, nhostFolder string) error {
+func initFolders(fs *system.PathStructure) error {
 	folders := []string{
-		dotNhostFolder,
-		filepath.Join(nhostFolder, "migrations"),
-		filepath.Join(nhostFolder, "metadata"),
-		filepath.Join(nhostFolder, "seeds"),
-		filepath.Join(nhostFolder, "emails"),
+		fs.DotNhostFolder(),
+		fs.FunctionsFolder(),
+		filepath.Join(fs.NhostFolder(), "migrations"),
+		filepath.Join(fs.NhostFolder(), "metadata"),
+		filepath.Join(fs.NhostFolder(), "seeds"),
+		filepath.Join(fs.NhostFolder(), "emails"),
 	}
 	for _, f := range folders {
 		if err := os.MkdirAll(f, 0o755); err != nil { //nolint:gomnd
@@ -36,12 +37,12 @@ func initFolders(dotNhostFolder, nhostFolder string) error {
 func initInit(
 	ctx context.Context, fs *system.PathStructure,
 ) error {
-	hasuraConf := map[string]any{"version": hasuraVersion}
+	hasuraConf := map[string]any{"version": hasuraMetadataVersion}
 	if err := MarshalFile(hasuraConf, fs.HasuraConfig(), yaml.Marshal); err != nil {
 		return fmt.Errorf("failed to save hasura config: %w", err)
 	}
 
-	if err := initFolders(fs.DotNhostFolder(), fs.NhostFolder()); err != nil {
+	if err := initFolders(fs); err != nil {
 		return err
 	}
 

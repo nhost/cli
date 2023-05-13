@@ -46,7 +46,7 @@ func (p PathStructure) NhostFolder() string {
 }
 
 func (p PathStructure) AuthFile() string {
-	return filepath.Join(p.nhostFolder, "auth.json")
+	return filepath.Join(PathStateHome(), "auth.json")
 }
 
 func (p PathStructure) NhostToml() string {
@@ -54,7 +54,7 @@ func (p PathStructure) NhostToml() string {
 }
 
 func (p PathStructure) Secrets() string {
-	return filepath.Join(p.dotNhostFolder, "secrets.json")
+	return filepath.Join(p.root, ".secrets")
 }
 
 func (p PathStructure) HasuraConfig() string {

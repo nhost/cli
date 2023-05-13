@@ -135,6 +135,13 @@ func Register(rootCmd *cobra.Command) { //nolint:funlen
 	}
 
 	{
+		logsCmd := logsCmd()
+		rootCmd.AddCommand(logsCmd)
+		logsCmd.Flags().
+			StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
+	}
+
+	{
 		initCmd := initCmd()
 		rootCmd.AddCommand(initCmd)
 		initCmd.Flags().Bool(
