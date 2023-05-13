@@ -11,7 +11,6 @@ require (
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-getter v1.7.1
-	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-colorable v0.1.13
 	github.com/nhost/be v0.0.0-20230417073532-3fb8b94c7444
 	github.com/pelletier/go-toml/v2 v2.0.7
@@ -37,10 +36,8 @@ require (
 	github.com/aws/aws-sdk-go v1.44.233 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
-	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cloudflare/circl v1.3.2 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20230327091844-0c958010ace2 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -79,7 +76,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
