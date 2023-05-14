@@ -98,77 +98,8 @@ func Register(rootCmd *cobra.Command) { //nolint:funlen
 	rootCmd.Flags().StringP(flagFunctionsFolder, "", functionsFolder, "Path to functions folder")
 
 	{
-		configCmd := configCmd()
-		rootCmd.AddCommand(configCmd)
-
-		configPullCmd := configPullCmd()
-		configCmd.AddCommand(configPullCmd)
-
-		configShowFullExampleCmd := configShowFullExampleCmd()
-		configCmd.AddCommand(configShowFullExampleCmd)
-
-		configValidateCmd := configValidateCmd()
-		configCmd.AddCommand(configValidateCmd)
-		configValidateCmd.Flags().Bool(
-			flagRemote, false, "Validate remote configuration. Defaults to validation of local config.",
-		)
-	}
-
-	{
-		devCmd := devCmd()
-		rootCmd.AddCommand(devCmd)
-		devCmd.Flags().
-			UintP(flagHTTPPort, "", defaultHTTPSPort, "HTTP port for the local development server")
-		devCmd.Flags().
-			BoolP(flagDisableTLS, "", false, "Disable TLS for the local development server")
-		devCmd.Flags().
-			UintP(flagPostgresPort, "", defaultPostgresPort, "Postgres port for the local development server")
-		devCmd.Flags().
-			StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
-	}
-
-	{
-		downCmd := downCmd()
-		rootCmd.AddCommand(downCmd)
-		downCmd.Flags().
-			StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
-	}
-
-	{
-		logsCmd := logsCmd()
-		rootCmd.AddCommand(logsCmd)
-		logsCmd.Flags().
-			StringP(flagProjectName, "", defaultProjectName, "Project name for the local development server")
-	}
-
-	{
-		initCmd := initCmd()
-		rootCmd.AddCommand(initCmd)
-		initCmd.Flags().Bool(
-			flagRemote, false, "Validate remote configuration. Defaults to validation of local config.",
-		)
-	}
-
-	{
-		loginCmd := logincCmd()
-		rootCmd.AddCommand(loginCmd)
-		loginCmd.PersistentFlags().StringP(flagEmail, "e", "", "Email of your Nhost account")
-		loginCmd.PersistentFlags().StringP(flagPassword, "p", "", "Password of your Nhost account")
-	}
-
-	{
 		logoutCmd := logoutCmd()
 		rootCmd.AddCommand(logoutCmd)
-	}
-
-	{
-		linkCmd := linkCmd()
-		rootCmd.AddCommand(linkCmd)
-	}
-
-	{
-		listCmd := listCmd()
-		rootCmd.AddCommand(listCmd)
 	}
 
 	{
