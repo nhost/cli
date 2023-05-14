@@ -11,7 +11,6 @@ require (
 	github.com/hashicorp/go-getter v1.7.1
 	github.com/nhost/be v0.0.0-20230417073532-3fb8b94c7444
 	github.com/pelletier/go-toml/v2 v2.0.7
-	github.com/spf13/cobra v1.6.1
 	github.com/urfave/cli/v2 v2.25.3
 	golang.org/x/term v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -46,7 +45,6 @@ require (
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
@@ -66,7 +64,6 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/skeema/knownhosts v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
