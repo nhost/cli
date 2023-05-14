@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/nhost/cli/clienv"
-	"github.com/nhost/cli/v2/tui"
 	"github.com/urfave/cli/v2"
 )
 
@@ -50,7 +49,7 @@ func commandLogin(cCtx *cli.Context) error {
 
 	if password == "" {
 		ce.PromptMessage("password: ")
-		password, err = tui.PromptInput(true)
+		password, err = ce.PromptInput(true)
 		ce.Println("")
 		if err != nil {
 			return fmt.Errorf("failed to read password: %w", err)

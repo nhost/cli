@@ -11,7 +11,6 @@ import (
 	"github.com/nhost/cli/clienv"
 	"github.com/nhost/cli/cmd/config"
 	"github.com/nhost/cli/v2/dockercompose"
-	"github.com/nhost/cli/v2/tui"
 	"github.com/urfave/cli/v2"
 )
 
@@ -191,7 +190,7 @@ func Up(
 		ce.Warnln(err.Error())
 
 		ce.PromptMessage("Do you want to stop Nhost development environment it? [y/N] ")
-		resp, err := tui.PromptInput(false)
+		resp, err := ce.PromptInput(false)
 		if err != nil {
 			ce.Warnln("failed to read input: %s", err)
 			return nil
