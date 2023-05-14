@@ -8,6 +8,7 @@ func Command() *cli.Command {
 		Aliases: []string{},
 		Usage:   "Operate local development environment",
 		Subcommands: []*cli.Command{
+			CommandCompose(),
 			CommandDown(),
 			CommandLogs(),
 			CommandUp(),

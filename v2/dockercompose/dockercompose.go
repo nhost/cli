@@ -99,6 +99,27 @@ func (dc *DockerCompose) Logs(ctx context.Context, extraArgs ...string) error {
 	return nil
 }
 
+func (dc *DockerCompose) Wrapper(ctx context.Context, extraArgs ...string) error {
+	args := []string{
+		"-f", dc.filepath,
+		"-p", dc.projectName,
+	}
+	args = append(args, extraArgs...)
+
+	cmd := exec.CommandContext(
+		ctx,
+		"docker-compose",
+		args...,
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run docker-compose: %w", err)
+	}
+	return nil
+}
+
 func (dc *DockerCompose) ApplyMetadata(ctx context.Context) error {
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
