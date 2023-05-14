@@ -739,7 +739,7 @@ func functions( //nolint:funlen
 				Target: "/opt/project/functions/node_modules",
 			},
 		},
-		WorkingDir: new(string),
+		WorkingDir: nil,
 	}
 }
 
