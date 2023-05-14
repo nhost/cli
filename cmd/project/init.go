@@ -3,15 +3,14 @@ package project
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 
-	"github.com/creack/pty"
 	"github.com/hashicorp/go-getter"
+	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/clienv"
 	"github.com/nhost/cli/cmd/config"
+	"github.com/nhost/cli/v2/dockercompose"
 	"github.com/nhost/cli/v2/nhostclient/graphql"
 	"github.com/nhost/cli/v2/project"
 	"github.com/nhost/cli/v2/project/env"
@@ -172,92 +171,50 @@ func InitRemote(
 		"https://%s.hasura.%s.%s", proj.Subdomain, proj.Region.AwsName, ce.Domain(),
 	)
 
-	ce.Infoln("Creating postgres migration")
-	if err := createPostgresMigration(
-		ctx,
-		ce.Path.NhostFolder(),
-		*cfg.Hasura.Version,
-		hasuraEndpoint,
-		hasuraAdminSecret.App.Config.Hasura.AdminSecret,
-		"public",
+	if err := deploy(
+		ctx, ce, cfg, hasuraEndpoint, hasuraAdminSecret.App.Config.Hasura.AdminSecret,
 	); err != nil {
-		return fmt.Errorf("failed to create postgres migration: %w", err)
-	}
-
-	ce.Infoln("Downloading metadata")
-	if err := createMetada(
-		ctx, ce.Path.NhostFolder(),
-		*cfg.Hasura.Version,
-		hasuraEndpoint,
-		hasuraAdminSecret.App.Config.Hasura.AdminSecret,
-	); err != nil {
-		return fmt.Errorf("failed to create metadata: %w", err)
+		return fmt.Errorf("failed to deploy: %w", err)
 	}
 
 	ce.Infoln("Project initialized successfully!")
 	return nil
 }
 
-func createPostgresMigration(
-	ctx context.Context, nhostfolder, hasuraVersion, hasuraEndpoint, adminSecret, schema string,
+func deploy(
+	ctx context.Context,
+	ce *clienv.CliEnv,
+	cfg *model.ConfigConfig,
+	hasuraEndpoint string,
+	hasuraAdminSecret string,
 ) error {
-	cmd := exec.CommandContext( //nolint:gosec
+	docker := dockercompose.NewDocker()
+	ce.Infoln("Creating postgres migration")
+	if err := docker.HasuraWrapper(
 		ctx,
-		"docker", "run",
-		"-v", fmt.Sprintf("%s:/app", nhostfolder),
-		"-e", "HASURA_GRAPHQL_ENABLE_TELEMETRY=false",
-		"-w", "/app",
-		"-it", "--rm",
-		"--entrypoint", "hasura-cli",
-		fmt.Sprintf("hasura/graphql-engine:%s.cli-migrations-v3", hasuraVersion),
-		"--endpoint", hasuraEndpoint,
-		"--admin-secret", adminSecret,
-		"migrate", "create", "init", "--from-server", "--schema", schema,
+		ce.Path.NhostFolder(),
+		*cfg.Hasura.Version,
+		"migrate", "create", "init", "--from-server", "--schema", "public",
 		"--database-name", "default",
 		"--skip-update-check",
 		"--log-level", "ERROR",
-	)
-
-	f, err := pty.Start(cmd)
-	if err != nil {
-		return fmt.Errorf("failed to start pty: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := io.Copy(os.Stdout, f); err != nil {
-		return fmt.Errorf("failed to copy output: %w", err)
-	}
-
-	return nil
-}
-
-func createMetada(
-	ctx context.Context, nhostfolder, hasuraVersion, hasuraEndpoint, adminSecret string,
-) error {
-	cmd := exec.CommandContext( //nolint:gosec
-		ctx,
-		"docker", "run",
-		"-v", fmt.Sprintf("%s:/app", nhostfolder),
-		"-e", "HASURA_GRAPHQL_ENABLE_TELEMETRY=false",
-		"-w", "/app",
-		"-it", "--rm",
-		"--entrypoint", "hasura-cli",
-		fmt.Sprintf("hasura/graphql-engine:%s.cli-migrations-v3", hasuraVersion),
 		"--endpoint", hasuraEndpoint,
-		"--admin-secret", adminSecret,
+		"--admin-secret", hasuraAdminSecret,
+	); err != nil {
+		return fmt.Errorf("failed to create postgres migration: %w", err)
+	}
+
+	ce.Infoln("Downloading metadata")
+	if err := docker.HasuraWrapper(
+		ctx, ce.Path.NhostFolder(),
+		*cfg.Hasura.Version,
 		"metadata", "export",
 		"--skip-update-check",
 		"--log-level", "ERROR",
-	)
-
-	f, err := pty.Start(cmd)
-	if err != nil {
-		return fmt.Errorf("failed to start pty: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := io.Copy(os.Stdout, f); err != nil {
-		return fmt.Errorf("failed to copy output: %w", err)
+		"--endpoint", hasuraEndpoint,
+		"--admin-secret", hasuraAdminSecret,
+	); err != nil {
+		return fmt.Errorf("failed to create metadata: %w", err)
 	}
 
 	return nil
