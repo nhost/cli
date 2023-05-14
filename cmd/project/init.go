@@ -58,7 +58,7 @@ func commandInit(cCtx *cli.Context) error {
 	if err := Init(cCtx.Context, ce); err != nil {
 		return fmt.Errorf("failed to initialize project: %w", err)
 	}
-	ce.Infoln("Successfully initialized Nhost project, run `nhost dev` to start development")
+	ce.Infoln("Successfully initialized Nhost project, run `nhost dev up` to start development")
 	return nil
 }
 
@@ -122,7 +122,7 @@ func initFolders(fs *clienv.PathStructure) error {
 	folders := []string{
 		fs.DotNhostFolder(),
 		fs.FunctionsFolder(),
-		filepath.Join(fs.NhostFolder(), "migrations"),
+		filepath.Join(fs.NhostFolder(), "migrations", "default"),
 		filepath.Join(fs.NhostFolder(), "metadata"),
 		filepath.Join(fs.NhostFolder(), "seeds"),
 		filepath.Join(fs.NhostFolder(), "emails"),

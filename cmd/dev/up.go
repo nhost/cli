@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -119,25 +120,26 @@ func up(
 	}
 
 	ce.Infoln("Starting Nhost development environment...")
-
 	if err = dc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start Nhost development environment: %w", err)
 	}
 
-	ce.Infoln("Applying migrations...")
-	if err = dc.ApplyMigrations(ctx); err != nil {
-		return fmt.Errorf("failed to apply migrations: %w", err)
+	if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "migrations", "default")) {
+		ce.Infoln("Applying migrations...")
+		if err = dc.ApplyMigrations(ctx); err != nil {
+			return fmt.Errorf("failed to apply migrations: %w", err)
+		}
 	}
 
-	ce.Infoln("Applying metadata...")
-	if err = dc.ApplyMetadata(ctx); err != nil {
-		return fmt.Errorf("failed to apply metadata: %w", err)
+	if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "metadata", "version.yaml")) {
+		ce.Infoln("Applying metadata...")
+		if err = dc.ApplyMetadata(ctx); err != nil {
+			return fmt.Errorf("failed to apply metadata: %w", err)
+		}
 	}
 
 	ce.Infoln("Nhost development environment started.")
-
 	printInfo(ce, httpPort, useTLS)
-
 	ce.Println("")
 	ce.Println("Run `nhost dev up` to reload the development environment")
 	ce.Println("Run `nhost dev down` to stop the development environment")
