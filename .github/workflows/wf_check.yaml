@@ -27,7 +27,10 @@ jobs:
         nix_conf: |
           experimental-features = nix-command flakes
           sandbox = false
+          substituters = https://cache.nixos.org/?priority=40
           trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+          builders-use-substitutes = true
+          extra-platforms = aarch64-linux
 
     - name: Cache nix store
       uses: actions/cache@v3
