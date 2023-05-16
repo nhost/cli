@@ -11,6 +11,9 @@ on:
       VERSION:
         type: string
         required: true
+      ARCHS:
+        type: string
+        required: true
 
 jobs:
   artifacts:
