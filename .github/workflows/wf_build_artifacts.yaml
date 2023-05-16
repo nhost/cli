@@ -2,9 +2,6 @@
 on:
   workflow_call:
     inputs:
-      NAME:
-        type: string
-        required: true
       GIT_REF:
         type: string
         required: false
@@ -39,7 +36,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /nix
-        key: nix-build-${{ inputs.NAME }}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
+        key: nix-build-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
     - name: Compute common env vars
       id: vars
       run: |

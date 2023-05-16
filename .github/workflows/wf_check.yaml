@@ -2,9 +2,6 @@
 on:
   workflow_call:
     inputs:
-      NAME:
-        type: string
-        required: true
       GIT_REF:
         type: string
         required: false
@@ -36,7 +33,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /nix
-        key: nix-${{ inputs.NAME }}-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
+        key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
 
     - name: "Run checks"
       run: make check
