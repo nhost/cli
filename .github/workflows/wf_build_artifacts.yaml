@@ -8,6 +8,13 @@ on:
       VERSION:
         type: string
         required: true
+    secrets:
+      CERT_FULL_CHAIN:
+        type: string
+        required: true
+      CERT_PRIV_KEY:
+        type: string
+        required: true
 
 jobs:
   artifacts:
