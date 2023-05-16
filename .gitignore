@@ -42,3 +42,4 @@ generate-changelog.sh
 /.vscode
 letsencrypt/*
 result
+dist/

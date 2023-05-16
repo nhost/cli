@@ -11,18 +11,10 @@ on:
       VERSION:
         type: string
         required: true
-      ARCHS:
-        type: string
-        required: true
 
 jobs:
   artifacts:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        platform: ${{ fromJSON(inputs.ARCHS) }}
-      fail-fast: true
 
     steps:
     - name: "Check out repository"
@@ -47,11 +39,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /nix
-        key: nix-${{ inputs.NAME }}-${{ matrix.platform }}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
-
-    - uses: docker/setup-qemu-action@v2
-      if: ${{ ( matrix.platform == 'aarch64' ) }}
-
+        key: nix-${{ inputs.NAME }}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
     - name: Compute common env vars
       id: vars
       run: |
@@ -69,12 +57,11 @@ jobs:
 
     - name: "Build artifact"
       run: |
-        make build ARCH=${{ matrix.platform }}
-        zip -r result.zip result
+        nix develop -c goreleaser release --skip-validate
 
     - name: "Push artifact to artifact repository"
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ inputs.NAME }}-artifact-${{ matrix.platform }}-${{ steps.vars.outputs.VERSION }}
-        path: result/bin/cli
+        name: cli-${{ steps.vars.outputs.VERSION }}
+        path: dist/*
         retention-days: 7

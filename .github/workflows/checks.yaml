@@ -15,4 +15,3 @@ jobs:
     with:
       NAME: cli
       VERSION: ${{ github.sha }}
-      ARCHS: '["aarch64","x86_64"]'
