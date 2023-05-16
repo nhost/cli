@@ -37,7 +37,6 @@ jobs:
       with:
         path: /nix
         key: nix-${{ inputs.NAME }}-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
-        restore-keys: nix-${{ inputs.NAME }}-${{ runner.OS }}-main
 
     - name: "Run checks"
       run: make check

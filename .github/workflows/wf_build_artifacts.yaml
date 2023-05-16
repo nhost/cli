@@ -48,7 +48,6 @@ jobs:
       with:
         path: /nix
         key: nix-${{ inputs.NAME }}-${{ matrix.platform }}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
-        restore-keys: nix-${{ inputs.NAME }}-${{ runner.OS }}-main
 
     - uses: docker/setup-qemu-action@v2
       if: ${{ ( matrix.platform == 'aarch64' ) }}
@@ -77,5 +76,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.NAME }}-artifact-${{ matrix.platform }}-${{ steps.vars.outputs.VERSION }}
-        path: ${{ inputs.PROJECT }}/result/bin/cli
+        path: result/bin/cli
         retention-days: 7
