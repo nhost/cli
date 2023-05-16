@@ -41,3 +41,4 @@ generate-changelog.sh
 /.idea
 /.vscode
 letsencrypt/*
+result

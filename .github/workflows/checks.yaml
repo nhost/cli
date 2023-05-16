@@ -1,0 +1,23 @@
+---
+name: "check and build"
+on:
+  pull_request:
+  push:
+
+jobs:
+  tests:
+    uses: ./.github/workflows/wf_check.yaml
+    with:
+      NAME: cli
+    secrets:
+      GIT_TOKEN: ${{ secrets.NHOST_BUILD_USER_GIT_TOKEN }}
+
+  build_artifacts:
+    uses: ./.github/workflows/wf_build_artifacts.yaml
+    with:
+      NAME: cli
+      VERSION: ${{ github.sha }}
+      ARCHS: '["aarch64","x86_64"]'
+    secrets:
+      GIT_TOKEN: ${{ secrets.NHOST_BUILD_USER_GIT_TOKEN }}
+
