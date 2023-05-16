@@ -57,32 +57,33 @@ jobs:
 
     - name: "Build artifact"
       run: |
+        export GORELEASER_CURRENT_TAG=${{ steps.vars.outputs.VERSION }}
         nix develop .\#cibuild -c goreleaser release --skip-validate
 
     - name: "Push artifact to artifact repository"
       uses: actions/upload-artifact@v3
       with:
-        name: cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-darwin-arm64.tar.gz
-        path: dist/cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-darwin-arm64.tar.gz
+        name: cli-${{ steps.vars.outputs.VERSION }}-darwin-arm64.tar.gz
+        path: dist/cli-${{ steps.vars.outputs.VERSION }}-darwin-arm64.tar.gz
         retention-days: 7
 
     - name: "Push artifact to artifact repository"
       uses: actions/upload-artifact@v3
       with:
-        name: cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-darwin-amd64.tar.gz
-        path: dist/cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-darwin-amd64.tar.gz
+        name: cli-${{ steps.vars.outputs.VERSION }}-darwin-amd64.tar.gz
+        path: dist/cli-${{ steps.vars.outputs.VERSION }}-darwin-amd64.tar.gz
         retention-days: 7
 
     - name: "Push artifact to artifact repository"
       uses: actions/upload-artifact@v3
       with:
-        name: cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-linux-arm64.tar.gz
-        path: dist/cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-linux-arm64.tar.gz
+        name: cli-${{ steps.vars.outputs.VERSION }}-linux-arm64.tar.gz
+        path: dist/cli-${{ steps.vars.outputs.VERSION }}-linux-arm64.tar.gz
         retention-days: 7
 
     - name: "Push artifact to artifact repository"
       uses: actions/upload-artifact@v3
       with:
-        name: cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-linux-amd64.tar.gz
-        path: dist/cli-v0.0.0-${{ steps.vars.outputs.VERSION }}-linux-amd64.tar.gz
+        name: cli-${{ steps.vars.outputs.VERSION }}-linux-amd64.tar.gz
+        path: dist/cli-${{ steps.vars.outputs.VERSION }}-linux-amd64.tar.gz
         retention-days: 7
