@@ -19,7 +19,6 @@ jobs:
       with:
         fetch-depth: 0
         ref: ${{ inputs.GIT_REF }}
-        token: ${{ secrets.GIT_TOKEN }}
         submodules: true
 
     - uses: nixbuild/nix-quick-install-action@v22
