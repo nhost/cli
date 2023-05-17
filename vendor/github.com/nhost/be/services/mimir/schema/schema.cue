@@ -100,7 +100,7 @@ import (
 #Hasura: {
     // Version of hasura, you can see available versions in the URL below:
     // https://hub.docker.com/r/hasura/graphql-engine/tags
-	version: string | *"v2.25.0"
+	version: string | *"v2.25.0-ce"
 
     // JWT Secrets configuration
 	jwtSecrets: [#JWTSecret]
