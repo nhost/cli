@@ -189,7 +189,7 @@ import (
     // Releases:
     //
     // https://github.com/nhost/hasura-auth/releases
-	version: string | *"0.20.0"
+	version: string | *"0.20.1"
 
     // Resources for the service
 	resources?: #Resources
