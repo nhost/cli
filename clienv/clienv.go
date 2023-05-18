@@ -76,7 +76,7 @@ func (ce *CliEnv) Login(
 
 	dir := filepath.Dir(ce.Path.AuthFile())
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.MkdirAll(dir, 0755)
+		if err := os.MkdirAll(dir, 0o755); err != nil { //nolint:gomnd
 		if err != nil {
 			return credentials.Credentials{}, fmt.Errorf("failed to create dir: %w", err)
 		}
