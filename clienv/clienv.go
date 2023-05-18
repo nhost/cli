@@ -75,7 +75,6 @@ func (ce *CliEnv) Login(
 	ce.Infoln("Storing PAT for future user")
 
 	dir := filepath.Dir(ce.Path.AuthFile())
-	
 	if !PathExists(dir) {
 		if err := os.MkdirAll(dir, 0o755); err != nil { //nolint:gomnd
 			return credentials.Credentials{}, fmt.Errorf("failed to create dir: %w", err)
