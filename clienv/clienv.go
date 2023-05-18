@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/nhost/cli/nhostclient"
 	"github.com/nhost/cli/nhostclient/credentials"
@@ -71,6 +73,14 @@ func (ce *CliEnv) Login(
 	}
 	ce.Infoln("Successfully created PAT")
 	ce.Infoln("Storing PAT for future user")
+
+	dir := filepath.Dir(ce.Path.AuthFile())
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return credentials.Credentials{}, fmt.Errorf("failed to create dir: %w", err)
+		}
+	}
 
 	if err := MarshalFile(session, ce.Path.AuthFile(), json.Marshal); err != nil {
 		return credentials.Credentials{}, fmt.Errorf("failed to write PAT to file: %w", err)
