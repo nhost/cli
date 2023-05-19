@@ -25,8 +25,6 @@ func graphql(cfg *model.ConfigConfig, useTLS bool) (*Service, error) { //nolint:
 		env[v.Name] = v.Value
 	}
 
-	delete(env, "HASURA_GRAPHQL_CONSOLE_ASSETS_DIR")
-
 	return &Service{
 		Image: fmt.Sprintf("hasura/graphql-engine:%s", *cfg.GetHasura().GetVersion()),
 		DependsOn: map[string]DependsOn{
@@ -61,16 +59,9 @@ func graphql(cfg *model.ConfigConfig, useTLS bool) (*Service, error) { //nolint:
 				},
 			},
 			{
-				Name:    "hasurav1",
+				Name:    "hasura",
 				TLS:     useTLS,
-				Rule:    "PathPrefix(`/v1`) && Host(`local.hasura.nhost.run`)",
-				Port:    hasuraPort,
-				Rewrite: nil,
-			},
-			{
-				Name:    "hasurav2",
-				TLS:     useTLS,
-				Rule:    "PathPrefix(`/v2`) && Host(`local.hasura.nhost.run`)",
+				Rule:    "( PathPrefix(`/v1`) || PathPrefix(`/v2`) || PathPrefix(`/console/assets`) ) && Host(`local.hasura.nhost.run`)", //nolint:lll
 				Port:    hasuraPort,
 				Rewrite: nil,
 			},
@@ -101,7 +92,10 @@ func console( //nolint:funlen
 	}
 
 	return &Service{
-		Image: fmt.Sprintf("hasura/graphql-engine:%s.cli-migrations-v3", *cfg.GetHasura().GetVersion()),
+		Image: fmt.Sprintf(
+			"hasura/graphql-engine:%s.cli-migrations-v3",
+			*cfg.GetHasura().GetVersion(),
+		),
 		Command: []string{
 			"bash", "-c",
 			fmt.Sprintf(`

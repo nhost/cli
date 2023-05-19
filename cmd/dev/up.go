@@ -182,7 +182,10 @@ func up(
 
 func printInfo(ce *clienv.CliEnv, httpPort, postgresPort uint, useTLS bool) {
 	ce.Println("URLs:")
-	ce.Println("- Postgres:             postgres://postgres:postgres@localhost:%d/postgres", postgresPort)
+	ce.Println(
+		"- Postgres:             postgres://postgres:postgres@localhost:%d/postgres",
+		postgresPort,
+	)
 	ce.Println("- Hasura:               %s", dockercompose.URL("hasura", httpPort, useTLS))
 	ce.Println("- GraphQL:              %s", dockercompose.URL("graphql", httpPort, useTLS))
 	ce.Println("- Auth:                 %s", dockercompose.URL("auth", httpPort, useTLS))

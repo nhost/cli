@@ -22,6 +22,7 @@ func expectedGraphql() *Service {
 			"ENV2":                                                     "VALUE2",
 			"HASURA_GRAPHQL_ADMIN_INTERNAL_ERRORS":                     "true",
 			"HASURA_GRAPHQL_ADMIN_SECRET":                              "adminSecret",
+			"HASURA_GRAPHQL_CONSOLE_ASSETS_DIR":                        "/srv/console-assets",
 			"HASURA_GRAPHQL_CORS_DOMAIN":                               "http://*.localhost",
 			"HASURA_GRAPHQL_DATABASE_URL":                              "postgres://nhost_hasura@postgres:5432/postgres",
 			"HASURA_GRAPHQL_DEV_MODE":                                  "false",
@@ -79,17 +80,12 @@ func expectedGraphql() *Service {
 			"traefik.http.routers.graphql.rule":                                     "PathPrefix(`/v1`) && Host(`local.graphql.nhost.run`)",
 			"traefik.http.routers.graphql.service":                                  "graphql",
 			"traefik.http.routers.graphql.tls":                                      "false",
-			"traefik.http.routers.hasurav1.entrypoints":                             "web",
-			"traefik.http.routers.hasurav1.rule":                                    "PathPrefix(`/v1`) && Host(`local.hasura.nhost.run`)",
-			"traefik.http.routers.hasurav1.service":                                 "hasurav1",
-			"traefik.http.routers.hasurav1.tls":                                     "false",
-			"traefik.http.routers.hasurav2.entrypoints":                             "web",
-			"traefik.http.routers.hasurav2.rule":                                    "PathPrefix(`/v2`) && Host(`local.hasura.nhost.run`)",
-			"traefik.http.routers.hasurav2.service":                                 "hasurav2",
-			"traefik.http.routers.hasurav2.tls":                                     "false",
+			"traefik.http.routers.hasura.entrypoints":                               "web",
+			"traefik.http.routers.hasura.rule":                                      "( PathPrefix(`/v1`) || PathPrefix(`/v2`) || PathPrefix(`/console/assets`) ) && Host(`local.hasura.nhost.run`)",
+			"traefik.http.routers.hasura.service":                                   "hasura",
+			"traefik.http.routers.hasura.tls":                                       "false",
 			"traefik.http.services.graphql.loadbalancer.server.port":                "8080",
-			"traefik.http.services.hasurav1.loadbalancer.server.port":               "8080",
-			"traefik.http.services.hasurav2.loadbalancer.server.port":               "8080",
+			"traefik.http.services.hasura.loadbalancer.server.port":                 "8080",
 		},
 		Ports:      nil,
 		Restart:    "always",
@@ -132,7 +128,6 @@ func TestGraphql(t *testing.T) {
 	}
 }
 
-//nolint:lll
 func expectedConsole() *Service {
 	return &Service{
 		Image:     "hasura/graphql-engine:v2.25.0.cli-migrations-v3",
@@ -150,6 +145,7 @@ func expectedConsole() *Service {
                     --api-host http://local.hasura.nhost.run \
                     --console-hge-endpoint http://local.hasura.nhost.run:1337`,
 		},
+		EntryPoint: nil,
 		Environment: map[string]string{
 			"HASURA_GRAPHQL_ADMIN_SECRET": "adminSecret",
 			"HASURA_GRAPHQL_DATABASE_URL": "postgres://nhost_hasura@postgres:5432/postgres",
@@ -161,7 +157,10 @@ func expectedConsole() *Service {
 			"local.storage.nhost.run:host-gateway",
 		},
 		HealthCheck: &HealthCheck{
-			Test:        []string{"CMD-SHELL", "timeout 1s bash -c ':> /dev/tcp/127.0.0.1/9695' || exit 1"},
+			Test: []string{
+				"CMD-SHELL",
+				"timeout 1s bash -c ':> /dev/tcp/127.0.0.1/9695' || exit 1",
+			},
 			Interval:    "5s",
 			StartPeriod: "60s",
 		},
@@ -178,8 +177,11 @@ func expectedConsole() *Service {
 			"traefik.http.services.console.loadbalancer.server.port": "9695",
 			"traefik.http.services.migrate.loadbalancer.server.port": "1337",
 		},
-		Restart:    "always",
-		Volumes:    []Volume{{Type: "bind", Source: "/path/to/nhost", Target: "/app", ReadOnly: ptr(false)}},
+		Ports:   nil,
+		Restart: "always",
+		Volumes: []Volume{
+			{Type: "bind", Source: "/path/to/nhost", Target: "/app", ReadOnly: ptr(false)},
+		},
 		WorkingDir: ptr("/app"),
 	}
 }
