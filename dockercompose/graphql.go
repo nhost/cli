@@ -75,7 +75,7 @@ func graphql(cfg *model.ConfigConfig, useTLS bool) (*Service, error) { //nolint:
 
 func console( //nolint:funlen
 	cfg *model.ConfigConfig,
-	port uint,
+	httpPort uint,
 	useTLS bool,
 	nhostFolder string,
 ) (*Service, error) {
@@ -107,7 +107,7 @@ func console( //nolint:funlen
                     --console-port 9695 \
                     --api-port %d \
                     --api-host %s://local.hasura.nhost.run \
-                    --console-hge-endpoint %s`, port, scheme, URL("hasura", port, useTLS)),
+                    --console-hge-endpoint %s`, httpPort, scheme, URL("hasura", httpPort, useTLS)),
 		},
 		DependsOn: map[string]DependsOn{
 			"graphql": {Condition: "service_healthy"},
@@ -146,7 +146,7 @@ func console( //nolint:funlen
 				Name:    "migrate",
 				TLS:     useTLS,
 				Rule:    "PathPrefix(`/apis/`) && Host(`local.hasura.nhost.run`)",
-				Port:    migratePort,
+				Port:    httpPort,
 				Rewrite: nil,
 			},
 		}.Labels(),
