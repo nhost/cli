@@ -234,7 +234,7 @@ func minio(dataFolder string) (*Service, error) {
 	}, nil
 }
 
-func dashboard(cfg *model.ConfigConfig, useTLS bool) *Service {
+func dashboard(cfg *model.ConfigConfig, httpPort uint, useTLS bool) *Service {
 	return &Service{
 		Image:      "nhost/dashboard:0.16.11",
 		DependsOn:  nil,
@@ -242,13 +242,13 @@ func dashboard(cfg *model.ConfigConfig, useTLS bool) *Service {
 		Command:    nil,
 		Environment: map[string]string{
 			"NEXT_PUBLIC_NHOST_ADMIN_SECRET":              cfg.Hasura.AdminSecret,
-			"NEXT_PUBLIC_NHOST_AUTH_URL":                  "http://local.auth.nhost.run:1337/v1",
-			"NEXT_PUBLIC_NHOST_FUNCTIONS_URL":             "http://local.functions.nhost.run:1337/v1",
-			"NEXT_PUBLIC_NHOST_GRAPHQL_URL":               "http://local.graphql.nhost.run:1337/v1",
-			"NEXT_PUBLIC_NHOST_HASURA_API_URL":            "http://local.hasura.nhost.run:1337",
-			"NEXT_PUBLIC_NHOST_HASURA_CONSOLE_URL":        "http://local.hasura.nhost.run:1337/console",
-			"NEXT_PUBLIC_NHOST_HASURA_MIGRATIONS_API_URL": "http://local.hasura.nhost.run:1337",
-			"NEXT_PUBLIC_NHOST_STORAGE_URL":               "http://local.storage.nhost.run:1337/v1",
+			"NEXT_PUBLIC_NHOST_AUTH_URL":                  URL("auth", httpPort, useTLS) + "/v1",
+			"NEXT_PUBLIC_NHOST_FUNCTIONS_URL":             URL("functions", httpPort, useTLS) + "/v1",
+			"NEXT_PUBLIC_NHOST_GRAPHQL_URL":               URL("graphql", httpPort, useTLS) + "/v1",
+			"NEXT_PUBLIC_NHOST_HASURA_API_URL":            URL("hasura", httpPort, useTLS),
+			"NEXT_PUBLIC_NHOST_HASURA_CONSOLE_URL":        URL("hasura", httpPort, useTLS) + "/console",
+			"NEXT_PUBLIC_NHOST_HASURA_MIGRATIONS_API_URL": URL("hasura", httpPort, useTLS),
+			"NEXT_PUBLIC_NHOST_STORAGE_URL":               URL("storage", httpPort, useTLS) + "/v1",
 		},
 		ExtraHosts:  extraHosts(),
 		HealthCheck: nil,
@@ -389,7 +389,7 @@ func mailhog(dataFolder string) (*Service, error) {
 func ComposeFileFromConfig( //nolint:funlen
 	cfg *model.ConfigConfig,
 	projectName string,
-	port uint,
+	httpPort uint,
 	useTLS bool,
 	postgresPort uint,
 	dataFolder string,
@@ -407,7 +407,7 @@ func ComposeFileFromConfig( //nolint:funlen
 		return nil, err
 	}
 
-	storage, err := storage(cfg, useTLS, port)
+	storage, err := storage(cfg, useTLS, httpPort)
 	if err != nil {
 		return nil, err
 	}
@@ -422,12 +422,12 @@ func ComposeFileFromConfig( //nolint:funlen
 		return nil, err
 	}
 
-	console, err := console(cfg, port, useTLS, nhostFolder)
+	console, err := console(cfg, httpPort, useTLS, nhostFolder)
 	if err != nil {
 		return nil, err
 	}
 
-	traefik, err := traefik(projectName, port, dotNhostFolder)
+	traefik, err := traefik(projectName, httpPort, dotNhostFolder)
 	if err != nil {
 		return nil, err
 	}
@@ -442,7 +442,7 @@ func ComposeFileFromConfig( //nolint:funlen
 		Services: map[string]*Service{
 			"auth":      auth,
 			"console":   console,
-			"dashboard": dashboard(cfg, useTLS),
+			"dashboard": dashboard(cfg, httpPort, useTLS),
 			"functions": functions(cfg, useTLS, rootFolder),
 			"graphql":   graphql,
 			"minio":     minio,

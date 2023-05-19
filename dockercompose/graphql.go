@@ -86,9 +86,9 @@ func console( //nolint:funlen
 		)
 	}
 
-	hgeURL := fmt.Sprintf("http://local.hasura.nhost.run:%d", port)
+	scheme := "http"
 	if useTLS {
-		hgeURL = fmt.Sprintf("https://local.hasura.nhost.run:%d", port)
+		scheme = "https"
 	}
 
 	return &Service{
@@ -106,8 +106,8 @@ func console( //nolint:funlen
                     --address 0.0.0.0 \
                     --console-port 9695 \
                     --api-port %d \
-                    --api-host http://local.hasura.nhost.run \
-                    --console-hge-endpoint %s`, port, hgeURL),
+                    --api-host %s://local.hasura.nhost.run \
+                    --console-hge-endpoint %s`, port, scheme, URL("hasura", port, useTLS)),
 		},
 		DependsOn: map[string]DependsOn{
 			"graphql": {Condition: "service_healthy"},
