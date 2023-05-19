@@ -7,11 +7,11 @@ import (
 	"github.com/nhost/be/services/mimir/schema/appconfig"
 )
 
-func auth(
+func auth( //nolint:funlen
 	cfg *model.ConfigConfig,
 	useTLS bool,
 	nhostFolder string,
-) (*Service, error) { //nolint:funlen
+) (*Service, error) {
 	envars, err := appconfig.HasuraAuthEnv(
 		cfg,
 		"http://graphql:8080/v1/graphql",
