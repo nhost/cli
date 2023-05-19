@@ -346,7 +346,7 @@ func functions( //nolint:funlen
 	}
 }
 
-func mailhog(dataFolder string) (*Service, error) {
+func mailhog(dataFolder string, useTLS bool) (*Service, error) {
 	mailhogDataFolder := filepath.Join(dataFolder, "mailhog")
 	if err := os.MkdirAll(mailhogDataFolder, 0o755); err != nil { //nolint:gomnd
 		return nil, fmt.Errorf("failed to create mailhog folder: %w", err)
@@ -370,7 +370,7 @@ func mailhog(dataFolder string) (*Service, error) {
 		Labels: Ingresses{
 			{
 				Name: "mailhog",
-				TLS:  false,
+				TLS:  useTLS,
 				Rule: "Host(`local.mailhog.nhost.run`)",
 				Port: mailhogPort,
 				// Rewrite: &Rewrite{
@@ -439,7 +439,7 @@ func ComposeFileFromConfig( //nolint:funlen
 		return nil, err
 	}
 
-	mailhog, err := mailhog(dataFolder)
+	mailhog, err := mailhog(dataFolder, useTLS)
 	if err != nil {
 		return nil, err
 	}
