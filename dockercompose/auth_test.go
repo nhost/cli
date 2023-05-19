@@ -90,7 +90,7 @@ func expectedAuth() *Service {
 			"AUTH_PROVIDER_WORKOS_DEFAULT_ORGANIZATION": "workosOrganization",
 			"AUTH_PROVIDER_WORKOS_ENABLED":              "true",
 			"AUTH_REFRESH_TOKEN_EXPIRES_IN":             "99",
-			"AUTH_SERVER_URL":                           "http://auth:4000",
+			"AUTH_SERVER_URL":                           "http://local.auth.nhost.run:1336/v1",
 			"AUTH_SMS_PASSWORDLESS_ENABLED":             "true",
 			"AUTH_SMS_PROVIDER":                         "twilio",
 			"AUTH_SMS_TWILIO_ACCOUNT_SID":               "smsAccountSid",
@@ -169,7 +169,7 @@ func TestAuth(t *testing.T) {
 			t.Parallel()
 			tc := tc
 
-			got, err := auth(tc.cfg(), tc.useTlS, "/tmp/nhost")
+			got, err := auth(tc.cfg(), 1336, tc.useTlS, "/tmp/nhost")
 			if err != nil {
 				t.Errorf("got error: %v", err)
 			}

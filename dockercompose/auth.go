@@ -9,13 +9,14 @@ import (
 
 func auth( //nolint:funlen
 	cfg *model.ConfigConfig,
+	httpPort uint,
 	useTLS bool,
 	nhostFolder string,
 ) (*Service, error) {
 	envars, err := appconfig.HasuraAuthEnv(
 		cfg,
 		"http://graphql:8080/v1/graphql",
-		"http://auth:4000",
+		URL("auth", httpPort, useTLS)+"/v1",
 		"postgres://nhost_auth_admin@postgres:5432/postgres",
 		&model.ConfigSmtp{
 			User:     "user",

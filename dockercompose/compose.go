@@ -409,7 +409,7 @@ func ComposeFileFromConfig( //nolint:funlen
 		return nil, err
 	}
 
-	auth, err := auth(cfg, useTLS, nhostFolder)
+	auth, err := auth(cfg, httpPort, useTLS, nhostFolder)
 	if err != nil {
 		return nil, err
 	}
