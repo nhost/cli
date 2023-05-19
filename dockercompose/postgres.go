@@ -35,7 +35,7 @@ func postgres( //nolint:funlen
 		"postgres",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get hasura env vars: %w", err)
+		return nil, fmt.Errorf("failed to get postgres env vars: %w", err)
 	}
 
 	env := make(map[string]string, len(envars))
