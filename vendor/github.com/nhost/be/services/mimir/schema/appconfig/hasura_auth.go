@@ -386,8 +386,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_GITHUB_CLIENT_SECRET",
 				SecretName: secretHasuraAuthGithubClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetGithub().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetGithub().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 		}...)
 	}
@@ -423,8 +425,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_GOOGLE_CLIENT_SECRET",
 				SecretName: secretHasuraAuthGoogleClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetGoogle().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetGoogle().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_GOOGLE_SCOPE",
@@ -472,8 +476,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_FACEBOOK_CLIENT_SECRET",
 				SecretName: secretHasuraAuthFacebookClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetFacebook().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetFacebook().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_FACEBOOK_SCOPE",
@@ -521,8 +527,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_SPOTIFY_CLIENT_SECRET",
 				SecretName: secretHasuraAuthSpotifyClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetSpotify().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetSpotify().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_SPOTIFY_SCOPE",
@@ -569,8 +577,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_LINKEDIN_CLIENT_SECRET",
 				SecretName: secretHasuraAuthLinkedinClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetLinkedin().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetLinkedin().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_LINKEDIN_SCOPE",
@@ -617,8 +627,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_DISCORD_CLIENT_SECRET",
 				SecretName: secretHasuraAuthDiscordClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetDiscord().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetDiscord().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_DISCORD_SCOPE",
@@ -665,8 +677,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_TWITCH_CLIENT_SECRET",
 				SecretName: secretHasuraAuthTwitchClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetTwitch().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetTwitch().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_TWITCH_SCOPE",
@@ -718,8 +732,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_WINDOWS_LIVE_CLIENT_SECRET",
 				SecretName: secretHasuraAuthWindowsLiveClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetWindowslive().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetWindowslive().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_WINDOWS_LIVE_SCOPE",
@@ -766,8 +782,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_WORKOS_CLIENT_SECRET",
 				SecretName: secretHasuraAuthWorkOsClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetWorkos().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetWorkos().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_WORKOS_DEFAULT_ORGANIZATION",
@@ -826,8 +844,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_TWITTER_CONSUMER_SECRET",
 				SecretName: secretHasuraAuthTwitterConsumerSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetTwitter().GetConsumerSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetTwitter().GetConsumerSecret(),
+				),
+				IsSecret: true,
 			},
 		}...)
 	}
@@ -880,8 +900,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_APPLE_PRIVATE_KEY",
 				SecretName: secretHasuraAuthApplePrivateKey,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetApple().GetPrivateKey()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetApple().GetPrivateKey(),
+				),
+				IsSecret: true,
 			},
 		}...)
 	}
@@ -917,8 +939,10 @@ func HasuraAuthEnv( //nolint:funlen,cyclop,maintidx
 			{
 				Name:       "AUTH_PROVIDER_AZUREAD_CLIENT_SECRET",
 				SecretName: secretHasuraAuthAzureADClientSecret,
-				Value:      unptr(config.GetAuth().GetMethod().GetOauth().GetAzuread().GetClientSecret()),
-				IsSecret:   true,
+				Value: unptr(
+					config.GetAuth().GetMethod().GetOauth().GetAzuread().GetClientSecret(),
+				),
+				IsSecret: true,
 			},
 			{
 				Name: "AUTH_PROVIDER_AZUREAD_TENANT",
