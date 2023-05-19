@@ -21,7 +21,7 @@ func storage(cfg *model.ConfigConfig, useTLS bool, httpPort uint) (*Service, err
 		"minioaccesskey123123",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get hasura env vars: %w", err)
+		return nil, fmt.Errorf("failed to get storage env vars: %w", err)
 	}
 
 	env := make(map[string]string, len(envars))
