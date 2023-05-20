@@ -52,9 +52,12 @@ func expectedConfig() *model.ConfigConfig {
 		},
 		Functions: &model.ConfigFunctions{Node: &model.ConfigFunctionsNode{Version: ptr(16)}},
 		Auth: &model.ConfigAuth{
-			Version:      ptr("0.20.0"),
-			Redirections: &model.ConfigAuthRedirections{ClientUrl: ptr("http://localhost:3000"), AllowedUrls: []string{}},
-			SignUp:       &model.ConfigAuthSignUp{Enabled: ptr(true)},
+			Version: ptr("0.20.0"),
+			Redirections: &model.ConfigAuthRedirections{
+				ClientUrl:   ptr("http://localhost:3000"),
+				AllowedUrls: []string{},
+			},
+			SignUp: &model.ConfigAuthSignUp{Enabled: ptr(true)},
 			User: &model.ConfigAuthUser{
 				Roles: &model.ConfigAuthUserRoles{
 					Default: ptr("user"),
@@ -160,10 +163,12 @@ func expectedConfig() *model.ConfigConfig {
 			},
 			Totp: &model.ConfigAuthTotp{Enabled: ptr(false)},
 		},
-		Postgres:      &model.ConfigPostgres{Version: ptr("14.6-20230406-2")},
-		Provider:      &model.ConfigProvider{},
-		Storage:       &model.ConfigStorage{Version: ptr("0.3.4")},
-		Observability: &model.ConfigObservability{Grafana: &model.ConfigGrafana{AdminPassword: "grafana-admin-password"}},
+		Postgres: &model.ConfigPostgres{Version: ptr("14.6-20230406-2")},
+		Provider: &model.ConfigProvider{},
+		Storage:  &model.ConfigStorage{Version: ptr("0.3.4")},
+		Observability: &model.ConfigObservability{
+			Grafana: &model.ConfigGrafana{AdminPassword: "grafana-admin-password"},
+		},
 	}
 }
 
