@@ -10,7 +10,7 @@ import (
 	"os/exec"
 
 	"github.com/creack/pty"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type DockerCompose struct {

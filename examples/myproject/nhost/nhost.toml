@@ -1,4 +1,7 @@
 [global]
+[[global.environment]]
+name = 'ENVIRONMENT'
+value = 'production'
 
 [hasura]
 version = 'v2.25.1-ce'
@@ -31,7 +34,7 @@ version = 16
 version = '0.20.1'
 
 [auth.redirections]
-clientUrl = 'http://localhost:3000'
+clientUrl = 'https://my.app.com'
 
 [auth.signUp]
 enabled = true
@@ -78,7 +81,11 @@ enabled = false
 
 [auth.method.oauth]
 [auth.method.oauth.apple]
-enabled = false
+enabled = true
+clientId = '{{ secrets.APPLE_CLIENT_ID }}'
+keyId = '{{ secrets.APPLE_KEY_ID }}'
+teamId = '{{ secrets.APPLE_TEAM_ID }}'
+privateKey = '{{ secrets.APPLE_PRIVATE_KEY }}'
 
 [auth.method.oauth.azuread]
 tenant = 'common'

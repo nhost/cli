@@ -14,7 +14,7 @@ import (
 	"github.com/nhost/cli/nhostclient/graphql"
 	"github.com/nhost/cli/system"
 	"github.com/urfave/cli/v2"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
