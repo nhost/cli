@@ -30,7 +30,7 @@ func CommandShow() *cli.Command {
 }
 
 func commandShow(c *cli.Context) error {
-	ce := clienv.New(c)
+	ce := clienv.FromCLI(c)
 
 	cfg, err := Validate(ce, !c.Bool(flagSkipPatches))
 	if err != nil {

@@ -41,7 +41,7 @@ func CommandInit() *cli.Command {
 }
 
 func commandInit(cCtx *cli.Context) error {
-	ce := clienv.New(cCtx)
+	ce := clienv.FromCLI(cCtx)
 
 	if clienv.PathExists(ce.Path.NhostFolder()) {
 		return fmt.Errorf("nhost folder already exists") //nolint:goerr113

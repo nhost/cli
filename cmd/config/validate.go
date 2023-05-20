@@ -39,7 +39,7 @@ func CommandValidate() *cli.Command {
 }
 
 func commandValidate(cCtx *cli.Context) error {
-	ce := clienv.New(cCtx)
+	ce := clienv.FromCLI(cCtx)
 
 	if cCtx.Bool(flagRemote) {
 		return ValidateRemote(
