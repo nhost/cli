@@ -1,0 +1,8 @@
+1. Import existing project (done)
+2. Synch configuration (done)
+3. Manage secrets (already in nhost.toml)
+4. Configure versions (already in nhost.toml but needs updating for new cli)
+5. Validate configuration (already in nhost.toml but needs updating for new cli)
+6. Troubleshooting issues (done)
+7. Override settings locally (TBD when merging #679)
+8. Multiple projects simultaneously (done)

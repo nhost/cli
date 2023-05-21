@@ -26,6 +26,7 @@ func main() {
 
 	app := &cli.App{ //nolint: exhaustruct
 		Name:                 "nhost",
+		Usage:                "nhost <command> [flags]",
 		EnableBashCompletion: true,
 		Version:              Version,
 		Description:          "Nhost CLI tool",
