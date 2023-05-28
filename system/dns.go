@@ -6,9 +6,13 @@ import (
 	"strings"
 )
 
-//nolint:lll
 const dnsLine = `# Start of Nhost CLI configuration
-127.0.0.1 local.auth.nhost.run local.db.nhost.run local.functions.nhost.run local.graphql.nhost.run local.hasura.nhost.run local.storage.nhost.run
+127.0.0.1 local.auth.nhost.run
+127.0.0.1 local.db.nhost.run
+127.0.0.1 local.functions.nhost.run
+127.0.0.1 local.graphql.nhost.run
+127.0.0.1 local.hasura.nhost.run
+127.0.0.1 local.storage.nhost.run
 # End of Nhost CLI configuration
 `
 
