@@ -60,6 +60,24 @@ func (ce *CliEnv) Login(
 ) (credentials.Credentials, error) {
 	cl := ce.GetNhostClient()
 
+	var err error
+	if email == "" {
+		ce.PromptMessage("email: ")
+		email, err = ce.PromptInput(false)
+		if err != nil {
+			return credentials.Credentials{}, fmt.Errorf("failed to read email: %w", err)
+		}
+	}
+
+	if password == "" {
+		ce.PromptMessage("password: ")
+		password, err = ce.PromptInput(true)
+		ce.Println("")
+		if err != nil {
+			return credentials.Credentials{}, fmt.Errorf("failed to read password: %w", err)
+		}
+	}
+
 	ce.Infoln("Authenticating")
 	loginResp, err := cl.Login(ctx, email, password)
 	if err != nil {

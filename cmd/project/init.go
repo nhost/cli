@@ -131,7 +131,7 @@ func InitRemote(
 	ctx context.Context,
 	ce *clienv.CliEnv,
 ) error {
-	proj, err := ce.GetAppInfo()
+	proj, err := ce.GetAppInfo(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get app info: %w", err)
 	}
