@@ -14,6 +14,7 @@ import (
 	"github.com/nhost/cli/cmd/config"
 	"github.com/nhost/cli/dockercompose"
 	"github.com/nhost/cli/project/env"
+	"github.com/nhost/cli/system"
 	"github.com/urfave/cli/v2"
 )
 
@@ -201,6 +202,19 @@ func printInfo(ce *clienv.CliEnv, httpPort, postgresPort uint, useTLS bool) {
 	ce.Println("Run `nhost dev up` to reload the development environment")
 	ce.Println("Run `nhost dev down` to stop the development environment")
 	ce.Println("Run `nhost dev logs` to watch the logs")
+
+	etcHosts := filepath.Join("/", "etc", "hosts")
+	f, err := os.OpenFile(etcHosts, os.O_RDONLY, 0o644) //nolint:gomnd
+	if err != nil {
+		ce.Warnln("failed to validate DNS configuration, try running `sudo nhost sw fix-dns")
+		return
+	}
+	defer f.Close()
+
+	if !system.DNSPresent(f) {
+		ce.Println("")
+		ce.Warnln("DNS Configuration not present, we recommend running `sudo nhost sw fix-dns`")
+	}
 }
 
 func Up(

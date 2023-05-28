@@ -12,6 +12,7 @@ func Command() *cli.Command {
 		Aliases: []string{},
 		Usage:   "Perform software management operations",
 		Subcommands: []*cli.Command{
+			CommandDNS(),
 			CommandUninstall(),
 			CommandUpgrade(),
 			CommandVersion(),
