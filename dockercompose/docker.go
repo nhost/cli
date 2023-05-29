@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"errors"
+	"io/fs"
 
 	"github.com/creack/pty"
 )
@@ -52,8 +54,15 @@ func (d *Docker) HasuraWrapper(
 	}
 	defer f.Close()
 
-	if _, err := io.Copy(os.Stdout, f); err != nil {
-		return fmt.Errorf("failed to copy output: %w", err)
+	if n, err := io.Copy(os.Stdout, f); err != nil {
+		var pathError *fs.PathError
+		switch {
+		case errors.As(err, &pathError) && n > 0 && pathError.Op == "read":
+			// linux pty returns an error when the process exits
+			return nil
+		default:
+			return fmt.Errorf("failed to copy pty output: %w", err)
+		}
 	}
 
 	return nil
