@@ -2,12 +2,12 @@ package dockercompose
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
-	"errors"
-	"io/fs"
 
 	"github.com/creack/pty"
 )
@@ -64,6 +64,5 @@ func (d *Docker) HasuraWrapper(
 			return fmt.Errorf("failed to copy pty output: %w", err)
 		}
 	}
-
 	return nil
 }
