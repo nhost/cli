@@ -112,7 +112,7 @@ func (ce *CliEnv) Link(ctx context.Context) (*graphql.GetWorkspacesApps_Workspac
 		return nil, err
 	}
 
-	ce.PromptMessage("Select # the workspace to link: ")
+	ce.PromptMessage("Select the workspace # to link: ")
 	idx, err := ce.PromptInput(false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read workspace: %w", err)
