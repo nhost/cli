@@ -89,7 +89,12 @@ func commandUp(cCtx *cli.Context) error {
 	)
 }
 
-func migrations(ctx context.Context, ce *clienv.CliEnv, dc *dockercompose.DockerCompose, applySeeds bool) error {
+func migrations(
+	ctx context.Context,
+	ce *clienv.CliEnv,
+	dc *dockercompose.DockerCompose,
+	applySeeds bool,
+) error {
 	if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "migrations", "default")) {
 		ce.Infoln("Applying migrations...")
 		if err := dc.ApplyMigrations(ctx); err != nil {
