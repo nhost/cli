@@ -57,7 +57,7 @@ func (d *Docker) HasuraWrapper(
 	if n, err := io.Copy(os.Stdout, f); err != nil {
 		var pathError *fs.PathError
 		switch {
-		case errors.As(err, &pathError) && n > 0 && pathError.Op == "read":
+		case errors.As(err, &pathError) && n > 0 && pathError.Op == op:
 			// linux pty returns an error when the process exits
 			return nil
 		default:
