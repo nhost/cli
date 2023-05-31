@@ -126,7 +126,7 @@ func restart(
 	ce *clienv.CliEnv,
 	dc *dockercompose.DockerCompose,
 ) error {
-	ce.Infoln("Restarting services to reapply new metadata...")
+	ce.Infoln("Restarting services to reapply metadata if needed...")
 	if err := dc.Wrapper(ctx, "restart", "auth", "storage", "functions"); err != nil {
 		return fmt.Errorf("failed to restart services: %w", err)
 	}
