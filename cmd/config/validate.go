@@ -45,20 +45,25 @@ func commandValidate(cCtx *cli.Context) error {
 		return ValidateRemote(
 			cCtx.Context,
 			ce,
+			true,
 		)
 	}
 
 	ce.Infoln("Verifying configuration...")
-	if _, err := Validate(ce, true); err != nil {
+	if _, err := Validate(ce, true, "local"); err != nil {
 		return err
 	}
 	ce.Infoln("Configuration is valid!")
 	return nil
 }
 
-func applyJSONPatches(ce *clienv.CliEnv, cfg *model.ConfigConfig) (*model.ConfigConfig, error) {
+func applyJSONPatches(
+	ce *clienv.CliEnv,
+	cfg *model.ConfigConfig,
+	subdomain string,
+) (*model.ConfigConfig, error) {
 	var y any
-	if err := clienv.UnmarshalFile(ce.Path.JSONPatches(), &y, yaml.Unmarshal); err != nil {
+	if err := clienv.UnmarshalFile(ce.Path.JSONPatches(subdomain), &y, yaml.Unmarshal); err != nil {
 		return nil, fmt.Errorf("failed to parse json patches: %w", err)
 	}
 
@@ -90,7 +95,7 @@ func applyJSONPatches(ce *clienv.CliEnv, cfg *model.ConfigConfig) (*model.Config
 	return cfg, nil
 }
 
-func Validate(ce *clienv.CliEnv, applyPatches bool) (*model.ConfigConfig, error) {
+func Validate(ce *clienv.CliEnv, applyPatches bool, subdomain string) (*model.ConfigConfig, error) {
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := clienv.UnmarshalFile(ce.Path.NhostToml(), cfg, toml.Unmarshal); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -101,9 +106,9 @@ func Validate(ce *clienv.CliEnv, applyPatches bool) (*model.ConfigConfig, error)
 		return nil, fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
-	if applyPatches && clienv.PathExists(ce.Path.JSONPatches()) {
+	if applyPatches && clienv.PathExists(ce.Path.JSONPatches(subdomain)) {
 		var err error
-		cfg, err = applyJSONPatches(ce, cfg)
+		cfg, err = applyJSONPatches(ce, cfg, subdomain)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply json patches: %w", err)
 		}
@@ -125,6 +130,7 @@ func Validate(ce *clienv.CliEnv, applyPatches bool) (*model.ConfigConfig, error)
 func ValidateRemote(
 	ctx context.Context,
 	ce *clienv.CliEnv,
+	applyPatches bool,
 ) error {
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := clienv.UnmarshalFile(ce.Path.NhostToml(), cfg, toml.Unmarshal); err != nil {
@@ -155,6 +161,14 @@ func ValidateRemote(
 	)
 	if err != nil {
 		return fmt.Errorf("failed to get secrets: %w", err)
+	}
+
+	if applyPatches && clienv.PathExists(ce.Path.JSONPatches(proj.GetSubdomain())) {
+		var err error
+		cfg, err = applyJSONPatches(ce, cfg, proj.GetSubdomain())
+		if err != nil {
+			return fmt.Errorf("failed to apply json patches: %w", err)
+		}
 	}
 
 	_, err = appconfig.Config(schema, cfg, respToSecrets(secrets.GetAppSecrets(), false))

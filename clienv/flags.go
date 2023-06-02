@@ -11,6 +11,7 @@ import (
 
 const (
 	flagDomain         = "domain"
+	flagSubdomain      = "subdomain"
 	flagProjectName    = "project-name"
 	flagRootFolder     = "root-folder"
 	flagDataFolder     = "data-folder"
@@ -50,6 +51,11 @@ func Flags() ([]cli.Flag, error) {
 			EnvVars: []string{"NHOST_DOMAIN"},
 			Value:   "nhost.run",
 			Hidden:  true,
+		},
+		&cli.StringFlag{ //nolint:exhaustruct
+			Name:    flagSubdomain,
+			Usage:   "For commands that operate on cloud projects, this is the subdomain of the project. If not specified, the subdomain will default to the value of the project linked", //nolint:lll
+			EnvVars: []string{"NHOST_SUBDOMAIN"},
 		},
 		&cli.StringFlag{ //nolint:exhaustruct
 			Name:     flagRootFolder,

@@ -236,10 +236,11 @@ func TestValidate(t *testing.T) {
 					filepath.Join("testdata", "validate", tc.path, "nhost"),
 				),
 				"fakedomain",
+				"",
 				"fakeproject",
 			)
 
-			cfg, err := config.Validate(ce, tc.applyPatches)
+			cfg, err := config.Validate(ce, tc.applyPatches, "local")
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -10,20 +10,28 @@ import (
 
 const (
 	flagSkipPatches = "skip-patches"
+	flagOverlay     = "overlay"
 )
 
 func CommandShow() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
-		Name:    "show",
-		Aliases: []string{},
-		Usage:   "Shows configuration after applying jsonpatches and resolving secrets",
-		Action:  commandShow,
+		Name:        "show",
+		Aliases:     []string{},
+		Usage:       "Shows configuration after applying jsonpatches and resolving secrets",
+		Description: "Note that this command will always use the local secrets, even if you specify the overlay for a cloud project.", //nolint:lll
+		Action:      commandShow,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{ //nolint:exhaustruct
 				Name:    flagSkipPatches,
 				Usage:   "Skip applying jsonpatches",
 				Value:   false,
 				EnvVars: []string{"NHOST_SKIP_PATCHES"},
+			},
+			&cli.StringFlag{ //nolint:exhaustruct
+				Name:    flagOverlay,
+				Usage:   "Overaly to use",
+				Value:   "local",
+				EnvVars: []string{"NHOST_OVERLAY"},
 			},
 		},
 	}
@@ -32,7 +40,7 @@ func CommandShow() *cli.Command {
 func commandShow(c *cli.Context) error {
 	ce := clienv.FromCLI(c)
 
-	cfg, err := Validate(ce, !c.Bool(flagSkipPatches))
+	cfg, err := Validate(ce, !c.Bool(flagSkipPatches), c.String(flagOverlay))
 	if err != nil {
 		return err
 	}
