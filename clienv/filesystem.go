@@ -53,8 +53,8 @@ func (p PathStructure) NhostToml() string {
 	return filepath.Join(p.nhostFolder, "nhost.toml")
 }
 
-func (p PathStructure) JSONPatches() string {
-	return filepath.Join(p.nhostFolder, "overlays", "local.yaml")
+func (p PathStructure) JSONPatches(subdomain string) string {
+	return filepath.Join(p.nhostFolder, "overlays", subdomain+".yaml")
 }
 
 func (p PathStructure) Secrets() string {

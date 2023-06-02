@@ -31,7 +31,7 @@ httpPoolSize = 100
 version = 16
 
 [auth]
-version = '0.20.1'
+version = '0.19.3'
 
 [auth.redirections]
 clientUrl = 'https://my.app.com'
