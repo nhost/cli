@@ -1,12 +1,12 @@
 [
   {
     "op": "replace",
-    "path": "/auth/redirections/clientUrl",
-    "value": "https://staging.app.io"
+    "path": "/global/environment/2/value",
+    "value": "staging"
   },
   {
     "op": "replace",
-    "path": "/global/environment/2/value",
-    "value": "staging"
+    "path": "/hasura/version",
+    "value": "v2.25.0-ce"
   }
 ]
