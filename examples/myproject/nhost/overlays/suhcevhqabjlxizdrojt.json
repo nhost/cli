@@ -1,0 +1,12 @@
+[
+  {
+    "op": "replace",
+    "path": "/auth/redirections/clientUrl",
+    "value": "https://staging.app.io"
+  },
+  {
+    "op": "replace",
+    "path": "/global/environment/2/value",
+    "value": "staging"
+  }
+]

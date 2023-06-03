@@ -54,7 +54,7 @@ func (p PathStructure) NhostToml() string {
 }
 
 func (p PathStructure) JSONPatches(subdomain string) string {
-	return filepath.Join(p.nhostFolder, "overlays", subdomain+".yaml")
+	return filepath.Join(p.nhostFolder, "overlays", subdomain+".json")
 }
 
 func (p PathStructure) Secrets() string {
