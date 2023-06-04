@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 
 	jsonpatch "github.com/mattbaird/jsonpatch"
 	"github.com/nhost/be/services/mimir/model"
@@ -20,17 +21,16 @@ const (
 	flagEditor = "editor"
 )
 
-func CommandGenerateJSONPatch() *cli.Command {
+func CommandEdit() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
-		Name:    "generate-json-patch",
+		Name:    "edit",
 		Aliases: []string{},
-		Usage:   "Edit configuration and generate json patch",
-		Action:  commandGenerateJSONPatch,
+		Usage:   "EXPERIMENTAL. Edit configuration, if an overlay is specify edit and generate jsonpatch",
+		Action:  edit,
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:    flagOverlay,
-				Usage:   "Overaly to use",
-				Value:   "local",
+				Usage:   "Overlay to use",
 				EnvVars: []string{"NHOST_OVERLAY"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
@@ -128,6 +128,10 @@ func generateJSONPatch(origfilepath, newfilepath, dst string) error {
 	}
 	defer dstf.Close()
 
+	sort.Slice(patches, func(i, j int) bool {
+		return patches[i].Path < patches[j].Path
+	})
+
 	dstb, err := json.MarshalIndent(patches, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to prettify json: %w", err)
@@ -140,7 +144,7 @@ func generateJSONPatch(origfilepath, newfilepath, dst string) error {
 	return nil
 }
 
-func commandGenerateJSONPatch(cCtx *cli.Context) error {
+func edit(cCtx *cli.Context) error {
 	ce := clienv.FromCLI(cCtx)
 
 	tmpdir, err := os.MkdirTemp(os.TempDir(), "nhost-jsonpatch")
