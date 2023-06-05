@@ -5,13 +5,16 @@
     "value": "https://staging.app.io"
   },
   {
-    "op": "replace",
-    "path": "/global/environment/2/value",
-    "value": "staging"
+    "op": "add",
+    "path": "/global/environment/2",
+    "value": {
+      "name": "ENVIRONMENT",
+      "value": "staging"
+    }
   },
   {
     "op": "replace",
-    "path": "/hasura/version",
-    "value": "v2.25.0-ce"
+    "path": "/hasura/settings/enableRemoteSchemaPermissions",
+    "value": true
   }
 ]

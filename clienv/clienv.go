@@ -13,7 +13,6 @@ type CliEnv struct {
 	stderr      io.Writer
 	Path        *PathStructure
 	domain      string
-	subdomain   string
 	nhclient    *nhostclient.Client
 	projectName string
 }
@@ -23,7 +22,6 @@ func New(
 	stderr io.Writer,
 	path *PathStructure,
 	domain string,
-	subdomain string,
 	projectName string,
 ) *CliEnv {
 	return &CliEnv{
@@ -31,7 +29,6 @@ func New(
 		stderr:      stderr,
 		Path:        path,
 		domain:      domain,
-		subdomain:   subdomain,
 		nhclient:    nil,
 		projectName: projectName,
 	}
@@ -53,7 +50,6 @@ func FromCLI(cCtx *cli.Context) *CliEnv {
 			cCtx.String(flagNhostFolder),
 		),
 		domain:      cCtx.String(flagDomain),
-		subdomain:   cCtx.String(flagSubdomain),
 		projectName: cCtx.String(flagProjectName),
 		nhclient:    nil,
 	}
@@ -65,10 +61,6 @@ func (ce *CliEnv) ProjectName() string {
 
 func (ce *CliEnv) Domain() string {
 	return ce.domain
-}
-
-func (ce *CliEnv) Subdomain() string {
-	return ce.subdomain
 }
 
 func (ce *CliEnv) GetNhostClient() *nhostclient.Client {

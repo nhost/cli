@@ -25,13 +25,13 @@ func CommandEdit() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:    "edit",
 		Aliases: []string{},
-		Usage:   "EXPERIMENTAL. Edit configuration, if an overlay is specify edit and generate jsonpatch",
+		Usage:   "Edit base configuration or an overlay",
 		Action:  edit,
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:    flagOverlay,
-				Usage:   "Overlay to use",
-				EnvVars: []string{"NHOST_OVERLAY"},
+				Name:    flagSubdomain,
+				Usage:   "If specified, edit this subdomain's overlay, otherwise edit base configuation",
+				EnvVars: []string{"NHOST_SUBDOMAIN"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:    flagEditor,
@@ -147,6 +147,17 @@ func generateJSONPatch(origfilepath, newfilepath, dst string) error {
 func edit(cCtx *cli.Context) error {
 	ce := clienv.FromCLI(cCtx)
 
+	if cCtx.String(flagSubdomain) == "" {
+		if err := editFile(cCtx.Context, cCtx.String(flagEditor), ce.Path.NhostToml()); err != nil {
+			return fmt.Errorf("failed to edit config: %w", err)
+		}
+		return nil
+	}
+
+	if err := os.MkdirAll(ce.Path.JSONPatchesFolder(), 0o755); err != nil { //nolint:gomnd
+		return fmt.Errorf("failed to create json patches directory: %w", err)
+	}
+
 	tmpdir, err := os.MkdirTemp(os.TempDir(), "nhost-jsonpatch")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
@@ -155,7 +166,7 @@ func edit(cCtx *cli.Context) error {
 
 	tmpfileName := filepath.Join(tmpdir, "nhost.toml")
 
-	if err := copyConfig(ce, tmpfileName, cCtx.String(flagOverlay)); err != nil {
+	if err := copyConfig(ce, tmpfileName, cCtx.String(flagSubdomain)); err != nil {
 		return fmt.Errorf("failed to copy config: %w", err)
 	}
 
@@ -164,7 +175,7 @@ func edit(cCtx *cli.Context) error {
 	}
 
 	if err := generateJSONPatch(
-		ce.Path.NhostToml(), tmpfileName, ce.Path.JSONPatches(cCtx.String(flagOverlay)),
+		ce.Path.NhostToml(), tmpfileName, ce.Path.JSONPatches(cCtx.String(flagSubdomain)),
 	); err != nil {
 		return fmt.Errorf("failed to generate json patch: %w", err)
 	}

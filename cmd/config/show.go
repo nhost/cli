@@ -21,12 +21,6 @@ func CommandShow() *cli.Command {
 				Usage:   "Show this subdomain's rendered configuration. Defaults to base configuration",
 				EnvVars: []string{"NHOST_SUBDOMAIN"},
 			},
-			&cli.StringFlag{ //nolint:exhaustruct
-				Name:    flagOverlay,
-				Usage:   "Overaly to use",
-				Value:   "local",
-				EnvVars: []string{"NHOST_OVERLAY"},
-			},
 		},
 	}
 }
