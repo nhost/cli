@@ -7,7 +7,12 @@ import (
 	"github.com/nhost/be/services/mimir/schema/appconfig"
 )
 
-func storage(cfg *model.ConfigConfig, useTLS bool, httpPort uint, exposePort uint) (*Service, error) {
+func storage(
+	cfg *model.ConfigConfig,
+	useTLS bool,
+	httpPort uint,
+	exposePort uint,
+) (*Service, error) {
 	envars, err := appconfig.HasuraStorageEnv(
 		cfg,
 		"http://graphql:8080/v1",
