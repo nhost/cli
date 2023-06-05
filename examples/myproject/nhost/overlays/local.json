@@ -1,7 +1,7 @@
 [
   {
     "op": "add",
-    "path": "/global/environment/3",
+    "path": "/global/environment/2",
     "value": {
       "name": "ENVIRONMENT",
       "value": "development"
