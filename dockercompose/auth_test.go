@@ -139,7 +139,7 @@ func expectedAuth() *Service {
 			"traefik.http.routers.auth.tls":                                      "false",
 			"traefik.http.services.auth.loadbalancer.server.port":                "4000",
 		},
-		Ports:   []Port{},
+		Ports:   nil,
 		Restart: "always",
 		Volumes: []Volume{
 			{Type: "bind", Source: "/tmp/nhost/emails", Target: "/app/email-templates"},
