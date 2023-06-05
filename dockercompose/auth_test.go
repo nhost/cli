@@ -170,7 +170,7 @@ func TestAuth(t *testing.T) {
 			t.Parallel()
 			tc := tc
 
-			got, err := auth(tc.cfg(), 1336, tc.useTlS, "/tmp/nhost")
+			got, err := auth(tc.cfg(), 1336, tc.useTlS, "/tmp/nhost", 0)
 			if err != nil {
 				t.Errorf("got error: %v", err)
 			}
