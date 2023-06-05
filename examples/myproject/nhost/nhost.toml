@@ -7,14 +7,6 @@ value = 'Sayonara'
 name = 'GREET_TYPE'
 value = '{{ secrets.GREET_TYPE }}'
 
-[[global.environment]]
-name = 'ENVIRONMENT'
-value = 'development'
-
-[[global.environment]]
-name = 'ANOTHER_VAR'
-value = 'value'
-
 [hasura]
 version = 'v2.25.1-ce'
 adminSecret = '{{ secrets.HASURA_GRAPHQL_ADMIN_SECRET }}'

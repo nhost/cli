@@ -8,30 +8,18 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const (
-	flagSkipPatches = "skip-patches"
-	flagOverlay     = "overlay"
-)
-
 func CommandShow() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:        "show",
 		Aliases:     []string{},
-		Usage:       "Shows configuration after applying jsonpatches and resolving secrets",
-		Description: "Note that this command will always use the local secrets, even if you specify the overlay for a cloud project.", //nolint:lll
+		Usage:       "Shows configuration after resolving secrets",
+		Description: "Note that this command will always use the local secrets, even if you specify subdomain",
 		Action:      commandShow,
 		Flags: []cli.Flag{
-			&cli.BoolFlag{ //nolint:exhaustruct
-				Name:    flagSkipPatches,
-				Usage:   "Skip applying jsonpatches",
-				Value:   false,
-				EnvVars: []string{"NHOST_SKIP_PATCHES"},
-			},
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:    flagOverlay,
-				Usage:   "Overaly to use",
-				Value:   "local",
-				EnvVars: []string{"NHOST_OVERLAY"},
+				Name:    flagSubdomain,
+				Usage:   "Show this subdomain's rendered configuration. Defaults to base configuration",
+				EnvVars: []string{"NHOST_SUBDOMAIN"},
 			},
 		},
 	}
@@ -40,7 +28,7 @@ func CommandShow() *cli.Command {
 func commandShow(c *cli.Context) error {
 	ce := clienv.FromCLI(c)
 
-	cfg, err := Validate(ce, !c.Bool(flagSkipPatches), c.String(flagOverlay))
+	cfg, err := Validate(ce, c.String(flagSubdomain))
 	if err != nil {
 		return err
 	}

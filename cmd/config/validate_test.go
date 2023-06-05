@@ -237,10 +237,9 @@ func TestValidate(t *testing.T) {
 				),
 				"fakedomain",
 				"",
-				"fakeproject",
 			)
 
-			cfg, err := config.Validate(ce, tc.applyPatches, "local")
+			cfg, err := config.Validate(ce, "local")
 			if err != nil {
 				t.Fatal(err)
 			}

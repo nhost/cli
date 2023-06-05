@@ -18,10 +18,6 @@ import (
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
-const (
-	flagRemote = "remote"
-)
-
 func CommandValidate() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:    "validate",
@@ -29,11 +25,10 @@ func CommandValidate() *cli.Command {
 		Usage:   "Validate configuration",
 		Action:  commandValidate,
 		Flags: []cli.Flag{
-			&cli.BoolFlag{ //nolint:exhaustruct
-				Name:    flagRemote,
-				Usage:   "Validate local configuration against remote projec",
-				Value:   false,
-				EnvVars: []string{"NHOST_REMOTE"},
+			&cli.StringFlag{ //nolint:exhaustruct
+				Name:    flagSubdomain,
+				Usage:   "Validate this subdomain's configuration. Defaults to linked project",
+				EnvVars: []string{"NHOST_SUBDOMAIN"},
 			},
 		},
 	}
@@ -42,16 +37,17 @@ func CommandValidate() *cli.Command {
 func commandValidate(cCtx *cli.Context) error {
 	ce := clienv.FromCLI(cCtx)
 
-	if cCtx.Bool(flagRemote) {
+	subdomain := cCtx.String(flagSubdomain)
+	if subdomain != "" && subdomain != "local" {
 		return ValidateRemote(
 			cCtx.Context,
 			ce,
-			true,
+			cCtx.String(flagSubdomain),
 		)
 	}
 
 	ce.Infoln("Verifying configuration...")
-	if _, err := Validate(ce, true, "local"); err != nil {
+	if _, err := Validate(ce, "local"); err != nil {
 		return err
 	}
 	ce.Infoln("Configuration is valid!")
@@ -97,7 +93,7 @@ func applyJSONPatches(
 	return &cfg, nil
 }
 
-func Validate(ce *clienv.CliEnv, applyPatches bool, subdomain string) (*model.ConfigConfig, error) {
+func Validate(ce *clienv.CliEnv, overlay string) (*model.ConfigConfig, error) {
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := clienv.UnmarshalFile(ce.Path.NhostToml(), cfg, toml.Unmarshal); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -108,9 +104,9 @@ func Validate(ce *clienv.CliEnv, applyPatches bool, subdomain string) (*model.Co
 		return nil, fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
-	if applyPatches && clienv.PathExists(ce.Path.JSONPatches(subdomain)) {
+	if clienv.PathExists(ce.Path.JSONPatches(overlay)) {
 		var err error
-		cfg, err = applyJSONPatches(ce, *cfg, subdomain)
+		cfg, err = applyJSONPatches(ce, *cfg, overlay)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply json patches: %w", err)
 		}
@@ -132,7 +128,7 @@ func Validate(ce *clienv.CliEnv, applyPatches bool, subdomain string) (*model.Co
 func ValidateRemote(
 	ctx context.Context,
 	ce *clienv.CliEnv,
-	applyPatches bool,
+	subdomain string,
 ) error {
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := clienv.UnmarshalFile(ce.Path.NhostToml(), cfg, toml.Unmarshal); err != nil {
@@ -144,7 +140,7 @@ func ValidateRemote(
 		return fmt.Errorf("failed to create schema: %w", err)
 	}
 
-	proj, err := ce.GetAppInfo(ctx)
+	proj, err := ce.GetAppInfo(ctx, subdomain)
 	if err != nil {
 		return fmt.Errorf("failed to get app info: %w", err)
 	}
@@ -165,7 +161,7 @@ func ValidateRemote(
 		return fmt.Errorf("failed to get secrets: %w", err)
 	}
 
-	if applyPatches && clienv.PathExists(ce.Path.JSONPatches(proj.GetSubdomain())) {
+	if clienv.PathExists(ce.Path.JSONPatches(proj.GetSubdomain())) {
 		var err error
 		cfg, err = applyJSONPatches(ce, *cfg, proj.GetSubdomain())
 		if err != nil {
