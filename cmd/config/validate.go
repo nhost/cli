@@ -59,7 +59,7 @@ func applyJSONPatches(
 	cfg model.ConfigConfig,
 	subdomain string,
 ) (*model.ConfigConfig, error) {
-	f, err := os.Open(ce.Path.JSONPatches(subdomain))
+	f, err := os.Open(ce.Path.Overlay(subdomain))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open json patches file: %w", err)
 	}
@@ -104,9 +104,9 @@ func Validate(ce *clienv.CliEnv, subdomain string) (*model.ConfigConfig, error) 
 		return nil, fmt.Errorf("failed to parse secrets: %w", err)
 	}
 
-	if subdomain == "local" && clienv.PathExists(ce.Path.JSONPatches()) {
+	if clienv.PathExists(ce.Path.Overlay(subdomain)) {
 		var err error
-		cfg, err = applyJSONPatches(ce, *cfg, overlay)
+		cfg, err = applyJSONPatches(ce, *cfg, subdomain)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply json patches: %w", err)
 		}
@@ -161,7 +161,7 @@ func ValidateRemote(
 		return fmt.Errorf("failed to get secrets: %w", err)
 	}
 
-	if clienv.PathExists(ce.Path.JSONPatches(proj.GetSubdomain())) {
+	if clienv.PathExists(ce.Path.Overlay(proj.GetSubdomain())) {
 		var err error
 		cfg, err = applyJSONPatches(ce, *cfg, proj.GetSubdomain())
 		if err != nil {

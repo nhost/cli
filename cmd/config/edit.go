@@ -67,7 +67,7 @@ func copyConfig(ce *clienv.CliEnv, dst, overlay string) error {
 	}
 
 	var err error
-	if clienv.PathExists(ce.Path.JSONPatches(overlay)) {
+	if clienv.PathExists(ce.Path.Overlay(overlay)) {
 		cfg, err = applyJSONPatches(ce, *cfg, overlay)
 		if err != nil {
 			return fmt.Errorf("failed to apply json patches: %w", err)
@@ -154,7 +154,7 @@ func edit(cCtx *cli.Context) error {
 		return nil
 	}
 
-	if err := os.MkdirAll(ce.Path.JSONPatchesFolder(), 0o755); err != nil { //nolint:gomnd
+	if err := os.MkdirAll(ce.Path.OverlaysFolder(), 0o755); err != nil { //nolint:gomnd
 		return fmt.Errorf("failed to create json patches directory: %w", err)
 	}
 
@@ -175,7 +175,7 @@ func edit(cCtx *cli.Context) error {
 	}
 
 	if err := generateJSONPatch(
-		ce.Path.NhostToml(), tmpfileName, ce.Path.JSONPatches(cCtx.String(flagSubdomain)),
+		ce.Path.NhostToml(), tmpfileName, ce.Path.Overlay(cCtx.String(flagSubdomain)),
 	); err != nil {
 		return fmt.Errorf("failed to generate json patch: %w", err)
 	}

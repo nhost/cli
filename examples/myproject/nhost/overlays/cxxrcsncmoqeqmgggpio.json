@@ -16,5 +16,10 @@
     "op": "replace",
     "path": "/hasura/settings/enableRemoteSchemaPermissions",
     "value": true
+  },
+  {
+    "op": "replace",
+    "path": "/hasura/version",
+    "value": "v2.25.1-ce"
   }
 ]

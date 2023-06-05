@@ -8,7 +8,7 @@ name = 'GREET_TYPE'
 value = '{{ secrets.GREET_TYPE }}'
 
 [hasura]
-version = 'v2.25.1-ce'
+version = 'v2.25.0-ce'
 adminSecret = '{{ secrets.HASURA_GRAPHQL_ADMIN_SECRET }}'
 webhookSecret = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
 

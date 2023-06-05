@@ -1,0 +1,10 @@
+[
+  {
+    "op": "add",
+    "path": "/global/environment/3",
+    "value": {
+      "name": "ENVIRONMENT",
+      "value": "development"
+    }
+  }
+]
