@@ -143,7 +143,7 @@ func up(
 	useTLS bool,
 	postgresPort uint,
 	applySeeds bool,
-) error {
+) error { //nolint:funlen
 	ctx, cancel := context.WithCancel(ctx)
 
 	sigChan := make(chan os.Signal, 1)
