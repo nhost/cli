@@ -134,7 +134,7 @@ func restart(
 	return nil
 }
 
-func up(
+func up( //nolint:funlen
 	ctx context.Context,
 	ce *clienv.CliEnv,
 	dc *dockercompose.DockerCompose,
@@ -143,7 +143,7 @@ func up(
 	useTLS bool,
 	postgresPort uint,
 	applySeeds bool,
-) error { //nolint:funlen
+) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	sigChan := make(chan os.Signal, 1)
