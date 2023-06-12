@@ -136,7 +136,11 @@ func Pull(
 
 	if writeSecrts {
 		ce.Infoln("Getting secrets list from Nhost...")
-		resp, err := cl.GetSecrets(ctx, proj.ID, graphql.WithAccessToken(session.Session.AccessToken))
+		resp, err := cl.GetSecrets(
+			ctx,
+			proj.ID,
+			graphql.WithAccessToken(session.Session.AccessToken),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get secrets: %w", err)
 		}
