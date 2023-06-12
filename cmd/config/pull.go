@@ -44,8 +44,10 @@ func commandPull(cCtx *cli.Context) error {
 	if err := verifyFile(ce, ce.Path.NhostToml()); err != nil {
 		return err
 	}
+
+	writeSecrets := true
 	if err := verifyFile(ce, ce.Path.Secrets()); err != nil {
-		return err
+		writeSecrets = false
 	}
 
 	proj, err := ce.GetAppInfo(cCtx.Context, cCtx.String(flagSubdomain))
@@ -57,7 +59,7 @@ func commandPull(cCtx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}
-	_, err = Pull(cCtx.Context, ce, proj, session)
+	_, err = Pull(cCtx.Context, ce, proj, session, writeSecrets)
 	return err
 }
 
@@ -105,6 +107,7 @@ func Pull(
 	ce *clienv.CliEnv,
 	proj *graphql.GetWorkspacesApps_Workspaces_Apps,
 	session credentials.Session,
+	writeSecrts bool,
 ) (*model.ConfigConfig, error) {
 	ce.Infoln("Pulling config from Nhost...")
 
@@ -131,20 +134,22 @@ func Pull(
 		return nil, fmt.Errorf("failed to save nhost.toml: %w", err)
 	}
 
-	ce.Infoln("Getting secrets list from Nhost...")
-	resp, err := cl.GetSecrets(ctx, proj.ID, graphql.WithAccessToken(session.Session.AccessToken))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get secrets: %w", err)
-	}
+	if writeSecrts {
+		ce.Infoln("Getting secrets list from Nhost...")
+		resp, err := cl.GetSecrets(ctx, proj.ID, graphql.WithAccessToken(session.Session.AccessToken))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secrets: %w", err)
+		}
 
-	secrets := respToSecrets(resp.GetAppSecrets(), true)
-	if err := clienv.MarshalFile(&secrets, ce.Path.Secrets(), env.Marshal); err != nil {
-		return nil, fmt.Errorf("failed to save nhost.toml: %w", err)
-	}
+		secrets := respToSecrets(resp.GetAppSecrets(), true)
+		if err := clienv.MarshalFile(&secrets, ce.Path.Secrets(), env.Marshal); err != nil {
+			return nil, fmt.Errorf("failed to save nhost.toml: %w", err)
+		}
 
-	ce.Infoln("Adding .secrets to .gitignore...")
-	if err := system.AddToGitignore("\n.secrets\n"); err != nil {
-		return nil, fmt.Errorf("failed to add .secrets to .gitignore: %w", err)
+		ce.Infoln("Adding .secrets to .gitignore...")
+		if err := system.AddToGitignore("\n.secrets\n"); err != nil {
+			return nil, fmt.Errorf("failed to add .secrets to .gitignore: %w", err)
+		}
 	}
 
 	ce.Infoln("Success!")
