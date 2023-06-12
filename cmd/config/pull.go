@@ -102,6 +102,36 @@ func respToSecrets(env []*graphql.GetSecrets_AppSecrets, anonymize bool) model.S
 	return secrets
 }
 
+func pullSecrets(
+	ctx context.Context,
+	ce *clienv.CliEnv,
+	proj *graphql.GetWorkspacesApps_Workspaces_Apps,
+	session credentials.Session,
+) error {
+	ce.Infoln("Getting secrets list from Nhost...")
+	cl := ce.GetNhostClient()
+	resp, err := cl.GetSecrets(
+		ctx,
+		proj.ID,
+		graphql.WithAccessToken(session.Session.AccessToken),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get secrets: %w", err)
+	}
+
+	secrets := respToSecrets(resp.GetAppSecrets(), true)
+	if err := clienv.MarshalFile(&secrets, ce.Path.Secrets(), env.Marshal); err != nil {
+		return fmt.Errorf("failed to save nhost.toml: %w", err)
+	}
+
+	ce.Infoln("Adding .secrets to .gitignore...")
+	if err := system.AddToGitignore("\n.secrets\n"); err != nil {
+		return fmt.Errorf("failed to add .secrets to .gitignore: %w", err)
+	}
+
+	return nil
+}
+
 func Pull(
 	ctx context.Context,
 	ce *clienv.CliEnv,
@@ -135,24 +165,8 @@ func Pull(
 	}
 
 	if writeSecrts {
-		ce.Infoln("Getting secrets list from Nhost...")
-		resp, err := cl.GetSecrets(
-			ctx,
-			proj.ID,
-			graphql.WithAccessToken(session.Session.AccessToken),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get secrets: %w", err)
-		}
-
-		secrets := respToSecrets(resp.GetAppSecrets(), true)
-		if err := clienv.MarshalFile(&secrets, ce.Path.Secrets(), env.Marshal); err != nil {
-			return nil, fmt.Errorf("failed to save nhost.toml: %w", err)
-		}
-
-		ce.Infoln("Adding .secrets to .gitignore...")
-		if err := system.AddToGitignore("\n.secrets\n"); err != nil {
-			return nil, fmt.Errorf("failed to add .secrets to .gitignore: %w", err)
+		if err := pullSecrets(ctx, ce, proj, session); err != nil {
+			return nil, err
 		}
 	}
 
