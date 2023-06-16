@@ -58,7 +58,7 @@ func (dc *DockerCompose) WriteComposeFile(composeFile *ComposeFile) error {
 func (dc *DockerCompose) Start(ctx context.Context) error {
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
-		"docker", "compose",
+		"podman-compose",
 		"--project-directory", dc.workingDir,
 		"-f", dc.filepath,
 		"-p", dc.projectName,
@@ -77,7 +77,7 @@ func (dc *DockerCompose) Start(ctx context.Context) error {
 func (dc *DockerCompose) Stop(ctx context.Context) error {
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
-		"docker", "compose",
+		"podman-compose",
 		"--project-directory", dc.workingDir,
 		"-f", dc.filepath,
 		"-p", dc.projectName,
@@ -94,7 +94,6 @@ func (dc *DockerCompose) Stop(ctx context.Context) error {
 
 func (dc *DockerCompose) Logs(ctx context.Context, extraArgs ...string) error {
 	args := []string{
-		"compose",
 		"--project-directory", dc.workingDir,
 		"-f", dc.filepath,
 		"-p", dc.projectName,
@@ -104,7 +103,7 @@ func (dc *DockerCompose) Logs(ctx context.Context, extraArgs ...string) error {
 
 	cmd := exec.CommandContext(
 		ctx,
-		"docker",
+		"podman-compose",
 		args...,
 	)
 	cmd.Stdout = os.Stdout
@@ -118,7 +117,6 @@ func (dc *DockerCompose) Logs(ctx context.Context, extraArgs ...string) error {
 
 func (dc *DockerCompose) Wrapper(ctx context.Context, extraArgs ...string) error {
 	args := []string{
-		"compose",
 		"--project-directory", dc.workingDir,
 		"-f", dc.filepath,
 		"-p", dc.projectName,
@@ -127,7 +125,7 @@ func (dc *DockerCompose) Wrapper(ctx context.Context, extraArgs ...string) error
 
 	cmd := exec.CommandContext(
 		ctx,
-		"docker",
+		"podman-compose",
 		args...,
 	)
 	cmd.Stdout = os.Stdout
@@ -142,7 +140,7 @@ func (dc *DockerCompose) Wrapper(ctx context.Context, extraArgs ...string) error
 func (dc *DockerCompose) ApplyMetadata(ctx context.Context) error {
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
-		"docker", "compose",
+		"podman-compose",
 		"--project-directory", dc.workingDir,
 		"-f", dc.filepath,
 		"-p", dc.projectName,
@@ -177,7 +175,7 @@ func (dc *DockerCompose) ApplyMetadata(ctx context.Context) error {
 func (dc *DockerCompose) ApplyMigrations(ctx context.Context) error {
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
-		"docker", "compose",
+		"podman-compose",
 		"--project-directory", dc.workingDir,
 		"-f", dc.filepath,
 		"-p", dc.projectName,
@@ -213,7 +211,7 @@ func (dc *DockerCompose) ApplyMigrations(ctx context.Context) error {
 func (dc *DockerCompose) ApplySeeds(ctx context.Context) error {
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
-		"docker", "compose",
+		"podman-compose",
 		"--project-directory", dc.workingDir,
 		"-f", dc.filepath,
 		"-p", dc.projectName,
