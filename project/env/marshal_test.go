@@ -19,12 +19,13 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "success",
 			data: []byte(`
-      s1=v1 # comment
-      s2=v2#comments
+      s1='v1' # comment
+      s2='v2'#comments
       #more comments
       # more comments
-      s3=v3
-      #s4=v4
+      s3='v3'
+      #s4='v4'
+      s5='asd#qwe'
       `),
 			expected: model.Secrets{
 				&model.ConfigEnvironmentVariable{
@@ -38,6 +39,10 @@ func TestUnmarshal(t *testing.T) {
 				&model.ConfigEnvironmentVariable{
 					Name:  "s3",
 					Value: "v3",
+				},
+				&model.ConfigEnvironmentVariable{
+					Name:  "s5",
+					Value: "asd#qwe",
 				},
 			},
 		},
