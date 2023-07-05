@@ -1,7 +1,6 @@
 package env
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/nhost/be/services/mimir/model"
@@ -49,23 +48,19 @@ func Unmarshal(data []byte, v any) error {
 
 // Only supports parsing secrets from a *model.Secrets.
 func Marshal(v any) ([]byte, error) {
-	buf := bytes.NewBuffer(nil)
+	m := make(map[string]string)
 	switch secrets := v.(type) {
 	case *model.Secrets:
 		for _, v := range *secrets {
-			if _, err := fmt.Fprintf(buf, "%s=%s\n", v.Name, v.Value); err != nil {
-				return nil, fmt.Errorf("failed to write env: %w", err)
-			}
+			m[v.Name] = v.Value
 		}
 	case model.Secrets:
 		for _, v := range secrets {
-			if _, err := fmt.Fprintf(buf, "%s=%s\n", v.Name, v.Value); err != nil {
-				return nil, fmt.Errorf("failed to write env: %w", err)
-			}
+			m[v.Name] = v.Value
 		}
 	default:
 		return nil, &UnsupportedTypeError{v}
 	}
 
-	return buf.Bytes(), nil
+	return toml.Marshal(m) //nolint:wrapcheck
 }
