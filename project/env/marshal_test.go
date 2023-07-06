@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/project/env"
 )
@@ -60,7 +61,13 @@ func TestUnmarshal(t *testing.T) {
 				t.Fatalf("got error: %v", err)
 			}
 
-			if diff := cmp.Diff(tc.expected, secrets); diff != "" {
+			cmpOpts := []cmp.Option{
+				cmpopts.SortSlices(func(a, b *model.ConfigEnvironmentVariable) bool {
+					return a.Name < b.Name
+				}),
+			}
+
+			if diff := cmp.Diff(tc.expected, secrets, cmpOpts...); diff != "" {
 				t.Error(diff)
 			}
 		})
