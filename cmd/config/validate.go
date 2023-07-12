@@ -39,15 +39,17 @@ func commandValidate(cCtx *cli.Context) error {
 
 	subdomain := cCtx.String(flagSubdomain)
 	if subdomain != "" && subdomain != "local" {
-		return ValidateRemote(
+		_, err := ValidateRemote(
 			cCtx.Context,
 			ce,
 			cCtx.String(flagSubdomain),
+			true,
 		)
+		return err
 	}
 
 	ce.Infoln("Verifying configuration...")
-	if _, err := Validate(ce, "local"); err != nil {
+	if _, err := Validate(ce, "local", true); err != nil {
 		return err
 	}
 	ce.Infoln("Configuration is valid!")
@@ -93,7 +95,7 @@ func applyJSONPatches(
 	return &cfg, nil
 }
 
-func Validate(ce *clienv.CliEnv, subdomain string) (*model.ConfigConfig, error) {
+func Validate(ce *clienv.CliEnv, subdomain string, resolve bool) (*model.ConfigConfig, error) {
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := clienv.UnmarshalFile(ce.Path.NhostToml(), cfg, toml.Unmarshal); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -120,9 +122,11 @@ func Validate(ce *clienv.CliEnv, subdomain string) (*model.ConfigConfig, error) 
 		return nil, fmt.Errorf("failed to create schema: %w", err)
 	}
 
-	cfg, err = appconfig.Config(schema, cfg, secrets)
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate config: %w", err)
+	if resolve {
+		cfg, err = appconfig.Config(schema, cfg, secrets)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate config: %w", err)
+		}
 	}
 
 	return cfg, nil
@@ -132,25 +136,26 @@ func ValidateRemote(
 	ctx context.Context,
 	ce *clienv.CliEnv,
 	subdomain string,
-) error {
+	resolve bool,
+) (*model.ConfigConfig, error) {
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := clienv.UnmarshalFile(ce.Path.NhostToml(), cfg, toml.Unmarshal); err != nil {
-		return fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	schema, err := schema.New()
 	if err != nil {
-		return fmt.Errorf("failed to create schema: %w", err)
+		return nil, fmt.Errorf("failed to create schema: %w", err)
 	}
 
 	proj, err := ce.GetAppInfo(ctx, subdomain)
 	if err != nil {
-		return fmt.Errorf("failed to get app info: %w", err)
+		return nil, fmt.Errorf("failed to get app info: %w", err)
 	}
 
 	session, err := ce.LoadSession(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load session: %w", err)
+		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 
 	ce.Infoln("Getting secrets...")
@@ -161,23 +166,25 @@ func ValidateRemote(
 		graphql.WithAccessToken(session.Session.AccessToken),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to get secrets: %w", err)
+		return nil, fmt.Errorf("failed to get secrets: %w", err)
 	}
 
 	if clienv.PathExists(ce.Path.Overlay(proj.GetSubdomain())) {
 		var err error
 		cfg, err = applyJSONPatches(ce, *cfg, proj.GetSubdomain())
 		if err != nil {
-			return fmt.Errorf("failed to apply json patches: %w", err)
+			return nil, fmt.Errorf("failed to apply json patches: %w", err)
 		}
 	}
 
-	_, err = appconfig.Config(schema, cfg, respToSecrets(secrets.GetAppSecrets(), false))
-	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+	if resolve {
+		cfg, err = appconfig.Config(schema, cfg, respToSecrets(secrets.GetAppSecrets(), false))
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate config: %w", err)
+		}
 	}
 
 	ce.Infoln("Config is valid!")
 
-	return nil
+	return cfg, nil
 }

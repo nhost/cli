@@ -11,6 +11,7 @@ func Command() *cli.Command {
 		Usage:   "Perform config operations",
 		Subcommands: []*cli.Command{
 			CommandDefault(),
+			CommandDiff(),
 			CommandExample(),
 			CommandPull(),
 			CommandShow(),

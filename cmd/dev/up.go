@@ -190,7 +190,7 @@ func up( //nolint:funlen
 		cancel()
 	}()
 
-	cfg, err := config.Validate(ce, "local")
+	cfg, err := config.Validate(ce, "local", true)
 	if err != nil {
 		return fmt.Errorf("failed to validate config: %w", err)
 	}

@@ -132,19 +132,16 @@ func pullSecrets(
 	return nil
 }
 
-func Pull(
+func pullConfigFromSubdomain(
 	ctx context.Context,
 	ce *clienv.CliEnv,
-	proj *graphql.GetWorkspacesApps_Workspaces_Apps,
+	id string,
 	session credentials.Session,
-	writeSecrts bool,
 ) (*model.ConfigConfig, error) {
-	ce.Infoln("Pulling config from Nhost...")
-
 	cl := ce.GetNhostClient()
 	cfg, err := cl.GetConfigRawJSON(
 		ctx,
-		proj.ID,
+		id,
 		graphql.WithAccessToken(session.Session.AccessToken),
 	)
 	if err != nil {
@@ -154,6 +151,23 @@ func Pull(
 	var v model.ConfigConfig
 	if err := json.Unmarshal([]byte(cfg.ConfigRawJSON), &v); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	return &v, nil
+}
+
+func Pull(
+	ctx context.Context,
+	ce *clienv.CliEnv,
+	proj *graphql.GetWorkspacesApps_Workspaces_Apps,
+	session credentials.Session,
+	writeSecrts bool,
+) (*model.ConfigConfig, error) {
+	ce.Infoln("Pulling config from Nhost...")
+
+	v, err := pullConfigFromSubdomain(ctx, ce, proj.ID, session)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := os.MkdirAll(ce.Path.NhostFolder(), 0o755); err != nil { //nolint:gomnd
@@ -177,5 +191,5 @@ func Pull(
 	ce.Warnln("- Review `.secrets` file and set your development secrets")
 	ce.Warnln("- Review `.secrets` was added to .gitignore")
 
-	return &v, nil
+	return v, nil
 }

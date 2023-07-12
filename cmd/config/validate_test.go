@@ -209,7 +209,7 @@ func TestValidate(t *testing.T) {
 				"",
 			)
 
-			cfg, err := config.Validate(ce, "local")
+			cfg, err := config.Validate(ce, "local", true)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -28,7 +28,7 @@ func CommandShow() *cli.Command {
 func commandShow(c *cli.Context) error {
 	ce := clienv.FromCLI(c)
 
-	cfg, err := Validate(ce, c.String(flagSubdomain))
+	cfg, err := Validate(ce, c.String(flagSubdomain), true)
 	if err != nil {
 		return err
 	}
