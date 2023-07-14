@@ -30,7 +30,7 @@ func CommandLogin() *cli.Command {
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:    flagPAT,
-				Usage:   "Personal Access Token. Use this PAT instead of generating a new one with your email/password",
+				Usage:   "Use this Personal Access Token instead of generating a new one with your email/password",
 				EnvVars: []string{"NHOST_PAT"},
 			},
 		},
