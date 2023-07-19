@@ -25,12 +25,6 @@ func CommandConfigReplace() *cli.Command {
 				EnvVars:  []string{"NHOST_RUN_SERVICE_CONFIG"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:     flagSubdomain,
-				Usage:    "Validate this subdomain's configuration. Defaults to linked project",
-				Required: true,
-				EnvVars:  []string{"NHOST_SUBDOMAIN"},
-			},
-			&cli.StringFlag{ //nolint:exhaustruct
 				Name:     flagServiceID,
 				Usage:    "Service ID to update",
 				Required: true,
@@ -61,21 +55,23 @@ func commandConfigReplace(cCtx *cli.Context) error {
 	}
 
 	ce := clienv.FromCLI(cCtx)
-	proj, err := ce.GetAppInfo(cCtx.Context, cCtx.String(flagSubdomain))
-	if err != nil {
-		return fmt.Errorf("failed to get app info: %w", err)
-	}
 
 	session, err := ce.LoadSession(cCtx.Context)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
 	}
 
-	if err := ValidateRemote(cCtx.Context, ce, session, cfg, proj.ID); err != nil {
+	cl := ce.GetNhostClient()
+
+	appID, err := getAppIDFromServiceID(cCtx.Context, cl, session, cCtx.String(flagServiceID))
+	if err != nil {
 		return err
 	}
 
-	cl := ce.GetNhostClient()
+	if err := ValidateRemote(cCtx.Context, ce, session, cfg, appID); err != nil {
+		return err
+	}
+
 	replaceConfig, err := transform[model.ConfigRunServiceConfig, graphql.ConfigRunServiceConfigInsertInput](cfg)
 	if err != nil {
 		return fmt.Errorf("failed to transform configuration into replace input: %w", err)
@@ -83,7 +79,7 @@ func commandConfigReplace(cCtx *cli.Context) error {
 
 	if _, err := cl.ReplaceRunServiceConfig(
 		cCtx.Context,
-		proj.ID,
+		appID,
 		cCtx.String(flagServiceID),
 		*replaceConfig,
 		graphql.WithAccessToken(session.Session.AccessToken),

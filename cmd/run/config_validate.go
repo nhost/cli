@@ -9,6 +9,7 @@ import (
 	"github.com/nhost/be/services/mimir/schema"
 	"github.com/nhost/be/services/mimir/schema/appconfig"
 	"github.com/nhost/cli/clienv"
+	"github.com/nhost/cli/nhostclient"
 	"github.com/nhost/cli/nhostclient/credentials"
 	"github.com/nhost/cli/nhostclient/graphql"
 	"github.com/pelletier/go-toml/v2"
@@ -16,8 +17,7 @@ import (
 )
 
 const (
-	flagConfig    = "config"
-	flagSubdomain = "subdomain"
+	flagConfig = "config"
 )
 
 func CommandConfigValidate() *cli.Command {
@@ -35,10 +35,10 @@ func CommandConfigValidate() *cli.Command {
 				EnvVars:  []string{"NHOST_RUN_SERVICE_CONFIG"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:     flagSubdomain,
-				Usage:    "Validate this subdomain's configuration. Defaults to linked project",
+				Name:     flagServiceID,
+				Usage:    "Service ID to update",
 				Required: true,
-				EnvVars:  []string{"NHOST_SUBDOMAIN"},
+				EnvVars:  []string{"NHOST_RUN_SERVICE_ID"},
 			},
 		},
 	}
@@ -74,6 +74,24 @@ func loadConfig(
 	}
 
 	return cfg, nil
+}
+
+func getAppIDFromServiceID(
+	ctx context.Context,
+	cl *nhostclient.Client,
+	session credentials.Session,
+	serviceID string,
+) (string, error) {
+	resp, err := cl.GetRunServiceInfo(
+		ctx,
+		serviceID,
+		graphql.WithAccessToken(session.Session.AccessToken),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to get app info from service id: %w", err)
+	}
+
+	return resp.GetRunService().GetAppID(), nil
 }
 
 func ValidateRemote(
@@ -117,14 +135,16 @@ func commandConfigValidate(cCtx *cli.Context) error {
 	}
 
 	ce := clienv.FromCLI(cCtx)
-	proj, err := ce.GetAppInfo(cCtx.Context, cCtx.String(flagSubdomain))
-	if err != nil {
-		return fmt.Errorf("failed to get app info: %w", err)
-	}
+	cl := ce.GetNhostClient()
 
 	session, err := ce.LoadSession(cCtx.Context)
 	if err != nil {
 		return fmt.Errorf("failed to load session: %w", err)
+	}
+
+	appID, err := getAppIDFromServiceID(cCtx.Context, cl, session, cCtx.String(flagServiceID))
+	if err != nil {
+		return err
 	}
 
 	return ValidateRemote(
@@ -132,6 +152,6 @@ func commandConfigValidate(cCtx *cli.Context) error {
 		ce,
 		session,
 		cfg,
-		proj.ID,
+		appID,
 	)
 }
