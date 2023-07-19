@@ -20,7 +20,7 @@ func CommandUpdateImage() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:    "update-image",
 		Aliases: []string{},
-		Usage:   "",
+		Usage:   "Update service image leaving rest of parameters intact",
 		Action:  commandUpdateImage,
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint:exhaustruct

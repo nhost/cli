@@ -6,9 +6,12 @@ func Command() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:    "run",
 		Aliases: []string{},
-		Usage:   "Perform operations on Nhost Cloud Run services",
+		Usage:   "Perform operations on Nhost Cloud Run",
 		Subcommands: []*cli.Command{
 			CommandUpdateImage(),
+			CommandConfigPull(),
+			CommandConfigReplace(),
+			CommandConfigValidate(),
 		},
 	}
 }

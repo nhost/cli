@@ -11,3 +11,40 @@ mutation UpdateRunServiceConfig(
     __typename
   }
 }
+
+mutation ReplaceRunServiceConfig(
+    $appID: uuid!,
+    $serviceID: uuid!,
+    $config: ConfigRunServiceConfigInsertInput!,
+) {
+  replaceRunServiceConfig(
+    appID: $appID,
+    serviceID: $serviceID,
+    config: $config,
+  ) {
+    __typename
+  }
+}
+
+query GetRunServiceInfo(
+    $serviceID: uuid!,
+) {
+    runService(
+        id: $serviceID,
+    ) {
+        appID
+    }
+}
+
+query GetRunServiceConfigRawJSON(
+    $appID: uuid!,
+    $serviceID: uuid!,
+    $resolve: Boolean!,
+) {
+    runServiceConfigRawJSON(
+        appID: $appID,
+        serviceID: $serviceID,
+        resolve: $resolve,
+    )
+}
+

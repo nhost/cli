@@ -14,6 +14,15 @@ models:
   jsonb:
     model:
       - github.com/99designs/gqlgen/graphql.Map
+  ConfigPort:
+    model:
+      - github.com/99designs/gqlgen/graphql.Uint32
+  ConfigUint8:
+    model:
+      - github.com/99designs/gqlgen/graphql.Uint32
+  ConfigUint32:
+    model:
+      - github.com/99designs/gqlgen/graphql.Uint32
 
 endpoint:
   url: https://staging.nhost.run/v1/graphql

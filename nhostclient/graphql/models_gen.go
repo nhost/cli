@@ -146,7 +146,7 @@ type ConfigAuthMethodEmailPassword struct {
 	// Disabling email+password sign in is not implmented yet
 	// enabled: bool | *true
 	HibpEnabled       *bool   `json:"hibpEnabled,omitempty"`
-	PasswordMinLength *string `json:"passwordMinLength,omitempty"`
+	PasswordMinLength *uint32 `json:"passwordMinLength,omitempty"`
 }
 
 type ConfigAuthMethodEmailPasswordComparisonExp struct {
@@ -161,13 +161,13 @@ type ConfigAuthMethodEmailPasswordComparisonExp struct {
 type ConfigAuthMethodEmailPasswordInsertInput struct {
 	EmailVerificationRequired *bool   `json:"emailVerificationRequired,omitempty"`
 	HibpEnabled               *bool   `json:"hibpEnabled,omitempty"`
-	PasswordMinLength         *string `json:"passwordMinLength,omitempty"`
+	PasswordMinLength         *uint32 `json:"passwordMinLength,omitempty"`
 }
 
 type ConfigAuthMethodEmailPasswordUpdateInput struct {
 	EmailVerificationRequired *bool   `json:"emailVerificationRequired,omitempty"`
 	HibpEnabled               *bool   `json:"hibpEnabled,omitempty"`
-	PasswordMinLength         *string `json:"passwordMinLength,omitempty"`
+	PasswordMinLength         *uint32 `json:"passwordMinLength,omitempty"`
 }
 
 type ConfigAuthMethodEmailPasswordless struct {
@@ -440,7 +440,7 @@ type ConfigAuthMethodWebauthn struct {
 }
 
 type ConfigAuthMethodWebauthnAttestation struct {
-	Timeout *string `json:"timeout,omitempty"`
+	Timeout *uint32 `json:"timeout,omitempty"`
 }
 
 type ConfigAuthMethodWebauthnAttestationComparisonExp struct {
@@ -451,11 +451,11 @@ type ConfigAuthMethodWebauthnAttestationComparisonExp struct {
 }
 
 type ConfigAuthMethodWebauthnAttestationInsertInput struct {
-	Timeout *string `json:"timeout,omitempty"`
+	Timeout *uint32 `json:"timeout,omitempty"`
 }
 
 type ConfigAuthMethodWebauthnAttestationUpdateInput struct {
-	Timeout *string `json:"timeout,omitempty"`
+	Timeout *uint32 `json:"timeout,omitempty"`
 }
 
 type ConfigAuthMethodWebauthnComparisonExp struct {
@@ -536,7 +536,7 @@ type ConfigAuthSessionAccessToken struct {
 	// AUTH_JWT_CUSTOM_CLAIMS
 	CustomClaims []*ConfigAuthsessionaccessTokenCustomClaims `json:"customClaims,omitempty"`
 	// AUTH_ACCESS_TOKEN_EXPIRES_IN
-	ExpiresIn *string `json:"expiresIn,omitempty"`
+	ExpiresIn *uint32 `json:"expiresIn,omitempty"`
 }
 
 type ConfigAuthSessionAccessTokenComparisonExp struct {
@@ -549,12 +549,12 @@ type ConfigAuthSessionAccessTokenComparisonExp struct {
 
 type ConfigAuthSessionAccessTokenInsertInput struct {
 	CustomClaims []*ConfigAuthsessionaccessTokenCustomClaimsInsertInput `json:"customClaims,omitempty"`
-	ExpiresIn    *string                                                `json:"expiresIn,omitempty"`
+	ExpiresIn    *uint32                                                `json:"expiresIn,omitempty"`
 }
 
 type ConfigAuthSessionAccessTokenUpdateInput struct {
 	CustomClaims []*ConfigAuthsessionaccessTokenCustomClaimsUpdateInput `json:"customClaims,omitempty"`
-	ExpiresIn    *string                                                `json:"expiresIn,omitempty"`
+	ExpiresIn    *uint32                                                `json:"expiresIn,omitempty"`
 }
 
 type ConfigAuthSessionComparisonExp struct {
@@ -572,7 +572,7 @@ type ConfigAuthSessionInsertInput struct {
 
 type ConfigAuthSessionRefreshToken struct {
 	// AUTH_REFRESH_TOKEN_EXPIRES_IN
-	ExpiresIn *string `json:"expiresIn,omitempty"`
+	ExpiresIn *uint32 `json:"expiresIn,omitempty"`
 }
 
 type ConfigAuthSessionRefreshTokenComparisonExp struct {
@@ -583,11 +583,11 @@ type ConfigAuthSessionRefreshTokenComparisonExp struct {
 }
 
 type ConfigAuthSessionRefreshTokenInsertInput struct {
-	ExpiresIn *string `json:"expiresIn,omitempty"`
+	ExpiresIn *uint32 `json:"expiresIn,omitempty"`
 }
 
 type ConfigAuthSessionRefreshTokenUpdateInput struct {
-	ExpiresIn *string `json:"expiresIn,omitempty"`
+	ExpiresIn *uint32 `json:"expiresIn,omitempty"`
 }
 
 type ConfigAuthSessionUpdateInput struct {
@@ -1083,7 +1083,7 @@ type ConfigHasuraComparisonExp struct {
 
 type ConfigHasuraEvents struct {
 	// HASURA_GRAPHQL_EVENTS_HTTP_POOL_SIZE
-	HTTPPoolSize *string `json:"httpPoolSize,omitempty"`
+	HTTPPoolSize *uint32 `json:"httpPoolSize,omitempty"`
 }
 
 type ConfigHasuraEventsComparisonExp struct {
@@ -1094,11 +1094,11 @@ type ConfigHasuraEventsComparisonExp struct {
 }
 
 type ConfigHasuraEventsInsertInput struct {
-	HTTPPoolSize *string `json:"httpPoolSize,omitempty"`
+	HTTPPoolSize *uint32 `json:"httpPoolSize,omitempty"`
 }
 
 type ConfigHasuraEventsUpdateInput struct {
-	HTTPPoolSize *string `json:"httpPoolSize,omitempty"`
+	HTTPPoolSize *uint32 `json:"httpPoolSize,omitempty"`
 }
 
 type ConfigHasuraInsertInput struct {
@@ -1204,7 +1204,7 @@ type ConfigIntComparisonExp struct {
 
 // See https://hasura.io/docs/latest/auth/authentication/jwt/
 type ConfigJWTSecret struct {
-	AllowedSkew         *string           `json:"allowed_skew,omitempty"`
+	AllowedSkew         *uint32           `json:"allowed_skew,omitempty"`
 	Audience            *string           `json:"audience,omitempty"`
 	ClaimsFormat        *string           `json:"claims_format,omitempty"`
 	ClaimsMap           []*ConfigClaimMap `json:"claims_map,omitempty"`
@@ -1235,7 +1235,7 @@ type ConfigJWTSecretComparisonExp struct {
 }
 
 type ConfigJWTSecretInsertInput struct {
-	AllowedSkew         *string                      `json:"allowed_skew,omitempty"`
+	AllowedSkew         *uint32                      `json:"allowed_skew,omitempty"`
 	Audience            *string                      `json:"audience,omitempty"`
 	ClaimsFormat        *string                      `json:"claims_format,omitempty"`
 	ClaimsMap           []*ConfigClaimMapInsertInput `json:"claims_map,omitempty"`
@@ -1249,7 +1249,7 @@ type ConfigJWTSecretInsertInput struct {
 }
 
 type ConfigJWTSecretUpdateInput struct {
-	AllowedSkew         *string                      `json:"allowed_skew,omitempty"`
+	AllowedSkew         *uint32                      `json:"allowed_skew,omitempty"`
 	Audience            *string                      `json:"audience,omitempty"`
 	ClaimsFormat        *string                      `json:"claims_format,omitempty"`
 	ClaimsMap           []*ConfigClaimMapUpdateInput `json:"claims_map,omitempty"`
@@ -1289,10 +1289,10 @@ type ConfigObservabilityUpdateInput struct {
 }
 
 type ConfigPortComparisonExp struct {
-	Eq  *string  `json:"_eq,omitempty"`
-	In  []string `json:"_in,omitempty"`
-	Neq *string  `json:"_neq,omitempty"`
-	Nin []string `json:"_nin,omitempty"`
+	Eq  *uint32  `json:"_eq,omitempty"`
+	In  []uint32 `json:"_in,omitempty"`
+	Neq *uint32  `json:"_neq,omitempty"`
+	Nin []uint32 `json:"_nin,omitempty"`
 }
 
 // Configuration for postgres service
@@ -1349,7 +1349,7 @@ type ConfigProviderUpdateInput struct {
 type ConfigResources struct {
 	Compute ConfigResourcesCompute `json:"compute"`
 	// Number of replicas for a service
-	Replicas string `json:"replicas"`
+	Replicas uint32 `json:"replicas"`
 }
 
 type ConfigResourcesComparisonExp struct {
@@ -1362,9 +1362,9 @@ type ConfigResourcesComparisonExp struct {
 
 type ConfigResourcesCompute struct {
 	// milicpus, 1000 milicpus = 1 cpu
-	CPU string `json:"cpu"`
+	CPU uint32 `json:"cpu"`
 	// MiB: 128MiB to 30GiB
-	Memory string `json:"memory"`
+	Memory uint32 `json:"memory"`
 }
 
 type ConfigResourcesComputeComparisonExp struct {
@@ -1376,23 +1376,23 @@ type ConfigResourcesComputeComparisonExp struct {
 }
 
 type ConfigResourcesComputeInsertInput struct {
-	CPU    string `json:"cpu"`
-	Memory string `json:"memory"`
+	CPU    uint32 `json:"cpu"`
+	Memory uint32 `json:"memory"`
 }
 
 type ConfigResourcesComputeUpdateInput struct {
-	CPU    *string `json:"cpu,omitempty"`
-	Memory *string `json:"memory,omitempty"`
+	CPU    *uint32 `json:"cpu,omitempty"`
+	Memory *uint32 `json:"memory,omitempty"`
 }
 
 type ConfigResourcesInsertInput struct {
 	Compute  ConfigResourcesComputeInsertInput `json:"compute"`
-	Replicas string                            `json:"replicas"`
+	Replicas uint32                            `json:"replicas"`
 }
 
 type ConfigResourcesUpdateInput struct {
 	Compute  *ConfigResourcesComputeUpdateInput `json:"compute,omitempty"`
-	Replicas *string                            `json:"replicas,omitempty"`
+	Replicas *uint32                            `json:"replicas,omitempty"`
 }
 
 type ConfigRunServiceConfig struct {
@@ -1459,7 +1459,7 @@ type ConfigRunServiceImageUpdateInput struct {
 }
 
 type ConfigRunServicePort struct {
-	Port    string `json:"port"`
+	Port    uint32 `json:"port"`
 	Publish *bool  `json:"publish,omitempty"`
 	Type    string `json:"type"`
 }
@@ -1474,13 +1474,13 @@ type ConfigRunServicePortComparisonExp struct {
 }
 
 type ConfigRunServicePortInsertInput struct {
-	Port    string `json:"port"`
+	Port    uint32 `json:"port"`
 	Publish *bool  `json:"publish,omitempty"`
 	Type    string `json:"type"`
 }
 
 type ConfigRunServicePortUpdateInput struct {
-	Port    *string `json:"port,omitempty"`
+	Port    *uint32 `json:"port,omitempty"`
 	Publish *bool   `json:"publish,omitempty"`
 	Type    *string `json:"type,omitempty"`
 }
@@ -1489,7 +1489,7 @@ type ConfigRunServicePortUpdateInput struct {
 type ConfigRunServiceResources struct {
 	Compute ConfigRunServiceResourcesCompute `json:"compute"`
 	// Number of replicas for a service
-	Replicas string                              `json:"replicas"`
+	Replicas uint32                              `json:"replicas"`
 	Storage  []*ConfigRunServiceResourcesStorage `json:"storage,omitempty"`
 }
 
@@ -1504,9 +1504,9 @@ type ConfigRunServiceResourcesComparisonExp struct {
 
 type ConfigRunServiceResourcesCompute struct {
 	// milicpus, 1000 milicpus = 1 cpu
-	CPU string `json:"cpu"`
+	CPU uint32 `json:"cpu"`
 	// MiB: 128MiB to 30GiB
-	Memory string `json:"memory"`
+	Memory uint32 `json:"memory"`
 }
 
 type ConfigRunServiceResourcesComputeComparisonExp struct {
@@ -1518,24 +1518,24 @@ type ConfigRunServiceResourcesComputeComparisonExp struct {
 }
 
 type ConfigRunServiceResourcesComputeInsertInput struct {
-	CPU    string `json:"cpu"`
-	Memory string `json:"memory"`
+	CPU    uint32 `json:"cpu"`
+	Memory uint32 `json:"memory"`
 }
 
 type ConfigRunServiceResourcesComputeUpdateInput struct {
-	CPU    *string `json:"cpu,omitempty"`
-	Memory *string `json:"memory,omitempty"`
+	CPU    *uint32 `json:"cpu,omitempty"`
+	Memory *uint32 `json:"memory,omitempty"`
 }
 
 type ConfigRunServiceResourcesInsertInput struct {
 	Compute  ConfigRunServiceResourcesComputeInsertInput    `json:"compute"`
-	Replicas string                                         `json:"replicas"`
+	Replicas uint32                                         `json:"replicas"`
 	Storage  []*ConfigRunServiceResourcesStorageInsertInput `json:"storage,omitempty"`
 }
 
 type ConfigRunServiceResourcesStorage struct {
 	// GiB
-	Capacity string `json:"capacity"`
+	Capacity uint32 `json:"capacity"`
 	// name of the volume, changing it will cause data loss
 	Name string `json:"name"`
 	Path string `json:"path"`
@@ -1551,20 +1551,20 @@ type ConfigRunServiceResourcesStorageComparisonExp struct {
 }
 
 type ConfigRunServiceResourcesStorageInsertInput struct {
-	Capacity string `json:"capacity"`
+	Capacity uint32 `json:"capacity"`
 	Name     string `json:"name"`
 	Path     string `json:"path"`
 }
 
 type ConfigRunServiceResourcesStorageUpdateInput struct {
-	Capacity *string `json:"capacity,omitempty"`
+	Capacity *uint32 `json:"capacity,omitempty"`
 	Name     *string `json:"name,omitempty"`
 	Path     *string `json:"path,omitempty"`
 }
 
 type ConfigRunServiceResourcesUpdateInput struct {
 	Compute  *ConfigRunServiceResourcesComputeUpdateInput   `json:"compute,omitempty"`
-	Replicas *string                                        `json:"replicas,omitempty"`
+	Replicas *uint32                                        `json:"replicas,omitempty"`
 	Storage  []*ConfigRunServiceResourcesStorageUpdateInput `json:"storage,omitempty"`
 }
 
@@ -1603,7 +1603,7 @@ type ConfigSMTP struct {
 	Host     string `json:"host"`
 	Method   string `json:"method"`
 	Password string `json:"password"`
-	Port     string `json:"port"`
+	Port     uint32 `json:"port"`
 	Secure   bool   `json:"secure"`
 	Sender   string `json:"sender"`
 	User     string `json:"user"`
@@ -1626,7 +1626,7 @@ type ConfigSMTPInsertInput struct {
 	Host     string `json:"host"`
 	Method   string `json:"method"`
 	Password string `json:"password"`
-	Port     string `json:"port"`
+	Port     uint32 `json:"port"`
 	Secure   bool   `json:"secure"`
 	Sender   string `json:"sender"`
 	User     string `json:"user"`
@@ -1636,7 +1636,7 @@ type ConfigSMTPUpdateInput struct {
 	Host     *string `json:"host,omitempty"`
 	Method   *string `json:"method,omitempty"`
 	Password *string `json:"password,omitempty"`
-	Port     *string `json:"port,omitempty"`
+	Port     *uint32 `json:"port,omitempty"`
 	Secure   *bool   `json:"secure,omitempty"`
 	Sender   *string `json:"sender,omitempty"`
 	User     *string `json:"user,omitempty"`
@@ -1877,17 +1877,17 @@ type ConfigSystemConfigUpdateInput struct {
 }
 
 type ConfigUint32ComparisonExp struct {
-	Eq  *string  `json:"_eq,omitempty"`
-	In  []string `json:"_in,omitempty"`
-	Neq *string  `json:"_neq,omitempty"`
-	Nin []string `json:"_nin,omitempty"`
+	Eq  *uint32  `json:"_eq,omitempty"`
+	In  []uint32 `json:"_in,omitempty"`
+	Neq *uint32  `json:"_neq,omitempty"`
+	Nin []uint32 `json:"_nin,omitempty"`
 }
 
 type ConfigUint8ComparisonExp struct {
-	Eq  *string  `json:"_eq,omitempty"`
-	In  []string `json:"_in,omitempty"`
-	Neq *string  `json:"_neq,omitempty"`
-	Nin []string `json:"_nin,omitempty"`
+	Eq  *uint32  `json:"_eq,omitempty"`
+	In  []uint32 `json:"_in,omitempty"`
+	Neq *uint32  `json:"_neq,omitempty"`
+	Nin []uint32 `json:"_nin,omitempty"`
 }
 
 type ConfigURLComparisonExp struct {

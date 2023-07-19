@@ -128,6 +128,7 @@ type QueryRoot struct {
 	RegionsByPk                             *Regions                                "json:\"regions_by_pk,omitempty\" graphql:\"regions_by_pk\""
 	RunService                              *RunService                             "json:\"runService,omitempty\" graphql:\"runService\""
 	RunServiceConfig                        *ConfigRunServiceConfig                 "json:\"runServiceConfig,omitempty\" graphql:\"runServiceConfig\""
+	RunServiceConfigRawJSON                 string                                  "json:\"runServiceConfigRawJSON\" graphql:\"runServiceConfigRawJSON\""
 	RunServiceConfigs                       []*ConfigRunServiceConfigWithID         "json:\"runServiceConfigs\" graphql:\"runServiceConfigs\""
 	RunServices                             []*RunService                           "json:\"runServices\" graphql:\"runServices\""
 	RunServicesAggregate                    RunServiceAggregate                     "json:\"runServicesAggregate\" graphql:\"runServicesAggregate\""
@@ -641,6 +642,28 @@ func (t *UpdateRunServiceConfig_UpdateRunServiceConfig) GetTypename() *string {
 	return t.Typename
 }
 
+type ReplaceRunServiceConfig_ReplaceRunServiceConfig struct {
+	Typename *string "json:\"__typename,omitempty\" graphql:\"__typename\""
+}
+
+func (t *ReplaceRunServiceConfig_ReplaceRunServiceConfig) GetTypename() *string {
+	if t == nil {
+		t = &ReplaceRunServiceConfig_ReplaceRunServiceConfig{}
+	}
+	return t.Typename
+}
+
+type GetRunServiceInfo_RunService struct {
+	AppID string "json:\"appID\" graphql:\"appID\""
+}
+
+func (t *GetRunServiceInfo_RunService) GetAppID() string {
+	if t == nil {
+		t = &GetRunServiceInfo_RunService{}
+	}
+	return t.AppID
+}
+
 type GetWorkspacesApps struct {
 	Workspaces []*GetWorkspacesApps_Workspaces "json:\"workspaces\" graphql:\"workspaces\""
 }
@@ -738,6 +761,39 @@ func (t *UpdateRunServiceConfig) GetUpdateRunServiceConfig() *UpdateRunServiceCo
 		t = &UpdateRunServiceConfig{}
 	}
 	return &t.UpdateRunServiceConfig
+}
+
+type ReplaceRunServiceConfig struct {
+	ReplaceRunServiceConfig ReplaceRunServiceConfig_ReplaceRunServiceConfig "json:\"replaceRunServiceConfig\" graphql:\"replaceRunServiceConfig\""
+}
+
+func (t *ReplaceRunServiceConfig) GetReplaceRunServiceConfig() *ReplaceRunServiceConfig_ReplaceRunServiceConfig {
+	if t == nil {
+		t = &ReplaceRunServiceConfig{}
+	}
+	return &t.ReplaceRunServiceConfig
+}
+
+type GetRunServiceInfo struct {
+	RunService *GetRunServiceInfo_RunService "json:\"runService,omitempty\" graphql:\"runService\""
+}
+
+func (t *GetRunServiceInfo) GetRunService() *GetRunServiceInfo_RunService {
+	if t == nil {
+		t = &GetRunServiceInfo{}
+	}
+	return t.RunService
+}
+
+type GetRunServiceConfigRawJSON struct {
+	RunServiceConfigRawJSON string "json:\"runServiceConfigRawJSON\" graphql:\"runServiceConfigRawJSON\""
+}
+
+func (t *GetRunServiceConfigRawJSON) GetRunServiceConfigRawJSON() string {
+	if t == nil {
+		t = &GetRunServiceConfigRawJSON{}
+	}
+	return t.RunServiceConfigRawJSON
 }
 
 const GetWorkspacesAppsDocument = `query GetWorkspacesApps {
@@ -936,6 +992,68 @@ func (c *Client) UpdateRunServiceConfig(ctx context.Context, appID string, servi
 
 	var res UpdateRunServiceConfig
 	if err := c.Client.Post(ctx, "UpdateRunServiceConfig", UpdateRunServiceConfigDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ReplaceRunServiceConfigDocument = `mutation ReplaceRunServiceConfig ($appID: uuid!, $serviceID: uuid!, $config: ConfigRunServiceConfigInsertInput!) {
+	replaceRunServiceConfig(appID: $appID, serviceID: $serviceID, config: $config) {
+		__typename
+	}
+}
+`
+
+func (c *Client) ReplaceRunServiceConfig(ctx context.Context, appID string, serviceID string, config ConfigRunServiceConfigInsertInput, interceptors ...clientv2.RequestInterceptor) (*ReplaceRunServiceConfig, error) {
+	vars := map[string]interface{}{
+		"appID":     appID,
+		"serviceID": serviceID,
+		"config":    config,
+	}
+
+	var res ReplaceRunServiceConfig
+	if err := c.Client.Post(ctx, "ReplaceRunServiceConfig", ReplaceRunServiceConfigDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetRunServiceInfoDocument = `query GetRunServiceInfo ($serviceID: uuid!) {
+	runService(id: $serviceID) {
+		appID
+	}
+}
+`
+
+func (c *Client) GetRunServiceInfo(ctx context.Context, serviceID string, interceptors ...clientv2.RequestInterceptor) (*GetRunServiceInfo, error) {
+	vars := map[string]interface{}{
+		"serviceID": serviceID,
+	}
+
+	var res GetRunServiceInfo
+	if err := c.Client.Post(ctx, "GetRunServiceInfo", GetRunServiceInfoDocument, &res, vars, interceptors...); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const GetRunServiceConfigRawJSONDocument = `query GetRunServiceConfigRawJSON ($appID: uuid!, $serviceID: uuid!, $resolve: Boolean!) {
+	runServiceConfigRawJSON(appID: $appID, serviceID: $serviceID, resolve: $resolve)
+}
+`
+
+func (c *Client) GetRunServiceConfigRawJSON(ctx context.Context, appID string, serviceID string, resolve bool, interceptors ...clientv2.RequestInterceptor) (*GetRunServiceConfigRawJSON, error) {
+	vars := map[string]interface{}{
+		"appID":     appID,
+		"serviceID": serviceID,
+		"resolve":   resolve,
+	}
+
+	var res GetRunServiceConfigRawJSON
+	if err := c.Client.Post(ctx, "GetRunServiceConfigRawJSON", GetRunServiceConfigRawJSONDocument, &res, vars, interceptors...); err != nil {
 		return nil, err
 	}
 
