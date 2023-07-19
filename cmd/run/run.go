@@ -8,6 +8,7 @@ func Command() *cli.Command {
 		Aliases: []string{},
 		Usage:   "Perform operations on Nhost Cloud Run",
 		Subcommands: []*cli.Command{
+			CommandConfigEditImage(),
 			CommandConfigPull(),
 			CommandConfigReplace(),
 			CommandConfigValidate(),
