@@ -72,7 +72,9 @@ func commandConfigReplace(cCtx *cli.Context) error {
 		return err
 	}
 
-	replaceConfig, err := transform[model.ConfigRunServiceConfig, graphql.ConfigRunServiceConfigInsertInput](cfg)
+	replaceConfig, err := transform[model.ConfigRunServiceConfig, graphql.ConfigRunServiceConfigInsertInput](
+		cfg,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to transform configuration into replace input: %w", err)
 	}
