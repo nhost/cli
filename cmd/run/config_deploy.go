@@ -10,12 +10,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func CommandConfigReplace() *cli.Command {
+func CommandConfigDeploy() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:    "config-replace",
 		Aliases: []string{},
-		Usage:   "Replace service configuration",
-		Action:  commandConfigReplace,
+		Usage:   "Deploy service configuration",
+		Action:  commandConfigDeploy,
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:     flagConfig,
@@ -48,7 +48,7 @@ func transform[T, V any](t *T) (*V, error) {
 	return &v, nil
 }
 
-func commandConfigReplace(cCtx *cli.Context) error {
+func commandConfigDeploy(cCtx *cli.Context) error {
 	cfg, err := loadConfig(cCtx.String(flagConfig))
 	if err != nil {
 		return err
