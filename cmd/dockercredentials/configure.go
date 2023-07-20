@@ -106,7 +106,7 @@ func configureDocker(dockerConfig string) error {
 		config = make(map[string]interface{})
 	}
 
-	credsHelpers, ok := config["credsHelpers"].(map[string]interface{})
+	credsHelpers, ok := config["credHelpers"].(map[string]interface{})
 	if !ok {
 		credsHelpers = make(map[string]interface{})
 	}
