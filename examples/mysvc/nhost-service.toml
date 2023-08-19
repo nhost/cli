@@ -1,14 +1,15 @@
 name = 'mysvc'
+command = ['gunicorn', '-b', '0.0.0.0:8080', 'httpbin:app', '-k', 'gevent']
 
 [image]
-image = 'registry.eu-central-1.nhost.run/21039060-88b3-4382-bc09-86c21fe3156b:123'
+image = 'docker.io/kong/httpbin:0.1.0'
 
 [[environment]]
-name = 'MY_ENV2'
-value = 'myvalue2'
+name = 'GREET'
+value = '{{ secrets.GREET_TYPE }}'
 
 [[ports]]
-port = 3000
+port = 8080
 type = 'http'
 publish = true
 

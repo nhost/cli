@@ -12,6 +12,7 @@ import (
 	"github.com/nhost/cli/nhostclient"
 	"github.com/nhost/cli/nhostclient/credentials"
 	"github.com/nhost/cli/nhostclient/graphql"
+	"github.com/nhost/cli/project/env"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/urfave/cli/v2"
 )
@@ -28,16 +29,16 @@ func CommandConfigValidate() *cli.Command {
 		Action:  commandConfigValidate,
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:     flagConfig,
-				Aliases:  []string{},
-				Usage:    "Service configuration file",
-				Required: true,
-				EnvVars:  []string{"NHOST_RUN_SERVICE_CONFIG"},
+				Name:    flagConfig,
+				Aliases: []string{},
+				Usage:   "Service configuration file",
+				Value:   "nhost-service.toml",
+				EnvVars: []string{"NHOST_RUN_SERVICE_CONFIG"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:     flagServiceID,
 				Usage:    "Service ID to update",
-				Required: true,
+				Required: false,
 				EnvVars:  []string{"NHOST_RUN_SERVICE_ID"},
 			},
 		},
@@ -128,6 +129,33 @@ func ValidateRemote(
 	return nil
 }
 
+func ValidateAndResolve(
+	ce *clienv.CliEnv,
+	cfg *model.ConfigRunServiceConfig,
+) (*model.ConfigRunServiceConfig, error) {
+	schema, err := schema.New()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create schema: %w", err)
+	}
+
+	var secrets model.Secrets
+	if err := clienv.UnmarshalFile(ce.Path.Secrets(), &secrets, env.Unmarshal); err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse secrets, make sure secret values are between quotes: %w",
+			err,
+		)
+	}
+
+	cfg, err = appconfig.SecretsResolver(cfg, secrets, schema.FillRunServiceConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate config: %w", err)
+	}
+
+	ce.Infoln("Config is valid!")
+
+	return cfg, nil
+}
+
 func commandConfigValidate(cCtx *cli.Context) error {
 	cfg, err := loadConfig(cCtx.String(flagConfig))
 	if err != nil {
@@ -135,6 +163,16 @@ func commandConfigValidate(cCtx *cli.Context) error {
 	}
 
 	ce := clienv.FromCLI(cCtx)
+
+	serviceID := cCtx.String(flagServiceID)
+	if serviceID == "" {
+		_, err := ValidateAndResolve(
+			ce,
+			cfg,
+		)
+		return err
+	}
+
 	cl := ce.GetNhostClient()
 
 	session, err := ce.LoadSession(cCtx.Context)

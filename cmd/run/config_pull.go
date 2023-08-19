@@ -20,11 +20,11 @@ func CommandConfigPull() *cli.Command {
 		Usage:   "Download service configuration",
 		Flags: []cli.Flag{
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:     flagConfig,
-				Aliases:  []string{},
-				Usage:    "Service configuration file",
-				Required: true,
-				EnvVars:  []string{"NHOST_RUN_SERVICE_CONFIG"},
+				Name:    flagConfig,
+				Aliases: []string{},
+				Usage:   "Service configuration file",
+				Value:   "nhost-service.toml",
+				EnvVars: []string{"NHOST_RUN_SERVICE_CONFIG"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:     flagServiceID,
