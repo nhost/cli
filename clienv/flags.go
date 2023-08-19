@@ -20,7 +20,8 @@ const (
 
 func getGitBranchName() string {
 	repo, err := git.PlainOpenWithOptions(".", &git.PlainOpenOptions{
-		DetectDotGit: true,
+		DetectDotGit:          true,
+		EnableDotGitCommonDir: false,
 	})
 	if err != nil {
 		return "nogit"
