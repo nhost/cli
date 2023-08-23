@@ -8,11 +8,11 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-func graphql(
+func graphql( //nolint:funlen
 	cfg *model.ConfigConfig,
 	useTLS bool,
 	httpPort, port uint,
-) (*Service, error) { //nolint:funlen
+) (*Service, error) {
 	envars, err := appconfig.HasuraEnv(
 		cfg,
 		"local",

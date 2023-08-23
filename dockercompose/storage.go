@@ -7,7 +7,7 @@ import (
 	"github.com/nhost/be/services/mimir/schema/appconfig"
 )
 
-func storage(
+func storage( //nolint:funlen
 	cfg *model.ConfigConfig,
 	useTLS bool,
 	httpPort uint,
