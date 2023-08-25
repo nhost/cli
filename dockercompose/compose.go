@@ -233,7 +233,14 @@ func minio(dataFolder string) (*Service, error) {
 			"MINIO_ROOT_USER":     "minioaccesskey123123",
 		},
 		ExtraHosts:  extraHosts(),
-		Ports:       nil,
+		Ports: []Port{
+			{
+				Mode:      "ingress",
+				Target:    9000,
+				Published: fmt.Sprintf("%d", 9000),
+				Protocol:  "tcp",
+			},
+		},
 		Restart:     "always",
 		HealthCheck: nil,
 		Labels:      nil,
