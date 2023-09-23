@@ -7,7 +7,6 @@ export default (req: Request, res: Response) => {
             headers: req.headers,
             query: req.query,
             node: process.version,
-            arch: process.arch,
         },
     )
 }
