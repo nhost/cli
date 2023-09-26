@@ -72,7 +72,7 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 		},
 		Functions: &model.ConfigFunctions{
 			Node: &model.ConfigFunctionsNode{
-				Version: ptr(int(16)),
+				Version: ptr(int(18)),
 			},
 		},
 		Auth: &model.ConfigAuth{
