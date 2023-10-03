@@ -257,7 +257,7 @@ func minio(dataFolder string) (*Service, error) {
 
 func dashboard(cfg *model.ConfigConfig, httpPort uint, useTLS bool) *Service {
 	return &Service{
-		Image:      "nhost/dashboard:0.20.7",
+		Image:      "nhost/dashboard:0.20.20",
 		DependsOn:  nil,
 		EntryPoint: nil,
 		Command:    nil,
@@ -324,8 +324,9 @@ func functions( //nolint:funlen
 	for _, envVar := range cfg.GetGlobal().GetEnvironment() {
 		envVars[envVar.GetName()] = envVar.GetValue()
 	}
+
 	return &Service{
-		Image:       "nhost/functions:0.1.9",
+		Image:       "nhost/functions:1.0.0",
 		DependsOn:   nil,
 		EntryPoint:  nil,
 		Command:     nil,

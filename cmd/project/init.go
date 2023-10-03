@@ -88,11 +88,11 @@ func initInit(
 	}
 	defer gitingoref.Close()
 
-	if err := system.AddToGitignore(".secrets"); err != nil {
+	if err := system.AddToGitignore(".secrets\n"); err != nil {
 		return fmt.Errorf("failed to add secrets to .gitignore: %w", err)
 	}
 
-	if err := system.AddToGitignore(".nhost"); err != nil {
+	if err := system.AddToGitignore(".nhost\n"); err != nil {
 		return fmt.Errorf("failed to add .nhost to .gitignore: %w", err)
 	}
 
@@ -199,7 +199,7 @@ func deploy(
 		return fmt.Errorf("failed to create postgres migration: %w", err)
 	}
 
-	ce.Infoln("Downloading metadata")
+	ce.Infoln("Downloading metadata...")
 	if err := docker.HasuraWrapper(
 		ctx, ce.Path.NhostFolder(),
 		*cfg.Hasura.Version,
