@@ -10496,6 +10496,162 @@ func (exp *ConfigHasuraSettingsComparisonExp) Matches(o *ConfigHasuraSettings) b
 	return true
 }
 
+type ConfigIngress struct {
+	Fqdn []string `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
+}
+
+func (o *ConfigIngress) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	if o.Fqdn != nil {
+		m["fqdn"] = o.Fqdn
+	}
+	return json.Marshal(m)
+}
+
+func (o *ConfigIngress) GetFqdn() []string {
+	if o == nil {
+		o = &ConfigIngress{}
+	}
+	return o.Fqdn
+}
+
+type ConfigIngressUpdateInput struct {
+	Fqdn      []string `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
+	IsSetFqdn bool     `json:"-"`
+}
+
+func (o *ConfigIngressUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["fqdn"]; ok {
+		if v != nil {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var l []string
+			if err := json.Unmarshal(b, &l); err != nil {
+				return err
+			}
+			o.Fqdn = l
+		}
+		o.IsSetFqdn = true
+	}
+
+	return nil
+}
+
+func (o *ConfigIngressUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigIngressUpdateInput) GetFqdn() []string {
+	if o == nil {
+		o = &ConfigIngressUpdateInput{}
+	}
+	return o.Fqdn
+}
+
+func (s *ConfigIngress) Update(v *ConfigIngressUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetFqdn || v.Fqdn != nil {
+		if v.Fqdn == nil {
+			s.Fqdn = nil
+		} else {
+			s.Fqdn = make([]string, len(v.Fqdn))
+			for i, e := range v.Fqdn {
+				s.Fqdn[i] = e
+			}
+		}
+	}
+}
+
+type ConfigIngressInsertInput struct {
+	Fqdn []string `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
+}
+
+func (o *ConfigIngressInsertInput) GetFqdn() []string {
+	if o == nil {
+		o = &ConfigIngressInsertInput{}
+	}
+	return o.Fqdn
+}
+
+func (s *ConfigIngress) Insert(v *ConfigIngressInsertInput) {
+	if v.Fqdn != nil {
+		s.Fqdn = make([]string, len(v.Fqdn))
+		for i, e := range v.Fqdn {
+			s.Fqdn[i] = e
+		}
+	}
+}
+
+func (s *ConfigIngress) Clone() *ConfigIngress {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigIngress{}
+	if s.Fqdn != nil {
+		v.Fqdn = make([]string, len(s.Fqdn))
+		copy(v.Fqdn, s.Fqdn)
+	}
+	return v
+}
+
+type ConfigIngressComparisonExp struct {
+	And  []*ConfigIngressComparisonExp `json:"_and,omitempty"`
+	Not  *ConfigIngressComparisonExp   `json:"_not,omitempty"`
+	Or   []*ConfigIngressComparisonExp `json:"_or,omitempty"`
+	Fqdn *ConfigStringComparisonExp    `json:"fqdn,omitempty"`
+}
+
+func (exp *ConfigIngressComparisonExp) Matches(o *ConfigIngress) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigIngress{
+			Fqdn: []string{},
+		}
+	}
+	{
+		found := false
+		for _, o := range o.Fqdn {
+			if exp.Fqdn.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Fqdn != nil {
+			return false
+		}
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
 // See https://hasura.io/docs/latest/auth/authentication/jwt/
 type ConfigJWTSecret struct {
 	Type *string `json:"type" toml:"type"`
@@ -11238,6 +11394,172 @@ func (exp *ConfigLocaleComparisonExp) Matches(o string) bool {
 	}
 
 	if exp.Nin != nil && contains(exp.Nin, o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigNetworking struct {
+	Ingresses []*ConfigIngress `json:"ingresses,omitempty" toml:"ingresses,omitempty"`
+}
+
+func (o *ConfigNetworking) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	if o.Ingresses != nil {
+		m["ingresses"] = o.Ingresses
+	}
+	return json.Marshal(m)
+}
+
+func (o *ConfigNetworking) GetIngresses() []*ConfigIngress {
+	if o == nil {
+		o = &ConfigNetworking{}
+	}
+	return o.Ingresses
+}
+
+type ConfigNetworkingUpdateInput struct {
+	Ingresses      []*ConfigIngressUpdateInput `json:"ingresses,omitempty" toml:"ingresses,omitempty"`
+	IsSetIngresses bool                        `json:"-"`
+}
+
+func (o *ConfigNetworkingUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["ingresses"]; ok {
+		if v != nil {
+			x, ok := v.([]interface{})
+			if !ok {
+				return fmt.Errorf("Ingresses must be []interface{}, got %T", v)
+			}
+
+			l := make([]*ConfigIngressUpdateInput, len(x))
+			for i, vv := range x {
+				t := &ConfigIngressUpdateInput{}
+				if err := t.UnmarshalGQL(vv); err != nil {
+					return err
+				}
+				l[i] = t
+			}
+			o.Ingresses = l
+		}
+		o.IsSetIngresses = true
+	}
+
+	return nil
+}
+
+func (o *ConfigNetworkingUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigNetworkingUpdateInput) GetIngresses() []*ConfigIngressUpdateInput {
+	if o == nil {
+		o = &ConfigNetworkingUpdateInput{}
+	}
+	return o.Ingresses
+}
+
+func (s *ConfigNetworking) Update(v *ConfigNetworkingUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetIngresses || v.Ingresses != nil {
+		if v.Ingresses == nil {
+			s.Ingresses = nil
+		} else {
+			s.Ingresses = make([]*ConfigIngress, len(v.Ingresses))
+			for i, e := range v.Ingresses {
+				v := &ConfigIngress{}
+				v.Update(e)
+				s.Ingresses[i] = v
+			}
+		}
+	}
+}
+
+type ConfigNetworkingInsertInput struct {
+	Ingresses []*ConfigIngressInsertInput `json:"ingresses,omitempty" toml:"ingresses,omitempty"`
+}
+
+func (o *ConfigNetworkingInsertInput) GetIngresses() []*ConfigIngressInsertInput {
+	if o == nil {
+		o = &ConfigNetworkingInsertInput{}
+	}
+	return o.Ingresses
+}
+
+func (s *ConfigNetworking) Insert(v *ConfigNetworkingInsertInput) {
+	if v.Ingresses != nil {
+		s.Ingresses = make([]*ConfigIngress, len(v.Ingresses))
+		for i, e := range v.Ingresses {
+			v := &ConfigIngress{}
+			v.Insert(e)
+			s.Ingresses[i] = v
+		}
+	}
+}
+
+func (s *ConfigNetworking) Clone() *ConfigNetworking {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigNetworking{}
+	if s.Ingresses != nil {
+		v.Ingresses = make([]*ConfigIngress, len(s.Ingresses))
+		for i, e := range s.Ingresses {
+			v.Ingresses[i] = e.Clone()
+		}
+	}
+	return v
+}
+
+type ConfigNetworkingComparisonExp struct {
+	And       []*ConfigNetworkingComparisonExp `json:"_and,omitempty"`
+	Not       *ConfigNetworkingComparisonExp   `json:"_not,omitempty"`
+	Or        []*ConfigNetworkingComparisonExp `json:"_or,omitempty"`
+	Ingresses *ConfigIngressComparisonExp      `json:"ingresses,omitempty"`
+}
+
+func (exp *ConfigNetworkingComparisonExp) Matches(o *ConfigNetworking) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigNetworking{
+			Ingresses: []*ConfigIngress{},
+		}
+	}
+	{
+		found := false
+		for _, o := range o.Ingresses {
+			if exp.Ingresses.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Ingresses != nil {
+			return false
+		}
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
 		return false
 	}
 
@@ -12943,7 +13265,9 @@ func (exp *ConfigProviderComparisonExp) Matches(o *ConfigProvider) bool {
 type ConfigResources struct {
 	Compute *ConfigResourcesCompute `json:"compute,omitempty" toml:"compute,omitempty"`
 	// Number of replicas for a service
-	Replicas uint8 `json:"replicas" toml:"replicas"`
+	Replicas *uint8 `json:"replicas" toml:"replicas"`
+
+	Networking *ConfigNetworking `json:"networking,omitempty" toml:"networking,omitempty"`
 }
 
 func (o *ConfigResources) MarshalJSON() ([]byte, error) {
@@ -12951,7 +13275,12 @@ func (o *ConfigResources) MarshalJSON() ([]byte, error) {
 	if o.Compute != nil {
 		m["compute"] = o.Compute
 	}
-	m["replicas"] = o.Replicas
+	if o.Replicas != nil {
+		m["replicas"] = o.Replicas
+	}
+	if o.Networking != nil {
+		m["networking"] = o.Networking
+	}
 	return json.Marshal(m)
 }
 
@@ -12962,18 +13291,27 @@ func (o *ConfigResources) GetCompute() *ConfigResourcesCompute {
 	return o.Compute
 }
 
-func (o *ConfigResources) GetReplicas() uint8 {
+func (o *ConfigResources) GetReplicas() *uint8 {
 	if o == nil {
 		o = &ConfigResources{}
 	}
 	return o.Replicas
 }
 
+func (o *ConfigResources) GetNetworking() *ConfigNetworking {
+	if o == nil {
+		return nil
+	}
+	return o.Networking
+}
+
 type ConfigResourcesUpdateInput struct {
-	Compute       *ConfigResourcesComputeUpdateInput `json:"compute,omitempty" toml:"compute,omitempty"`
-	IsSetCompute  bool                               `json:"-"`
-	Replicas      *uint8                             `json:"replicas,omitempty" toml:"replicas,omitempty"`
-	IsSetReplicas bool                               `json:"-"`
+	Compute         *ConfigResourcesComputeUpdateInput `json:"compute,omitempty" toml:"compute,omitempty"`
+	IsSetCompute    bool                               `json:"-"`
+	Replicas        *uint8                             `json:"replicas,omitempty" toml:"replicas,omitempty"`
+	IsSetReplicas   bool                               `json:"-"`
+	Networking      *ConfigNetworkingUpdateInput       `json:"networking,omitempty" toml:"networking,omitempty"`
+	IsSetNetworking bool                               `json:"-"`
 }
 
 func (o *ConfigResourcesUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -13008,6 +13346,16 @@ func (o *ConfigResourcesUpdateInput) UnmarshalGQL(v interface{}) error {
 		}
 		o.IsSetReplicas = true
 	}
+	if x, ok := m["networking"]; ok {
+		if x != nil {
+			t := &ConfigNetworkingUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Networking = t
+		}
+		o.IsSetNetworking = true
+	}
 
 	return nil
 }
@@ -13033,6 +13381,13 @@ func (o *ConfigResourcesUpdateInput) GetReplicas() *uint8 {
 	return o.Replicas
 }
 
+func (o *ConfigResourcesUpdateInput) GetNetworking() *ConfigNetworkingUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Networking
+}
+
 func (s *ConfigResources) Update(v *ConfigResourcesUpdateInput) {
 	if v == nil {
 		return
@@ -13048,15 +13403,24 @@ func (s *ConfigResources) Update(v *ConfigResourcesUpdateInput) {
 		}
 	}
 	if v.IsSetReplicas || v.Replicas != nil {
-		if v.Replicas != nil {
-			s.Replicas = *v.Replicas
+		s.Replicas = v.Replicas
+	}
+	if v.IsSetNetworking || v.Networking != nil {
+		if v.Networking == nil {
+			s.Networking = nil
+		} else {
+			if s.Networking == nil {
+				s.Networking = &ConfigNetworking{}
+			}
+			s.Networking.Update(v.Networking)
 		}
 	}
 }
 
 type ConfigResourcesInsertInput struct {
-	Compute  *ConfigResourcesComputeInsertInput `json:"compute,omitempty" toml:"compute,omitempty"`
-	Replicas uint8                              `json:"replicas,omitempty" toml:"replicas,omitempty"`
+	Compute    *ConfigResourcesComputeInsertInput `json:"compute,omitempty" toml:"compute,omitempty"`
+	Replicas   *uint8                             `json:"replicas,omitempty" toml:"replicas,omitempty"`
+	Networking *ConfigNetworkingInsertInput       `json:"networking,omitempty" toml:"networking,omitempty"`
 }
 
 func (o *ConfigResourcesInsertInput) GetCompute() *ConfigResourcesComputeInsertInput {
@@ -13066,11 +13430,18 @@ func (o *ConfigResourcesInsertInput) GetCompute() *ConfigResourcesComputeInsertI
 	return o.Compute
 }
 
-func (o *ConfigResourcesInsertInput) GetReplicas() uint8 {
+func (o *ConfigResourcesInsertInput) GetReplicas() *uint8 {
 	if o == nil {
 		o = &ConfigResourcesInsertInput{}
 	}
 	return o.Replicas
+}
+
+func (o *ConfigResourcesInsertInput) GetNetworking() *ConfigNetworkingInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Networking
 }
 
 func (s *ConfigResources) Insert(v *ConfigResourcesInsertInput) {
@@ -13081,6 +13452,12 @@ func (s *ConfigResources) Insert(v *ConfigResourcesInsertInput) {
 		s.Compute.Insert(v.Compute)
 	}
 	s.Replicas = v.Replicas
+	if v.Networking != nil {
+		if s.Networking == nil {
+			s.Networking = &ConfigNetworking{}
+		}
+		s.Networking.Insert(v.Networking)
+	}
 }
 
 func (s *ConfigResources) Clone() *ConfigResources {
@@ -13091,15 +13468,17 @@ func (s *ConfigResources) Clone() *ConfigResources {
 	v := &ConfigResources{}
 	v.Compute = s.Compute.Clone()
 	v.Replicas = s.Replicas
+	v.Networking = s.Networking.Clone()
 	return v
 }
 
 type ConfigResourcesComparisonExp struct {
-	And      []*ConfigResourcesComparisonExp      `json:"_and,omitempty"`
-	Not      *ConfigResourcesComparisonExp        `json:"_not,omitempty"`
-	Or       []*ConfigResourcesComparisonExp      `json:"_or,omitempty"`
-	Compute  *ConfigResourcesComputeComparisonExp `json:"compute,omitempty"`
-	Replicas *ConfigUint8ComparisonExp            `json:"replicas,omitempty"`
+	And        []*ConfigResourcesComparisonExp      `json:"_and,omitempty"`
+	Not        *ConfigResourcesComparisonExp        `json:"_not,omitempty"`
+	Or         []*ConfigResourcesComparisonExp      `json:"_or,omitempty"`
+	Compute    *ConfigResourcesComputeComparisonExp `json:"compute,omitempty"`
+	Replicas   *ConfigUint8ComparisonExp            `json:"replicas,omitempty"`
+	Networking *ConfigNetworkingComparisonExp       `json:"networking,omitempty"`
 }
 
 func (exp *ConfigResourcesComparisonExp) Matches(o *ConfigResources) bool {
@@ -13109,13 +13488,17 @@ func (exp *ConfigResourcesComparisonExp) Matches(o *ConfigResources) bool {
 
 	if o == nil {
 		o = &ConfigResources{
-			Compute: &ConfigResourcesCompute{},
+			Compute:    &ConfigResourcesCompute{},
+			Networking: &ConfigNetworking{},
 		}
 	}
 	if !exp.Compute.Matches(o.Compute) {
 		return false
 	}
-	if !exp.Replicas.Matches(o.Replicas) {
+	if o.Replicas != nil && !exp.Replicas.Matches(*o.Replicas) {
+		return false
+	}
+	if !exp.Networking.Matches(o.Networking) {
 		return false
 	}
 
@@ -14000,6 +14383,8 @@ type ConfigRunServicePort struct {
 	Type string `json:"type" toml:"type"`
 
 	Publish *bool `json:"publish" toml:"publish"`
+
+	Ingresses []*ConfigIngress `json:"ingresses,omitempty" toml:"ingresses,omitempty"`
 }
 
 func (o *ConfigRunServicePort) MarshalJSON() ([]byte, error) {
@@ -14008,6 +14393,9 @@ func (o *ConfigRunServicePort) MarshalJSON() ([]byte, error) {
 	m["type"] = o.Type
 	if o.Publish != nil {
 		m["publish"] = o.Publish
+	}
+	if o.Ingresses != nil {
+		m["ingresses"] = o.Ingresses
 	}
 	return json.Marshal(m)
 }
@@ -14033,13 +14421,22 @@ func (o *ConfigRunServicePort) GetPublish() *bool {
 	return o.Publish
 }
 
+func (o *ConfigRunServicePort) GetIngresses() []*ConfigIngress {
+	if o == nil {
+		o = &ConfigRunServicePort{}
+	}
+	return o.Ingresses
+}
+
 type ConfigRunServicePortUpdateInput struct {
-	Port         *uint16 `json:"port,omitempty" toml:"port,omitempty"`
-	IsSetPort    bool    `json:"-"`
-	Type         *string `json:"type,omitempty" toml:"type,omitempty"`
-	IsSetType    bool    `json:"-"`
-	Publish      *bool   `json:"publish,omitempty" toml:"publish,omitempty"`
-	IsSetPublish bool    `json:"-"`
+	Port           *uint16                     `json:"port,omitempty" toml:"port,omitempty"`
+	IsSetPort      bool                        `json:"-"`
+	Type           *string                     `json:"type,omitempty" toml:"type,omitempty"`
+	IsSetType      bool                        `json:"-"`
+	Publish        *bool                       `json:"publish,omitempty" toml:"publish,omitempty"`
+	IsSetPublish   bool                        `json:"-"`
+	Ingresses      []*ConfigIngressUpdateInput `json:"ingresses,omitempty" toml:"ingresses,omitempty"`
+	IsSetIngresses bool                        `json:"-"`
 }
 
 func (o *ConfigRunServicePortUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -14098,6 +14495,25 @@ func (o *ConfigRunServicePortUpdateInput) UnmarshalGQL(v interface{}) error {
 		}
 		o.IsSetPublish = true
 	}
+	if v, ok := m["ingresses"]; ok {
+		if v != nil {
+			x, ok := v.([]interface{})
+			if !ok {
+				return fmt.Errorf("Ingresses must be []interface{}, got %T", v)
+			}
+
+			l := make([]*ConfigIngressUpdateInput, len(x))
+			for i, vv := range x {
+				t := &ConfigIngressUpdateInput{}
+				if err := t.UnmarshalGQL(vv); err != nil {
+					return err
+				}
+				l[i] = t
+			}
+			o.Ingresses = l
+		}
+		o.IsSetIngresses = true
+	}
 
 	return nil
 }
@@ -14130,6 +14546,13 @@ func (o *ConfigRunServicePortUpdateInput) GetPublish() *bool {
 	return o.Publish
 }
 
+func (o *ConfigRunServicePortUpdateInput) GetIngresses() []*ConfigIngressUpdateInput {
+	if o == nil {
+		o = &ConfigRunServicePortUpdateInput{}
+	}
+	return o.Ingresses
+}
+
 func (s *ConfigRunServicePort) Update(v *ConfigRunServicePortUpdateInput) {
 	if v == nil {
 		return
@@ -14147,12 +14570,25 @@ func (s *ConfigRunServicePort) Update(v *ConfigRunServicePortUpdateInput) {
 	if v.IsSetPublish || v.Publish != nil {
 		s.Publish = v.Publish
 	}
+	if v.IsSetIngresses || v.Ingresses != nil {
+		if v.Ingresses == nil {
+			s.Ingresses = nil
+		} else {
+			s.Ingresses = make([]*ConfigIngress, len(v.Ingresses))
+			for i, e := range v.Ingresses {
+				v := &ConfigIngress{}
+				v.Update(e)
+				s.Ingresses[i] = v
+			}
+		}
+	}
 }
 
 type ConfigRunServicePortInsertInput struct {
-	Port    uint16 `json:"port,omitempty" toml:"port,omitempty"`
-	Type    string `json:"type,omitempty" toml:"type,omitempty"`
-	Publish *bool  `json:"publish,omitempty" toml:"publish,omitempty"`
+	Port      uint16                      `json:"port,omitempty" toml:"port,omitempty"`
+	Type      string                      `json:"type,omitempty" toml:"type,omitempty"`
+	Publish   *bool                       `json:"publish,omitempty" toml:"publish,omitempty"`
+	Ingresses []*ConfigIngressInsertInput `json:"ingresses,omitempty" toml:"ingresses,omitempty"`
 }
 
 func (o *ConfigRunServicePortInsertInput) GetPort() uint16 {
@@ -14176,10 +14612,25 @@ func (o *ConfigRunServicePortInsertInput) GetPublish() *bool {
 	return o.Publish
 }
 
+func (o *ConfigRunServicePortInsertInput) GetIngresses() []*ConfigIngressInsertInput {
+	if o == nil {
+		o = &ConfigRunServicePortInsertInput{}
+	}
+	return o.Ingresses
+}
+
 func (s *ConfigRunServicePort) Insert(v *ConfigRunServicePortInsertInput) {
 	s.Port = v.Port
 	s.Type = v.Type
 	s.Publish = v.Publish
+	if v.Ingresses != nil {
+		s.Ingresses = make([]*ConfigIngress, len(v.Ingresses))
+		for i, e := range v.Ingresses {
+			v := &ConfigIngress{}
+			v.Insert(e)
+			s.Ingresses[i] = v
+		}
+	}
 }
 
 func (s *ConfigRunServicePort) Clone() *ConfigRunServicePort {
@@ -14191,16 +14642,23 @@ func (s *ConfigRunServicePort) Clone() *ConfigRunServicePort {
 	v.Port = s.Port
 	v.Type = s.Type
 	v.Publish = s.Publish
+	if s.Ingresses != nil {
+		v.Ingresses = make([]*ConfigIngress, len(s.Ingresses))
+		for i, e := range s.Ingresses {
+			v.Ingresses[i] = e.Clone()
+		}
+	}
 	return v
 }
 
 type ConfigRunServicePortComparisonExp struct {
-	And     []*ConfigRunServicePortComparisonExp `json:"_and,omitempty"`
-	Not     *ConfigRunServicePortComparisonExp   `json:"_not,omitempty"`
-	Or      []*ConfigRunServicePortComparisonExp `json:"_or,omitempty"`
-	Port    *ConfigPortComparisonExp             `json:"port,omitempty"`
-	Type    *ConfigStringComparisonExp           `json:"type,omitempty"`
-	Publish *ConfigBooleanComparisonExp          `json:"publish,omitempty"`
+	And       []*ConfigRunServicePortComparisonExp `json:"_and,omitempty"`
+	Not       *ConfigRunServicePortComparisonExp   `json:"_not,omitempty"`
+	Or        []*ConfigRunServicePortComparisonExp `json:"_or,omitempty"`
+	Port      *ConfigPortComparisonExp             `json:"port,omitempty"`
+	Type      *ConfigStringComparisonExp           `json:"type,omitempty"`
+	Publish   *ConfigBooleanComparisonExp          `json:"publish,omitempty"`
+	Ingresses *ConfigIngressComparisonExp          `json:"ingresses,omitempty"`
 }
 
 func (exp *ConfigRunServicePortComparisonExp) Matches(o *ConfigRunServicePort) bool {
@@ -14209,7 +14667,9 @@ func (exp *ConfigRunServicePortComparisonExp) Matches(o *ConfigRunServicePort) b
 	}
 
 	if o == nil {
-		o = &ConfigRunServicePort{}
+		o = &ConfigRunServicePort{
+			Ingresses: []*ConfigIngress{},
+		}
 	}
 	if !exp.Port.Matches(o.Port) {
 		return false
@@ -14219,6 +14679,18 @@ func (exp *ConfigRunServicePortComparisonExp) Matches(o *ConfigRunServicePort) b
 	}
 	if o.Publish != nil && !exp.Publish.Matches(*o.Publish) {
 		return false
+	}
+	{
+		found := false
+		for _, o := range o.Ingresses {
+			if exp.Ingresses.Matches(o) {
+				found = true
+				break
+			}
+		}
+		if !found && exp.Ingresses != nil {
+			return false
+		}
 	}
 
 	if exp.And != nil && !all(exp.And, o) {
@@ -16281,7 +16753,8 @@ type ConfigStorage struct {
 	//
 	// https://github.com/nhost/hasura-storage/releases
 	Version *string `json:"version" toml:"version"`
-	// Resources for the service
+	// Networking (custom domains at the moment) are not allowed as we need to do further
+	// configurations in the CDN. We will enable it again in the future.
 	Resources *ConfigResources `json:"resources,omitempty" toml:"resources,omitempty"`
 
 	Antivirus *ConfigStorageAntivirus `json:"antivirus,omitempty" toml:"antivirus,omitempty"`

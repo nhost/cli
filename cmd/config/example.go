@@ -67,7 +67,14 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 					Cpu:    500,
 					Memory: 1024,
 				},
-				Replicas: 1,
+				Replicas: ptr(uint8(1)),
+				Networking: &model.ConfigNetworking{
+					Ingresses: []*model.ConfigIngress{
+						{
+							Fqdn: []string{"hasura.example.com"},
+						},
+					},
+				},
 			},
 		},
 		Functions: &model.ConfigFunctions{
@@ -82,7 +89,14 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 					Cpu:    250,
 					Memory: 512,
 				},
-				Replicas: 1,
+				Replicas: ptr(uint8(1)),
+				Networking: &model.ConfigNetworking{
+					Ingresses: []*model.ConfigIngress{
+						{
+							Fqdn: []string{"auth.example.com"},
+						},
+					},
+				},
 			},
 			Redirections: &model.ConfigAuthRedirections{
 				ClientUrl: ptr("https://example.com"),
@@ -263,7 +277,8 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 					Cpu:    2000,
 					Memory: 4096,
 				},
-				Replicas: 1,
+				Replicas:   ptr(uint8(1)),
+				Networking: nil,
 			},
 			Settings: &model.ConfigPostgresSettings{
 				Jit:                           ptr("off"),
@@ -313,7 +328,8 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 					Cpu:    500,
 					Memory: 1024,
 				},
-				Replicas: 1,
+				Networking: nil,
+				Replicas:   ptr(uint8(1)),
 			},
 		},
 		Observability: &model.ConfigObservability{
