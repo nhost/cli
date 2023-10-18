@@ -248,13 +248,14 @@ func getConfig() *model.ConfigConfig { //nolint:maintidx
 		},
 		Postgres: &model.ConfigPostgres{
 			Version: ptr("14.5-20220831-1"),
-			Resources: &model.ConfigResources{
+			Resources: &model.ConfigPostgresResources{
 				Compute: &model.ConfigResourcesCompute{
 					Cpu:    2000,
 					Memory: 500,
 				},
 				Replicas:   ptr(uint8(1)),
 				Networking: nil,
+				Storage:    nil,
 			},
 			Settings: nil,
 		},

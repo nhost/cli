@@ -11742,7 +11742,7 @@ type ConfigPostgres struct {
 	// https://hub.docker.com/r/nhost/postgres/tags
 	Version *string `json:"version" toml:"version"`
 	// Resources for the service
-	Resources *ConfigResources `json:"resources,omitempty" toml:"resources,omitempty"`
+	Resources *ConfigPostgresResources `json:"resources,omitempty" toml:"resources,omitempty"`
 
 	Settings *ConfigPostgresSettings `json:"settings,omitempty" toml:"settings,omitempty"`
 }
@@ -11768,7 +11768,7 @@ func (o *ConfigPostgres) GetVersion() *string {
 	return o.Version
 }
 
-func (o *ConfigPostgres) GetResources() *ConfigResources {
+func (o *ConfigPostgres) GetResources() *ConfigPostgresResources {
 	if o == nil {
 		return nil
 	}
@@ -11783,12 +11783,12 @@ func (o *ConfigPostgres) GetSettings() *ConfigPostgresSettings {
 }
 
 type ConfigPostgresUpdateInput struct {
-	Version        *string                            `json:"version,omitempty" toml:"version,omitempty"`
-	IsSetVersion   bool                               `json:"-"`
-	Resources      *ConfigResourcesUpdateInput        `json:"resources,omitempty" toml:"resources,omitempty"`
-	IsSetResources bool                               `json:"-"`
-	Settings       *ConfigPostgresSettingsUpdateInput `json:"settings,omitempty" toml:"settings,omitempty"`
-	IsSetSettings  bool                               `json:"-"`
+	Version        *string                             `json:"version,omitempty" toml:"version,omitempty"`
+	IsSetVersion   bool                                `json:"-"`
+	Resources      *ConfigPostgresResourcesUpdateInput `json:"resources,omitempty" toml:"resources,omitempty"`
+	IsSetResources bool                                `json:"-"`
+	Settings       *ConfigPostgresSettingsUpdateInput  `json:"settings,omitempty" toml:"settings,omitempty"`
+	IsSetSettings  bool                                `json:"-"`
 }
 
 func (o *ConfigPostgresUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -11815,7 +11815,7 @@ func (o *ConfigPostgresUpdateInput) UnmarshalGQL(v interface{}) error {
 	}
 	if x, ok := m["resources"]; ok {
 		if x != nil {
-			t := &ConfigResourcesUpdateInput{}
+			t := &ConfigPostgresResourcesUpdateInput{}
 			if err := t.UnmarshalGQL(x); err != nil {
 				return err
 			}
@@ -11851,7 +11851,7 @@ func (o *ConfigPostgresUpdateInput) GetVersion() *string {
 	return o.Version
 }
 
-func (o *ConfigPostgresUpdateInput) GetResources() *ConfigResourcesUpdateInput {
+func (o *ConfigPostgresUpdateInput) GetResources() *ConfigPostgresResourcesUpdateInput {
 	if o == nil {
 		return nil
 	}
@@ -11877,7 +11877,7 @@ func (s *ConfigPostgres) Update(v *ConfigPostgresUpdateInput) {
 			s.Resources = nil
 		} else {
 			if s.Resources == nil {
-				s.Resources = &ConfigResources{}
+				s.Resources = &ConfigPostgresResources{}
 			}
 			s.Resources.Update(v.Resources)
 		}
@@ -11895,9 +11895,9 @@ func (s *ConfigPostgres) Update(v *ConfigPostgresUpdateInput) {
 }
 
 type ConfigPostgresInsertInput struct {
-	Version   *string                            `json:"version,omitempty" toml:"version,omitempty"`
-	Resources *ConfigResourcesInsertInput        `json:"resources,omitempty" toml:"resources,omitempty"`
-	Settings  *ConfigPostgresSettingsInsertInput `json:"settings,omitempty" toml:"settings,omitempty"`
+	Version   *string                             `json:"version,omitempty" toml:"version,omitempty"`
+	Resources *ConfigPostgresResourcesInsertInput `json:"resources,omitempty" toml:"resources,omitempty"`
+	Settings  *ConfigPostgresSettingsInsertInput  `json:"settings,omitempty" toml:"settings,omitempty"`
 }
 
 func (o *ConfigPostgresInsertInput) GetVersion() *string {
@@ -11907,7 +11907,7 @@ func (o *ConfigPostgresInsertInput) GetVersion() *string {
 	return o.Version
 }
 
-func (o *ConfigPostgresInsertInput) GetResources() *ConfigResourcesInsertInput {
+func (o *ConfigPostgresInsertInput) GetResources() *ConfigPostgresResourcesInsertInput {
 	if o == nil {
 		return nil
 	}
@@ -11925,7 +11925,7 @@ func (s *ConfigPostgres) Insert(v *ConfigPostgresInsertInput) {
 	s.Version = v.Version
 	if v.Resources != nil {
 		if s.Resources == nil {
-			s.Resources = &ConfigResources{}
+			s.Resources = &ConfigPostgresResources{}
 		}
 		s.Resources.Insert(v.Resources)
 	}
@@ -11950,12 +11950,12 @@ func (s *ConfigPostgres) Clone() *ConfigPostgres {
 }
 
 type ConfigPostgresComparisonExp struct {
-	And       []*ConfigPostgresComparisonExp       `json:"_and,omitempty"`
-	Not       *ConfigPostgresComparisonExp         `json:"_not,omitempty"`
-	Or        []*ConfigPostgresComparisonExp       `json:"_or,omitempty"`
-	Version   *ConfigStringComparisonExp           `json:"version,omitempty"`
-	Resources *ConfigResourcesComparisonExp        `json:"resources,omitempty"`
-	Settings  *ConfigPostgresSettingsComparisonExp `json:"settings,omitempty"`
+	And       []*ConfigPostgresComparisonExp        `json:"_and,omitempty"`
+	Not       *ConfigPostgresComparisonExp          `json:"_not,omitempty"`
+	Or        []*ConfigPostgresComparisonExp        `json:"_or,omitempty"`
+	Version   *ConfigStringComparisonExp            `json:"version,omitempty"`
+	Resources *ConfigPostgresResourcesComparisonExp `json:"resources,omitempty"`
+	Settings  *ConfigPostgresSettingsComparisonExp  `json:"settings,omitempty"`
 }
 
 func (exp *ConfigPostgresComparisonExp) Matches(o *ConfigPostgres) bool {
@@ -11965,7 +11965,7 @@ func (exp *ConfigPostgresComparisonExp) Matches(o *ConfigPostgres) bool {
 
 	if o == nil {
 		o = &ConfigPostgres{
-			Resources: &ConfigResources{},
+			Resources: &ConfigPostgresResources{},
 			Settings:  &ConfigPostgresSettings{},
 		}
 	}
@@ -11976,6 +11976,323 @@ func (exp *ConfigPostgresComparisonExp) Matches(o *ConfigPostgres) bool {
 		return false
 	}
 	if !exp.Settings.Matches(o.Settings) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+// Resources for the service
+type ConfigPostgresResources struct {
+	Compute *ConfigResourcesCompute `json:"compute,omitempty" toml:"compute,omitempty"`
+	// Number of replicas for a service
+	Replicas *uint8 `json:"replicas" toml:"replicas"`
+
+	Networking *ConfigNetworking `json:"networking,omitempty" toml:"networking,omitempty"`
+
+	Storage *ConfigPostgresStorage `json:"storage,omitempty" toml:"storage,omitempty"`
+}
+
+func (o *ConfigPostgresResources) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	if o.Compute != nil {
+		m["compute"] = o.Compute
+	}
+	if o.Replicas != nil {
+		m["replicas"] = o.Replicas
+	}
+	if o.Networking != nil {
+		m["networking"] = o.Networking
+	}
+	if o.Storage != nil {
+		m["storage"] = o.Storage
+	}
+	return json.Marshal(m)
+}
+
+func (o *ConfigPostgresResources) GetCompute() *ConfigResourcesCompute {
+	if o == nil {
+		return nil
+	}
+	return o.Compute
+}
+
+func (o *ConfigPostgresResources) GetReplicas() *uint8 {
+	if o == nil {
+		o = &ConfigPostgresResources{}
+	}
+	return o.Replicas
+}
+
+func (o *ConfigPostgresResources) GetNetworking() *ConfigNetworking {
+	if o == nil {
+		return nil
+	}
+	return o.Networking
+}
+
+func (o *ConfigPostgresResources) GetStorage() *ConfigPostgresStorage {
+	if o == nil {
+		return nil
+	}
+	return o.Storage
+}
+
+type ConfigPostgresResourcesUpdateInput struct {
+	Compute         *ConfigResourcesComputeUpdateInput `json:"compute,omitempty" toml:"compute,omitempty"`
+	IsSetCompute    bool                               `json:"-"`
+	Replicas        *uint8                             `json:"replicas,omitempty" toml:"replicas,omitempty"`
+	IsSetReplicas   bool                               `json:"-"`
+	Networking      *ConfigNetworkingUpdateInput       `json:"networking,omitempty" toml:"networking,omitempty"`
+	IsSetNetworking bool                               `json:"-"`
+	Storage         *ConfigPostgresStorageUpdateInput  `json:"storage,omitempty" toml:"storage,omitempty"`
+	IsSetStorage    bool                               `json:"-"`
+}
+
+func (o *ConfigPostgresResourcesUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if x, ok := m["compute"]; ok {
+		if x != nil {
+			t := &ConfigResourcesComputeUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Compute = t
+		}
+		o.IsSetCompute = true
+	}
+	if v, ok := m["replicas"]; ok {
+		if v == nil {
+			o.Replicas = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x uint8
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Replicas = &x
+		}
+		o.IsSetReplicas = true
+	}
+	if x, ok := m["networking"]; ok {
+		if x != nil {
+			t := &ConfigNetworkingUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Networking = t
+		}
+		o.IsSetNetworking = true
+	}
+	if x, ok := m["storage"]; ok {
+		if x != nil {
+			t := &ConfigPostgresStorageUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Storage = t
+		}
+		o.IsSetStorage = true
+	}
+
+	return nil
+}
+
+func (o *ConfigPostgresResourcesUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigPostgresResourcesUpdateInput) GetCompute() *ConfigResourcesComputeUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Compute
+}
+
+func (o *ConfigPostgresResourcesUpdateInput) GetReplicas() *uint8 {
+	if o == nil {
+		o = &ConfigPostgresResourcesUpdateInput{}
+	}
+	return o.Replicas
+}
+
+func (o *ConfigPostgresResourcesUpdateInput) GetNetworking() *ConfigNetworkingUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Networking
+}
+
+func (o *ConfigPostgresResourcesUpdateInput) GetStorage() *ConfigPostgresStorageUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Storage
+}
+
+func (s *ConfigPostgresResources) Update(v *ConfigPostgresResourcesUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetCompute || v.Compute != nil {
+		if v.Compute == nil {
+			s.Compute = nil
+		} else {
+			if s.Compute == nil {
+				s.Compute = &ConfigResourcesCompute{}
+			}
+			s.Compute.Update(v.Compute)
+		}
+	}
+	if v.IsSetReplicas || v.Replicas != nil {
+		s.Replicas = v.Replicas
+	}
+	if v.IsSetNetworking || v.Networking != nil {
+		if v.Networking == nil {
+			s.Networking = nil
+		} else {
+			if s.Networking == nil {
+				s.Networking = &ConfigNetworking{}
+			}
+			s.Networking.Update(v.Networking)
+		}
+	}
+	if v.IsSetStorage || v.Storage != nil {
+		if v.Storage == nil {
+			s.Storage = nil
+		} else {
+			if s.Storage == nil {
+				s.Storage = &ConfigPostgresStorage{}
+			}
+			s.Storage.Update(v.Storage)
+		}
+	}
+}
+
+type ConfigPostgresResourcesInsertInput struct {
+	Compute    *ConfigResourcesComputeInsertInput `json:"compute,omitempty" toml:"compute,omitempty"`
+	Replicas   *uint8                             `json:"replicas,omitempty" toml:"replicas,omitempty"`
+	Networking *ConfigNetworkingInsertInput       `json:"networking,omitempty" toml:"networking,omitempty"`
+	Storage    *ConfigPostgresStorageInsertInput  `json:"storage,omitempty" toml:"storage,omitempty"`
+}
+
+func (o *ConfigPostgresResourcesInsertInput) GetCompute() *ConfigResourcesComputeInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Compute
+}
+
+func (o *ConfigPostgresResourcesInsertInput) GetReplicas() *uint8 {
+	if o == nil {
+		o = &ConfigPostgresResourcesInsertInput{}
+	}
+	return o.Replicas
+}
+
+func (o *ConfigPostgresResourcesInsertInput) GetNetworking() *ConfigNetworkingInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Networking
+}
+
+func (o *ConfigPostgresResourcesInsertInput) GetStorage() *ConfigPostgresStorageInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Storage
+}
+
+func (s *ConfigPostgresResources) Insert(v *ConfigPostgresResourcesInsertInput) {
+	if v.Compute != nil {
+		if s.Compute == nil {
+			s.Compute = &ConfigResourcesCompute{}
+		}
+		s.Compute.Insert(v.Compute)
+	}
+	s.Replicas = v.Replicas
+	if v.Networking != nil {
+		if s.Networking == nil {
+			s.Networking = &ConfigNetworking{}
+		}
+		s.Networking.Insert(v.Networking)
+	}
+	if v.Storage != nil {
+		if s.Storage == nil {
+			s.Storage = &ConfigPostgresStorage{}
+		}
+		s.Storage.Insert(v.Storage)
+	}
+}
+
+func (s *ConfigPostgresResources) Clone() *ConfigPostgresResources {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigPostgresResources{}
+	v.Compute = s.Compute.Clone()
+	v.Replicas = s.Replicas
+	v.Networking = s.Networking.Clone()
+	v.Storage = s.Storage.Clone()
+	return v
+}
+
+type ConfigPostgresResourcesComparisonExp struct {
+	And        []*ConfigPostgresResourcesComparisonExp `json:"_and,omitempty"`
+	Not        *ConfigPostgresResourcesComparisonExp   `json:"_not,omitempty"`
+	Or         []*ConfigPostgresResourcesComparisonExp `json:"_or,omitempty"`
+	Compute    *ConfigResourcesComputeComparisonExp    `json:"compute,omitempty"`
+	Replicas   *ConfigUint8ComparisonExp               `json:"replicas,omitempty"`
+	Networking *ConfigNetworkingComparisonExp          `json:"networking,omitempty"`
+	Storage    *ConfigPostgresStorageComparisonExp     `json:"storage,omitempty"`
+}
+
+func (exp *ConfigPostgresResourcesComparisonExp) Matches(o *ConfigPostgresResources) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigPostgresResources{
+			Compute:    &ConfigResourcesCompute{},
+			Networking: &ConfigNetworking{},
+			Storage:    &ConfigPostgresStorage{},
+		}
+	}
+	if !exp.Compute.Matches(o.Compute) {
+		return false
+	}
+	if o.Replicas != nil && !exp.Replicas.Matches(*o.Replicas) {
+		return false
+	}
+	if !exp.Networking.Matches(o.Networking) {
+		return false
+	}
+	if !exp.Storage.Matches(o.Storage) {
 		return false
 	}
 
@@ -13043,6 +13360,139 @@ func (exp *ConfigPostgresSettingsComparisonExp) Matches(o *ConfigPostgresSetting
 		return false
 	}
 	if o.MaxParallelMaintenanceWorkers != nil && !exp.MaxParallelMaintenanceWorkers.Matches(*o.MaxParallelMaintenanceWorkers) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigPostgresStorage struct {
+	// GiB
+	Capacity uint32 `json:"capacity" toml:"capacity"`
+}
+
+func (o *ConfigPostgresStorage) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	m["capacity"] = o.Capacity
+	return json.Marshal(m)
+}
+
+func (o *ConfigPostgresStorage) GetCapacity() uint32 {
+	if o == nil {
+		o = &ConfigPostgresStorage{}
+	}
+	return o.Capacity
+}
+
+type ConfigPostgresStorageUpdateInput struct {
+	Capacity      *uint32 `json:"capacity,omitempty" toml:"capacity,omitempty"`
+	IsSetCapacity bool    `json:"-"`
+}
+
+func (o *ConfigPostgresStorageUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["capacity"]; ok {
+		if v == nil {
+			o.Capacity = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x uint32
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Capacity = &x
+		}
+		o.IsSetCapacity = true
+	}
+
+	return nil
+}
+
+func (o *ConfigPostgresStorageUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigPostgresStorageUpdateInput) GetCapacity() *uint32 {
+	if o == nil {
+		o = &ConfigPostgresStorageUpdateInput{}
+	}
+	return o.Capacity
+}
+
+func (s *ConfigPostgresStorage) Update(v *ConfigPostgresStorageUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetCapacity || v.Capacity != nil {
+		if v.Capacity != nil {
+			s.Capacity = *v.Capacity
+		}
+	}
+}
+
+type ConfigPostgresStorageInsertInput struct {
+	Capacity uint32 `json:"capacity,omitempty" toml:"capacity,omitempty"`
+}
+
+func (o *ConfigPostgresStorageInsertInput) GetCapacity() uint32 {
+	if o == nil {
+		o = &ConfigPostgresStorageInsertInput{}
+	}
+	return o.Capacity
+}
+
+func (s *ConfigPostgresStorage) Insert(v *ConfigPostgresStorageInsertInput) {
+	s.Capacity = v.Capacity
+}
+
+func (s *ConfigPostgresStorage) Clone() *ConfigPostgresStorage {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigPostgresStorage{}
+	v.Capacity = s.Capacity
+	return v
+}
+
+type ConfigPostgresStorageComparisonExp struct {
+	And      []*ConfigPostgresStorageComparisonExp `json:"_and,omitempty"`
+	Not      *ConfigPostgresStorageComparisonExp   `json:"_not,omitempty"`
+	Or       []*ConfigPostgresStorageComparisonExp `json:"_or,omitempty"`
+	Capacity *ConfigUint32ComparisonExp            `json:"capacity,omitempty"`
+}
+
+func (exp *ConfigPostgresStorageComparisonExp) Matches(o *ConfigPostgresStorage) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigPostgresStorage{}
+	}
+	if !exp.Capacity.Matches(o.Capacity) {
 		return false
 	}
 

@@ -191,10 +191,15 @@ import (
 #Postgres: {
 	// Version of postgres, you can see available versions in the URL below:
 	// https://hub.docker.com/r/nhost/postgres/tags
-	version: string | *"14.6-20230927-1"
+	version: string | *"14.6-20231018-1"
 
 	// Resources for the service
-	resources?: #Resources & {
+	resources?: {
+		#Resources
+		storage: {
+			capacity: uint32 & >=10 & <=1000 | *10 // GiB
+		}
+	} & {
 		replicas:    1
 		networking?: null
 	}

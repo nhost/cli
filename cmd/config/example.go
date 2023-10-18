@@ -272,13 +272,16 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 		},
 		Postgres: &model.ConfigPostgres{
 			Version: ptr("14-20230312-1"),
-			Resources: &model.ConfigResources{
+			Resources: &model.ConfigPostgresResources{
 				Compute: &model.ConfigResourcesCompute{
 					Cpu:    2000,
 					Memory: 4096,
 				},
 				Replicas:   ptr(uint8(1)),
 				Networking: nil,
+				Storage: &model.ConfigPostgresStorage{
+					Capacity: 20,
+				},
 			},
 			Settings: &model.ConfigPostgresSettings{
 				Jit:                           ptr("off"),

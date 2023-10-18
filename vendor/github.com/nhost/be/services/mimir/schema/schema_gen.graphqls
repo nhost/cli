@@ -1876,7 +1876,7 @@ type ConfigPostgres {
     """
     Resources for the service
     """
-    resources: ConfigResources
+    resources: ConfigPostgresResources
     """
 
     """
@@ -1885,13 +1885,13 @@ type ConfigPostgres {
 
 input ConfigPostgresUpdateInput {
     version: String
-    resources: ConfigResourcesUpdateInput
+    resources: ConfigPostgresResourcesUpdateInput
     settings: ConfigPostgresSettingsUpdateInput
 }
 
 input ConfigPostgresInsertInput {
     version: String
-    resources: ConfigResourcesInsertInput
+    resources: ConfigPostgresResourcesInsertInput
     settings: ConfigPostgresSettingsInsertInput
 }
 
@@ -1900,8 +1900,54 @@ input ConfigPostgresComparisonExp {
     _not: ConfigPostgresComparisonExp
     _or: [ConfigPostgresComparisonExp!]
     version: ConfigStringComparisonExp
-    resources: ConfigResourcesComparisonExp
+    resources: ConfigPostgresResourcesComparisonExp
     settings: ConfigPostgresSettingsComparisonExp
+}
+
+"""
+Resources for the service
+"""
+type ConfigPostgresResources {
+    """
+
+    """
+    compute: ConfigResourcesCompute
+    """
+    Number of replicas for a service
+    """
+    replicas: ConfigUint8
+    """
+
+    """
+    networking: ConfigNetworking
+    """
+
+    """
+    storage: ConfigPostgresStorage!
+}
+
+input ConfigPostgresResourcesUpdateInput {
+    compute: ConfigResourcesComputeUpdateInput
+    replicas: ConfigUint8
+    networking: ConfigNetworkingUpdateInput
+    storage: ConfigPostgresStorageUpdateInput
+}
+
+input ConfigPostgresResourcesInsertInput {
+    compute: ConfigResourcesComputeInsertInput
+    replicas: ConfigUint8
+    networking: ConfigNetworkingInsertInput
+    storage: ConfigPostgresStorageInsertInput!
+}
+
+input ConfigPostgresResourcesComparisonExp {
+    _and: [ConfigPostgresResourcesComparisonExp!]
+    _not: ConfigPostgresResourcesComparisonExp
+    _or: [ConfigPostgresResourcesComparisonExp!]
+    compute: ConfigResourcesComputeComparisonExp
+    replicas: ConfigUint8ComparisonExp
+    networking: ConfigNetworkingComparisonExp
+    storage: ConfigPostgresStorageComparisonExp
 }
 
 """
@@ -2046,6 +2092,31 @@ input ConfigPostgresSettingsComparisonExp {
     maxParallelWorkersPerGather: ConfigInt32ComparisonExp
     maxParallelWorkers: ConfigInt32ComparisonExp
     maxParallelMaintenanceWorkers: ConfigInt32ComparisonExp
+}
+
+"""
+
+"""
+type ConfigPostgresStorage {
+    """
+    GiB
+    """
+    capacity: ConfigUint32!
+}
+
+input ConfigPostgresStorageUpdateInput {
+    capacity: ConfigUint32
+}
+
+input ConfigPostgresStorageInsertInput {
+    capacity: ConfigUint32!
+}
+
+input ConfigPostgresStorageComparisonExp {
+    _and: [ConfigPostgresStorageComparisonExp!]
+    _not: ConfigPostgresStorageComparisonExp
+    _or: [ConfigPostgresStorageComparisonExp!]
+    capacity: ConfigUint32ComparisonExp
 }
 
 """
