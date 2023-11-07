@@ -24,5 +24,15 @@ func CompareVersions(a, b string) int {
 	a = addVPrefix(extractFromImage(a))
 	b = addVPrefix(extractFromImage(b))
 
+	// if semver isn't valid we assume
+	// it's a dev version and we assume it
+	// is the latest version
+	if !semver.IsValid(a) {
+		return 1
+	}
+	if !semver.IsValid(b) {
+		return -1
+	}
+
 	return semver.Compare(a, b)
 }
