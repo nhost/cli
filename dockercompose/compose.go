@@ -514,7 +514,7 @@ func ComposeFileFromConfig( //nolint:funlen
 	}
 
 	if cfg.Ai != nil {
-		c.Services["graphite"] = ai(cfg)
+		c.Services["ai"] = ai(cfg)
 	}
 
 	return c, nil
