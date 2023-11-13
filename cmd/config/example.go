@@ -35,6 +35,21 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 				},
 			},
 		},
+		Ai: &model.ConfigAI{
+			Version: ptr("0.1.0"),
+			Resources: &model.ConfigAIResources{
+				Compute: &model.ConfigComputeResources{
+					Cpu:    256,
+					Memory: 512,
+				},
+			},
+			Openai: &model.ConfigAIOpenai{
+				Organization: ptr("org-id"),
+				ApiKey:       "opeanai-api-key",
+			},
+			SynchPeriodMinutes: ptr(uint32(10)),
+			WebhookSecret:      "this-is-a-webhook-secret",
+		},
 		Hasura: &model.ConfigHasura{
 			Version: new(string),
 			JwtSecrets: []*model.ConfigJWTSecret{

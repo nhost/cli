@@ -3203,4 +3203,3 @@ input ConfigUserRoleComparisonExp {
     _neq: ConfigUserRole
     _in: [ConfigUserRole!]
     _nin: [ConfigUserRole!]
-}

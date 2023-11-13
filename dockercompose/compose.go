@@ -512,5 +512,10 @@ func ComposeFileFromConfig( //nolint:funlen
 			pgVolumeName:             {},
 		},
 	}
+
+	if cfg.Ai != nil {
+		c.Services["graphite"] = ai(cfg)
+	}
+
 	return c, nil
 }
