@@ -18,7 +18,7 @@ func expectedAI() *Service {
 		Environment: map[string]string{
 			"ENV1":                        "VALUE1",
 			"ENV2":                        "VALUE2",
-			"GRAPHITE_BASE_URL":           "http://graphite:8090",
+			"GRAPHITE_BASE_URL":           "http://ai:8090",
 			"GRAPHITE_WEBHOOK_SECRET":     "webhookSecret",
 			"HASURA_GRAPHQL_ADMIN_SECRET": "adminSecret",
 			"NHOST_GRAPHQL_URL":           "http://graphql:8080/v1/graphql",
