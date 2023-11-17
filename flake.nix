@@ -47,7 +47,6 @@
         goCheckDeps = with pkgs; [
           curl
           jq
-          envsubst
           golangci-lint
           gofumpt
           golines
