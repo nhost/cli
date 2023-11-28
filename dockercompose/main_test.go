@@ -202,6 +202,15 @@ func getConfig() *model.ConfigConfig { //nolint:maintidx
 			Node: &model.ConfigFunctionsNode{
 				Version: ptr(18),
 			},
+			Resources: &model.ConfigFunctionsResources{
+				Networking: &model.ConfigNetworking{
+					Ingresses: []*model.ConfigIngress{
+						{
+							Fqdn: []string{"hasura.example.com"},
+						},
+					},
+				},
+			},
 		},
 		Hasura: &model.ConfigHasura{
 			Resources: &model.ConfigResources{
