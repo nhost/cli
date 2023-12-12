@@ -523,6 +523,18 @@ type ConfigHasuraUpdateInput struct {
 	WebhookSecret *string                          `json:"webhookSecret,omitempty"`
 }
 
+type ConfigHealthCheck struct {
+	Port uint32 `json:"port"`
+}
+
+type ConfigHealthCheckInsertInput struct {
+	Port uint32 `json:"port"`
+}
+
+type ConfigHealthCheckUpdateInput struct {
+	Port *uint32 `json:"port,omitempty"`
+}
+
 type ConfigIngress struct {
 	Fqdn []string `json:"fqdn,omitempty"`
 }
@@ -690,6 +702,7 @@ type ConfigResourcesUpdateInput struct {
 type ConfigRunServiceConfig struct {
 	Command     []string                     `json:"command,omitempty"`
 	Environment []*ConfigEnvironmentVariable `json:"environment,omitempty"`
+	HealthCheck *ConfigHealthCheck           `json:"healthCheck,omitempty"`
 	Image       ConfigRunServiceImage        `json:"image"`
 	Name        string                       `json:"name"`
 	Ports       []*ConfigRunServicePort      `json:"ports,omitempty"`
@@ -699,6 +712,7 @@ type ConfigRunServiceConfig struct {
 type ConfigRunServiceConfigInsertInput struct {
 	Command     []string                                `json:"command,omitempty"`
 	Environment []*ConfigEnvironmentVariableInsertInput `json:"environment,omitempty"`
+	HealthCheck *ConfigHealthCheckInsertInput           `json:"healthCheck,omitempty"`
 	Image       ConfigRunServiceImageInsertInput        `json:"image"`
 	Name        string                                  `json:"name"`
 	Ports       []*ConfigRunServicePortInsertInput      `json:"ports,omitempty"`
@@ -708,6 +722,7 @@ type ConfigRunServiceConfigInsertInput struct {
 type ConfigRunServiceConfigUpdateInput struct {
 	Command     []string                                `json:"command,omitempty"`
 	Environment []*ConfigEnvironmentVariableUpdateInput `json:"environment,omitempty"`
+	HealthCheck *ConfigHealthCheckUpdateInput           `json:"healthCheck,omitempty"`
 	Image       *ConfigRunServiceImageUpdateInput       `json:"image,omitempty"`
 	Name        *string                                 `json:"name,omitempty"`
 	Ports       []*ConfigRunServicePortUpdateInput      `json:"ports,omitempty"`
