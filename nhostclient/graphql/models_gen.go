@@ -32,6 +32,40 @@ type BooleanComparisonExp struct {
 	Nin    []bool `json:"_nin,omitempty"`
 }
 
+type ConfigAi struct {
+	Openai             ConfigAIOpenai    `json:"openai"`
+	Resources          ConfigAIResources `json:"resources"`
+	SynchPeriodMinutes *uint32           `json:"synchPeriodMinutes,omitempty"`
+	Version            *string           `json:"version,omitempty"`
+	WebhookSecret      string            `json:"webhookSecret"`
+}
+
+type ConfigAIOpenai struct {
+	APIKey       string  `json:"apiKey"`
+	Organization *string `json:"organization,omitempty"`
+}
+
+type ConfigAIOpenaiUpdateInput struct {
+	APIKey       *string `json:"apiKey,omitempty"`
+	Organization *string `json:"organization,omitempty"`
+}
+
+type ConfigAIResources struct {
+	Compute ConfigComputeResources `json:"compute"`
+}
+
+type ConfigAIResourcesUpdateInput struct {
+	Compute *ConfigComputeResourcesUpdateInput `json:"compute,omitempty"`
+}
+
+type ConfigAIUpdateInput struct {
+	Openai             *ConfigAIOpenaiUpdateInput    `json:"openai,omitempty"`
+	Resources          *ConfigAIResourcesUpdateInput `json:"resources,omitempty"`
+	SynchPeriodMinutes *uint32                       `json:"synchPeriodMinutes,omitempty"`
+	Version            *string                       `json:"version,omitempty"`
+	WebhookSecret      *string                       `json:"webhookSecret,omitempty"`
+}
+
 type ConfigAuth struct {
 	Method       *ConfigAuthMethod       `json:"method,omitempty"`
 	Redirections *ConfigAuthRedirections `json:"redirections,omitempty"`
@@ -386,7 +420,23 @@ type ConfigClaimMapUpdateInput struct {
 	Value   *string `json:"value,omitempty"`
 }
 
+type ConfigComputeResources struct {
+	CPU    uint32 `json:"cpu"`
+	Memory uint32 `json:"memory"`
+}
+
+type ConfigComputeResourcesInsertInput struct {
+	CPU    uint32 `json:"cpu"`
+	Memory uint32 `json:"memory"`
+}
+
+type ConfigComputeResourcesUpdateInput struct {
+	CPU    *uint32 `json:"cpu,omitempty"`
+	Memory *uint32 `json:"memory,omitempty"`
+}
+
 type ConfigConfig struct {
+	Ai            *ConfigAi           `json:"ai,omitempty"`
 	Auth          *ConfigAuth         `json:"auth,omitempty"`
 	Functions     *ConfigFunctions    `json:"functions,omitempty"`
 	Global        *ConfigGlobal       `json:"global,omitempty"`
@@ -398,6 +448,7 @@ type ConfigConfig struct {
 }
 
 type ConfigConfigUpdateInput struct {
+	Ai            *ConfigAIUpdateInput            `json:"ai,omitempty"`
 	Auth          *ConfigAuthUpdateInput          `json:"auth,omitempty"`
 	Functions     *ConfigFunctionsUpdateInput     `json:"functions,omitempty"`
 	Global        *ConfigGlobalUpdateInput        `json:"global,omitempty"`
@@ -524,15 +575,21 @@ type ConfigHasuraUpdateInput struct {
 }
 
 type ConfigHealthCheck struct {
-	Port uint32 `json:"port"`
+	InitialDelaySeconds *int64 `json:"initialDelaySeconds,omitempty"`
+	Port                uint32 `json:"port"`
+	ProbePeriodSeconds  *int64 `json:"probePeriodSeconds,omitempty"`
 }
 
 type ConfigHealthCheckInsertInput struct {
-	Port uint32 `json:"port"`
+	InitialDelaySeconds *int64 `json:"initialDelaySeconds,omitempty"`
+	Port                uint32 `json:"port"`
+	ProbePeriodSeconds  *int64 `json:"probePeriodSeconds,omitempty"`
 }
 
 type ConfigHealthCheckUpdateInput struct {
-	Port *uint32 `json:"port,omitempty"`
+	InitialDelaySeconds *int64  `json:"initialDelaySeconds,omitempty"`
+	Port                *uint32 `json:"port,omitempty"`
+	ProbePeriodSeconds  *int64  `json:"probePeriodSeconds,omitempty"`
 }
 
 type ConfigIngress struct {
@@ -763,28 +820,13 @@ type ConfigRunServicePortUpdateInput struct {
 }
 
 type ConfigRunServiceResources struct {
-	Compute  ConfigRunServiceResourcesCompute    `json:"compute"`
+	Compute  ConfigComputeResources              `json:"compute"`
 	Replicas uint32                              `json:"replicas"`
 	Storage  []*ConfigRunServiceResourcesStorage `json:"storage,omitempty"`
 }
 
-type ConfigRunServiceResourcesCompute struct {
-	CPU    uint32 `json:"cpu"`
-	Memory uint32 `json:"memory"`
-}
-
-type ConfigRunServiceResourcesComputeInsertInput struct {
-	CPU    uint32 `json:"cpu"`
-	Memory uint32 `json:"memory"`
-}
-
-type ConfigRunServiceResourcesComputeUpdateInput struct {
-	CPU    *uint32 `json:"cpu,omitempty"`
-	Memory *uint32 `json:"memory,omitempty"`
-}
-
 type ConfigRunServiceResourcesInsertInput struct {
-	Compute  ConfigRunServiceResourcesComputeInsertInput    `json:"compute"`
+	Compute  ConfigComputeResourcesInsertInput              `json:"compute"`
 	Replicas uint32                                         `json:"replicas"`
 	Storage  []*ConfigRunServiceResourcesStorageInsertInput `json:"storage,omitempty"`
 }
@@ -808,7 +850,7 @@ type ConfigRunServiceResourcesStorageUpdateInput struct {
 }
 
 type ConfigRunServiceResourcesUpdateInput struct {
-	Compute  *ConfigRunServiceResourcesComputeUpdateInput   `json:"compute,omitempty"`
+	Compute  *ConfigComputeResourcesUpdateInput             `json:"compute,omitempty"`
 	Replicas *uint32                                        `json:"replicas,omitempty"`
 	Storage  []*ConfigRunServiceResourcesStorageUpdateInput `json:"storage,omitempty"`
 }

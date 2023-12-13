@@ -29,3 +29,5 @@ path = '/var/lib/storage1'
 
 [healthCheck]
 port = 3000
+initialDelaySeconds = 10
+probePeriodSeconds = 20
