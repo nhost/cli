@@ -18,8 +18,10 @@ func getConfig() *model.ConfigConfig { //nolint:maintidx
 				Organization: ptr("my-org"),
 				ApiKey:       "openaiApiKey",
 			},
-			SynchPeriodMinutes: ptr(uint32(10)),
-			WebhookSecret:      "webhookSecret",
+			AutoEmbeddings: &model.ConfigAIAutoEmbeddings{
+				SynchPeriodMinutes: ptr(uint32(10)),
+			},
+			WebhookSecret: "webhookSecret",
 		},
 		Auth: &model.ConfigAuth{
 			Resources: &model.ConfigResources{

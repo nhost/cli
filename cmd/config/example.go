@@ -47,8 +47,10 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 				Organization: ptr("org-id"),
 				ApiKey:       "opeanai-api-key",
 			},
-			SynchPeriodMinutes: ptr(uint32(10)),
-			WebhookSecret:      "this-is-a-webhook-secret",
+			AutoEmbeddings: &model.ConfigAIAutoEmbeddings{
+				SynchPeriodMinutes: ptr(uint32(10)),
+			},
+			WebhookSecret: "this-is-a-webhook-secret",
 		},
 		Hasura: &model.ConfigHasura{
 			Version: new(string),

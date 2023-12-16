@@ -29,10 +29,8 @@ func AIEnv(
 			Value: "http://ai:8090",
 		},
 		{
-			Name: "SYNCH_PERIOD",
-			Value: fmt.Sprintf(
-				"%dm", unptr(config.GetAi().GetAutoEmbeddings().GetSynchPeriodMinutes()),
-			),
+			Name:  "SYNCH_PERIOD",
+			Value: fmt.Sprintf("%dm", unptr(config.GetAi().GetAutoEmbeddings().GetSynchPeriodMinutes())),
 		},
 		{
 			Name:  "NHOST_GRAPHQL_URL",
