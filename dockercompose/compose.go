@@ -320,6 +320,7 @@ func functions( //nolint:funlen
 		"NHOST_REGION":                "",
 		"NHOST_SUBDOMAIN":             "local",
 		"NHOST_WEBHOOK_SECRET":        cfg.Hasura.WebhookSecret,
+		"GRAPHITE_WEBHOOK_SECRET":     cfg.GetAi().GetWebhookSecret(),
 	}
 	for _, envVar := range cfg.GetGlobal().GetEnvironment() {
 		envVars[envVar.GetName()] = envVar.GetValue()
