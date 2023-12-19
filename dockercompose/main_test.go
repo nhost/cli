@@ -301,6 +301,23 @@ func getConfig() *model.ConfigConfig { //nolint:maintidx
 			},
 			Version: ptr("0.2.5"),
 		},
+		Ai: &model.ConfigAI{
+			Version: ptr("0.3.5"),
+			Resources: &model.ConfigAIResources{
+				Compute: &model.ConfigComputeResources{
+					Cpu:    500,
+					Memory: 1024,
+				},
+			},
+			Openai: &model.ConfigAIOpenai{
+				Organization: ptr("openaiOrganization"),
+				ApiKey:       "openaiApiKey",
+			},
+			AutoEmbeddings: &model.ConfigAIAutoEmbeddings{
+				SynchPeriodMinutes: ptr(uint32(600)),
+			},
+			WebhookSecret: "aiWebhookSecret",
+		},
 		Observability: &model.ConfigObservability{
 			Grafana: &model.ConfigGrafana{
 				AdminPassword: "grafanaAdminPassword",
