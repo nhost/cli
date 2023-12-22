@@ -20,6 +20,7 @@ func expectedGraphql() *Service {
 		Environment: map[string]string{
 			"ENV1":                                                     "VALUE1",
 			"ENV2":                                                     "VALUE2",
+			"GRAPHITE_WEBHOOK_SECRET":                                  "",
 			"HASURA_GRAPHQL_ADMIN_INTERNAL_ERRORS":                     "true",
 			"HASURA_GRAPHQL_ADMIN_SECRET":                              "adminSecret",
 			"HASURA_GRAPHQL_CONSOLE_ASSETS_DIR":                        "/srv/console-assets",
@@ -47,7 +48,6 @@ func expectedGraphql() *Service {
 			"HASURA_GRAPHQL_WS_READ_COOKIE":                            "false",
 			"NHOST_ADMIN_SECRET":                                       "adminSecret",
 			"NHOST_AUTH_URL":                                           "http://local.auth.nhost.run:1337/v1",
-			"NHOST_BACKEND_URL":                                        "http://local.nhost.run:1337",
 			"NHOST_FUNCTIONS_URL":                                      "http://local.functions.nhost.run:1337/v1",
 			"NHOST_GRAPHQL_URL":                                        "http://local.graphql.nhost.run:1337/v1",
 			"NHOST_HASURA_URL":                                         "http://local.hasura.nhost.run:1337",
@@ -150,6 +150,7 @@ func expectedConsole() *Service {
 		Environment: map[string]string{
 			"ENV1":                                                     "VALUE1",
 			"ENV2":                                                     "VALUE2",
+			"GRAPHITE_WEBHOOK_SECRET":                                  "",
 			"HASURA_GRAPHQL_ADMIN_INTERNAL_ERRORS":                     "true",
 			"HASURA_GRAPHQL_ADMIN_SECRET":                              "adminSecret",
 			"HASURA_GRAPHQL_CONSOLE_ASSETS_DIR":                        "/srv/console-assets",
@@ -177,7 +178,6 @@ func expectedConsole() *Service {
 			"HASURA_GRAPHQL_WS_READ_COOKIE":                            "false",
 			"NHOST_ADMIN_SECRET":                                       "adminSecret",
 			"NHOST_AUTH_URL":                                           "http://local.auth.nhost.run:1337/v1",
-			"NHOST_BACKEND_URL":                                        "http://local.nhost.run:1337",
 			"NHOST_FUNCTIONS_URL":                                      "http://local.functions.nhost.run:1337/v1",
 			"NHOST_GRAPHQL_URL":                                        "http://local.graphql.nhost.run:1337/v1",
 			"NHOST_HASURA_URL":                                         "http://local.hasura.nhost.run:1337",

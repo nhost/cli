@@ -65,10 +65,6 @@ func HasuraEnv( //nolint:funlen
 			IsSecret:   true,
 		},
 		{
-			Name:  "NHOST_BACKEND_URL",
-			Value: GetFQDNOldURL(subdomain, domain, useTLS, httpPort),
-		},
-		{
 			Name:  "NHOST_SUBDOMAIN",
 			Value: subdomain,
 		},
@@ -204,6 +200,10 @@ func HasuraEnv( //nolint:funlen
 				"%d",
 				*config.GetHasura().GetEvents().HttpPoolSize,
 			),
+		},
+		{
+			Name:  "GRAPHITE_WEBHOOK_SECRET",
+			Value: config.GetAi().GetWebhookSecret(),
 		},
 	}
 

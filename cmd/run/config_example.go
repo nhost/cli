@@ -59,7 +59,7 @@ func commandConfigExample(cCtx *cli.Context) error { //nolint:funlen
 			},
 		},
 		Resources: &model.ConfigRunServiceResources{
-			Compute: &model.ConfigRunServiceResourcesCompute{
+			Compute: &model.ConfigComputeResources{
 				Cpu:    125,
 				Memory: 256,
 			},
@@ -71,6 +71,11 @@ func commandConfigExample(cCtx *cli.Context) error { //nolint:funlen
 				},
 			},
 			Replicas: 1,
+		},
+		HealthCheck: &model.ConfigHealthCheck{
+			Port:                8080,
+			InitialDelaySeconds: ptr(10),
+			ProbePeriodSeconds:  ptr(20),
 		},
 	}
 
