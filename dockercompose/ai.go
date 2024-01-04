@@ -30,6 +30,9 @@ func ai(
 			"postgres": {
 				Condition: "service_healthy",
 			},
+			"auth": {
+				Condition: "service_healthy",
+			},
 		},
 		EntryPoint: nil,
 		Command: []string{

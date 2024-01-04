@@ -11,6 +11,7 @@ func expectedAI() *Service {
 	return &Service{ //nolint:exhaustruct
 		Image: "nhost/graphite:0.2.5",
 		DependsOn: map[string]DependsOn{
+			"auth":     {Condition: "service_healthy"},
 			"graphql":  {Condition: "service_healthy"},
 			"postgres": {Condition: "service_healthy"},
 		},
