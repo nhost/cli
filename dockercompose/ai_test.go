@@ -22,6 +22,7 @@ func expectedAI() *Service {
 			"GRAPHITE_BASE_URL":           "http://ai:8090",
 			"GRAPHITE_WEBHOOK_SECRET":     "webhookSecret",
 			"HASURA_GRAPHQL_ADMIN_SECRET": "adminSecret",
+			"LICENSE":                     "",
 			"NHOST_GRAPHQL_URL":           "http://graphql:8080/v1/graphql",
 			"OPENAI_API_KEY":              "openaiApiKey",
 			"OPENAI_ORG":                  "my-org",
@@ -37,6 +38,13 @@ func expectedAI() *Service {
 			"local.hasura.nhost.run:host-gateway",
 			"local.storage.nhost.run:host-gateway",
 		},
+		HealthCheck: &HealthCheck{
+			Test:        []string{"CMD", "graphite", "healthcheck"},
+			Timeout:     "60s",
+			Interval:    "5s",
+			StartPeriod: "10s",
+		},
+
 		Restart: "always",
 	}
 }

@@ -14,6 +14,7 @@ func ai(
 		cfg,
 		"http://graphql:8080/v1/graphql",
 		"postgres://postgres@postgres:5432/local?sslmode=disable",
+		"",
 	)
 
 	env := make(map[string]string, len(envars))
@@ -43,8 +44,15 @@ func ai(
 		Labels:      nil,
 		Ports:       nil,
 		Restart:     "always",
-		HealthCheck: nil,
-		Volumes:     nil,
-		WorkingDir:  nil,
+		HealthCheck: &HealthCheck{
+			Test: []string{
+				"CMD", "graphite", "healthcheck",
+			},
+			Timeout:     "60s",
+			Interval:    "5s",
+			StartPeriod: "10s",
+		},
+		Volumes:    nil,
+		WorkingDir: nil,
 	}
 }

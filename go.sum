@@ -444,6 +444,8 @@ github.com/muesli/termenv v0.15.2 h1:GohcuySI0QmI3wN8Ok9PtKGkgkFIk7y6Vpb5PvrY+Wo
 github.com/muesli/termenv v0.15.2/go.mod h1:Epx+iuz8sNs7mNKhxzH4fWXGNpZwUaJKRS1noLXviQ8=
 github.com/nhost/be v0.0.0-20240103144040-9863259b42c0 h1:idym2tRKeRpJ7c6vWXGzhr5XOWUUYxnCcZn8EcljLBg=
 github.com/nhost/be v0.0.0-20240103144040-9863259b42c0/go.mod h1:2GaeX/9i5tn2+z4vJUvWIl1wl4yl74RhTmCj15butQE=
+github.com/nhost/be v0.0.0-20240106121631-d9a3a3127388 h1:eFwpkEnrrTJKLWIHiJOC6PNSW6hM78+8Zb5myRrEhCk=
+github.com/nhost/be v0.0.0-20240106121631-d9a3a3127388/go.mod h1:KzfRCfBFWnF5av0PNHPWG6kiQzyM+jOcAPkTZHHdInw=
 github.com/onsi/gomega v1.27.10 h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=
 github.com/onsi/gomega v1.27.10/go.mod h1:RsS8tutOdbdgzbPtzzATp12yT7kM5I5aElG3evPbQ0M=
 github.com/pelletier/go-toml/v2 v2.1.1 h1:LWAJwfNvjQZCFIDKWYQaM62NcYeYViCmWIwmOStowAI=

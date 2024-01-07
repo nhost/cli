@@ -36,7 +36,7 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 			},
 		},
 		Ai: &model.ConfigAI{
-			Version: ptr("0.1.0"),
+			Version: ptr("0.3.0"),
 			Resources: &model.ConfigAIResources{
 				Compute: &model.ConfigComputeResources{
 					Cpu:    256,
