@@ -8,7 +8,7 @@ name = 'GREET_TYPE'
 value = '{{ secrets.GREET_TYPE }}'
 
 [ai]
-version = '0.3.1-beta1'
+version = '0.3.1'
 webhookSecret = '{{ secrets.GRAPHITE_WEBHOOK_SECRET }}'
 
 [ai.resources.compute]
