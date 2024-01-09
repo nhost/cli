@@ -1,6 +1,7 @@
 package dockercompose
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -255,15 +256,20 @@ func dashboard(
 	dashboardVersion string,
 	httpPort uint,
 	useTLS bool,
-) *Service {
+) (*Service, error) {
+	b, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal config: %w", err)
+	}
 	return &Service{
 		Image:      dashboardVersion,
 		DependsOn:  nil,
 		EntryPoint: nil,
 		Command:    nil,
 		Environment: map[string]string{
-			"NEXT_PUBLIC_NHOST_ADMIN_SECRET": cfg.Hasura.AdminSecret,
-			"NEXT_PUBLIC_NHOST_AUTH_URL":     URL("auth", httpPort, useTLS) + "/v1",
+			"NEXT_PUBLIC_LOCAL_PROJECT_CONFIG": string(b),
+			"NEXT_PUBLIC_NHOST_ADMIN_SECRET":   cfg.Hasura.AdminSecret,
+			"NEXT_PUBLIC_NHOST_AUTH_URL":       URL("auth", httpPort, useTLS) + "/v1",
 			"NEXT_PUBLIC_NHOST_FUNCTIONS_URL": URL(
 				"functions",
 				httpPort,
@@ -294,7 +300,7 @@ func dashboard(
 		Restart:    "",
 		Volumes:    []Volume{},
 		WorkingDir: new(string),
-	}
+	}, nil
 }
 
 func functions( //nolint:funlen
@@ -430,7 +436,7 @@ func sanitizeBranch(name string) string {
 	return strings.ToLower(re.ReplaceAllString(name, ""))
 }
 
-func ComposeFileFromConfig( //nolint:funlen
+func ComposeFileFromConfig( //nolint:funlen,cyclop
 	cfg *model.ConfigConfig,
 	projectName string,
 	httpPort uint,
@@ -486,12 +492,17 @@ func ComposeFileFromConfig( //nolint:funlen
 		return nil, err
 	}
 
+	dashboard, err := dashboard(cfg, dashboardVersion, httpPort, useTLS)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dashboard service: %w", err)
+	}
+
 	c := &ComposeFile{
 		Version: "3.8",
 		Services: map[string]*Service{
 			"auth":      auth,
 			"console":   console,
-			"dashboard": dashboard(cfg, dashboardVersion, httpPort, useTLS),
+			"dashboard": dashboard,
 			"functions": functions(
 				cfg,
 				httpPort,
