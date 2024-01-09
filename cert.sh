@@ -11,6 +11,7 @@ certbot certonly \
     -d local.hasura.nhost.run \
     -d local.auth.nhost.run \
     -d local.storage.nhost.run \
+    -d local.dashboard.nhost.run \
     -d local.functions.nhost.run \
     -m 'admin@nhost.io' \
     --non-interactive \
