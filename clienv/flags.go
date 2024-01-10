@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	flagAppBaseURL     = "app-base-url"
 	flagDomain         = "domain"
 	flagBranch         = "branch"
 	flagProjectName    = "project-name"
@@ -55,6 +56,13 @@ func Flags() ([]cli.Flag, error) { //nolint:funlen
 			Usage:   "Nhost domain",
 			EnvVars: []string{"NHOST_DOMAIN"},
 			Value:   "nhost.run",
+			Hidden:  true,
+		},
+		&cli.StringFlag{ //nolint:exhaustruct
+			Name:    flagAppBaseURL,
+			Usage:   "Nhost app base URL",
+			EnvVars: []string{"NHOST_APP_BASE_URL"},
+			Value:   "https://app.nhost.io",
 			Hidden:  true,
 		},
 		&cli.StringFlag{ //nolint:exhaustruct
