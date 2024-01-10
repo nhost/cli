@@ -74,7 +74,9 @@ func getTLSServer() (*http.Server, error) {
 	// Type assert the private key to crypto.PrivateKey
 	pk, ok := privateKey.(crypto.PrivateKey)
 	if !ok {
-		return nil, fmt.Errorf("failed to type assert private key to crypto.PrivateKey") //nolint:goerr113
+		return nil, fmt.Errorf( //nolint:goerr113
+			"failed to type assert private key to crypto.PrivateKey",
+		)
 	}
 
 	block, _ = pem.Decode(ssl.CertFile)
@@ -163,7 +165,9 @@ func (ce *CliEnv) loginGithub(ctx context.Context) (credentials.Credentials, err
 	}()
 
 	signinPage := fmt.Sprintf(
-		"https://%s/v1/auth/signin/provider/github/?redirectTo=https://local.dashboard.nhost.run:8099/signin", ce.Domain())
+		"https://%s/v1/auth/signin/provider/github/?redirectTo=https://local.dashboard.nhost.run:8099/signin",
+		ce.Domain(),
+	)
 	ce.Infoln("Opening browser to sign-in")
 	if err := openBrowser(signinPage); err != nil {
 		return credentials.Credentials{}, err
@@ -191,7 +195,10 @@ func (ce *CliEnv) loginMethod(ctx context.Context) (credentials.Credentials, err
 	ce.PromptMessage("method: ")
 	method, err := ce.PromptInput(false)
 	if err != nil {
-		return credentials.Credentials{}, fmt.Errorf("failed to read authentication method: %w", err)
+		return credentials.Credentials{}, fmt.Errorf(
+			"failed to read authentication method: %w",
+			err,
+		)
 	}
 
 	var session credentials.Credentials
