@@ -20,7 +20,6 @@ type CliEnv struct {
 	stderr      io.Writer
 	Path        *PathStructure
 	domain      string
-	appBaseURL  string
 	branch      string
 	nhclient    *nhostclient.Client
 	projectName string
@@ -31,7 +30,6 @@ func New(
 	stderr io.Writer,
 	path *PathStructure,
 	domain string,
-	appBaseURL string,
 	branch string,
 	projectName string,
 ) *CliEnv {
@@ -40,7 +38,6 @@ func New(
 		stderr:      stderr,
 		Path:        path,
 		domain:      domain,
-		appBaseURL:  appBaseURL,
 		branch:      branch,
 		nhclient:    nil,
 		projectName: projectName,
@@ -63,7 +60,6 @@ func FromCLI(cCtx *cli.Context) *CliEnv {
 			cCtx.String(flagNhostFolder),
 		),
 		domain:      cCtx.String(flagDomain),
-		appBaseURL:  cCtx.String(flagAppBaseURL),
 		branch:      cCtx.String(flagBranch),
 		projectName: sanitizeName(cCtx.String(flagProjectName)),
 		nhclient:    nil,
@@ -76,10 +72,6 @@ func (ce *CliEnv) ProjectName() string {
 
 func (ce *CliEnv) Domain() string {
 	return ce.domain
-}
-
-func (ce *CliEnv) AppBaseURL() string {
-	return ce.appBaseURL
 }
 
 func (ce *CliEnv) Branch() string {

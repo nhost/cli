@@ -210,7 +210,6 @@ func TestValidate(t *testing.T) {
 					filepath.Join("testdata", "validate", tc.path, "nhost"),
 				),
 				"fakedomain",
-				"fakseAppBaseURL",
 				"fakebranch",
 				"",
 			)

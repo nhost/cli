@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	flagDomain     = "domain"
-	flagAppBaseURL = "app-base-url"
+	flagDomain = "domain"
 )
 
 func CommandGet() *cli.Command {
@@ -30,25 +29,17 @@ func CommandGet() *cli.Command {
 				Value:   "nhost.run",
 				Hidden:  true,
 			},
-			&cli.StringFlag{ //nolint:exhaustruct
-				Name:    flagAppBaseURL,
-				Usage:   "Nhost app base URL",
-				EnvVars: []string{"NHOST_APP_BASE_URL"},
-				Value:   "https://app.nhost.io",
-				Hidden:  true,
-			},
 		},
 		Action: actionGet,
 	}
 }
 
-func getToken(ctx context.Context, domain, appBaseURL string) (string, error) {
+func getToken(ctx context.Context, domain string) (string, error) {
 	ce := clienv.New(
 		os.Stdout,
 		os.Stderr,
 		&clienv.PathStructure{},
 		domain,
-		appBaseURL,
 		"unneeded",
 		"unneeded",
 	)
@@ -73,7 +64,7 @@ func actionGet(c *cli.Context) error {
 	for scanner.Scan() {
 		input += scanner.Text()
 	}
-	token, err := getToken(c.Context, c.String(flagDomain), c.String(flagAppBaseURL))
+	token, err := getToken(c.Context, c.String(flagDomain))
 	if err != nil {
 		return err
 	}
