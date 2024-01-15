@@ -76,7 +76,6 @@
             preCheck = ''
               echo "➜ Getting access token"
               export NHOST_ACCESS_TOKEN=$(bash ${src}/get_access_token.sh)
-              echo $NHOST_ACCESS_TOKEN
             '';
           };
         };
