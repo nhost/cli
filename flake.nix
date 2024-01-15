@@ -40,9 +40,10 @@
         };
 
         checkDeps = with pkgs; [
-          curl
           jq
+          curl
           cacert
+          gqlgenc
         ];
 
         buildInputs = with pkgs; [
@@ -71,6 +72,11 @@
 
           go-checks = nixops-lib.go.check {
             inherit src submodule ldflags tags buildInputs nativeBuildInputs checkDeps;
+
+            preCheck = ''
+              echo "➜ Getting access token"
+              export NHOST_ACCESS_TOKEN=$(bash ${src}/get_access_token.sh)
+            '';
           };
         };
 
