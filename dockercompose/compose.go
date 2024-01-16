@@ -430,7 +430,12 @@ func sanitizeBranch(name string) string {
 	return strings.ToLower(re.ReplaceAllString(name, ""))
 }
 
-func ComposeFileFromConfig( //nolint:funlen
+type RunService struct {
+	Config *model.ConfigRunServiceConfig
+	Name   string
+}
+
+func getServices( //nolint: funlen,cyclop
 	cfg *model.ConfigConfig,
 	projectName string,
 	httpPort uint,
@@ -443,7 +448,8 @@ func ComposeFileFromConfig( //nolint:funlen
 	ports ExposePorts,
 	branch string,
 	dashboardVersion string,
-) (*ComposeFile, error) {
+	runServices ...RunService,
+) (map[string]*Service, error) {
 	minio, err := minio(dataFolder)
 	if err != nil {
 		return nil, err
@@ -486,37 +492,86 @@ func ComposeFileFromConfig( //nolint:funlen
 		return nil, err
 	}
 
-	c := &ComposeFile{
-		Version: "3.8",
-		Services: map[string]*Service{
-			"auth":      auth,
-			"console":   console,
-			"dashboard": dashboard(cfg, dashboardVersion, httpPort, useTLS),
-			"functions": functions(
-				cfg,
-				httpPort,
-				useTLS,
-				rootFolder,
-				jwtSecret,
-				ports.Functions,
-			),
-			"graphql":  graphql,
-			"minio":    minio,
-			"postgres": postgres,
-			"storage":  storage,
-			"mailhog":  mailhog,
-			"traefik":  traefik,
-		},
-		Volumes: map[string]struct{}{
-			"functions_node_modules": {},
-			"root_node_modules":      {},
-			pgVolumeName:             {},
-		},
+	services := map[string]*Service{
+		"auth":      auth,
+		"console":   console,
+		"dashboard": dashboard(cfg, dashboardVersion, httpPort, useTLS),
+		"functions": functions(
+			cfg,
+			httpPort,
+			useTLS,
+			rootFolder,
+			jwtSecret,
+			ports.Functions,
+		),
+		"graphql":  graphql,
+		"minio":    minio,
+		"postgres": postgres,
+		"storage":  storage,
+		"mailhog":  mailhog,
+		"traefik":  traefik,
 	}
 
 	if cfg.Ai != nil {
-		c.Services["ai"] = ai(cfg)
+		services["ai"] = ai(cfg)
 	}
 
-	return c, nil
+	for _, runService := range runServices {
+		services[runService.Name] = run(runService.Name, runService.Config, branch)
+	}
+
+	return services, nil
+}
+
+func ComposeFileFromConfig(
+	cfg *model.ConfigConfig,
+	projectName string,
+	httpPort uint,
+	useTLS bool,
+	postgresPort uint,
+	dataFolder string,
+	nhostFolder string,
+	dotNhostFolder string,
+	rootFolder string,
+	ports ExposePorts,
+	branch string,
+	dashboardVersion string,
+	runServices ...RunService,
+) (*ComposeFile, error) {
+	services, err := getServices(
+		cfg,
+		projectName,
+		httpPort,
+		useTLS,
+		postgresPort,
+		dataFolder,
+		nhostFolder,
+		dotNhostFolder,
+		rootFolder,
+		ports,
+		branch,
+		dashboardVersion,
+		runServices...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	pgVolumeName := fmt.Sprintf("pgdata_%s", sanitizeBranch(branch))
+	volumes := map[string]struct{}{
+		"functions_node_modules": {},
+		"root_node_modules":      {},
+		pgVolumeName:             {},
+	}
+	for _, runService := range runServices {
+		for _, s := range runService.Config.GetResources().GetStorage() {
+			volumes[runVolumeName(runService.Name, s.GetName(), branch)] = struct{}{}
+		}
+	}
+
+	return &ComposeFile{
+		Version:  "3.8",
+		Services: services,
+		Volumes:  volumes,
+	}, nil
 }

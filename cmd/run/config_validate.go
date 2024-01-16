@@ -61,7 +61,7 @@ func respToSecrets(env []*graphql.GetSecrets_AppSecrets) model.Secrets {
 	return secrets
 }
 
-func loadConfig(
+func LoadConfig(
 	path string,
 ) (*model.ConfigRunServiceConfig, error) {
 	cfg := &model.ConfigRunServiceConfig{} //nolint:exhaustruct

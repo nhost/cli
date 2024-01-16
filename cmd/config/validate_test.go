@@ -218,10 +218,10 @@ func TestValidate(t *testing.T) {
 			var secrets model.Secrets
 			if err := clienv.UnmarshalFile(ce.Path.Secrets(), &secrets, env.Unmarshal); err != nil {
 				t.Fatalf(
-					"failed to parse secrets, make sure secret values are between quotes: %s",
-					err,
+					"failed to parse secrets, make sure secret values are between quotes: %s", err,
 				)
 			}
+
 			cfg, err := config.Validate(ce, "local", secrets)
 			if err != nil {
 				t.Fatal(err)
