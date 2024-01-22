@@ -110,7 +110,7 @@ func CommandUp() *cli.Command { //nolint:funlen
 			},
 			&cli.StringSliceFlag{ //nolint:exhaustruct
 				Name:    flagRunService,
-				Usage:   "Run service to add to the development environment. Can be passed multiple times. Comma-separated values are also accepted. Format: name:/path/to/run-service.toml", //nolint:lll
+				Usage:   "Run service to add to the development environment. Can be passed multiple times. Comma-separated values are also accepted. Format: /path/to/run-service.toml[:overlay_name]", //nolint:lll
 				EnvVars: []string{"NHOST_RUN_SERVICE"},
 			},
 		},
@@ -198,30 +198,39 @@ func restart(
 	return nil
 }
 
+func parseRunServiceConfigFlag(value string) (string, string, error) {
+	parts := strings.Split(value, ":")
+	switch len(parts) {
+	case 1:
+		return parts[0], "", nil
+	case 2: //nolint:gomnd
+		return parts[0], parts[1], nil
+	default:
+		return "", "", fmt.Errorf( //nolint:goerr113
+			"invalid run service format, must be /path/to/config.toml:overlay_name, got %s",
+			value,
+		)
+	}
+}
+
 func processRunServices(
 	ce *clienv.CliEnv,
 	runServices []string,
 	secrets model.Secrets,
-) ([]dockercompose.RunService, error) {
-	r := make([]dockercompose.RunService, 0, len(runServices))
+) ([]*model.ConfigRunServiceConfig, error) {
+	r := make([]*model.ConfigRunServiceConfig, 0, len(runServices))
 	for _, runService := range runServices {
-		parts := strings.Split(runService, ":")
-		if len(parts) != 2 { //nolint:gomnd
-			return nil, fmt.Errorf( //nolint:goerr113
-				"invalid run service format, must be svc_name:/path/to/config.toml, got %s",
-				runService,
-			)
-		}
-
-		cfg, err := run.Validate(ce, parts[1], parts[0], secrets)
+		cfgPath, overlayName, err := parseRunServiceConfigFlag(runService)
 		if err != nil {
-			return nil, fmt.Errorf("failed to validate run service %s: %w", parts[0], err)
+			return nil, err
 		}
 
-		r = append(r, dockercompose.RunService{
-			Name:   parts[0],
-			Config: cfg,
-		})
+		cfg, err := run.Validate(ce, cfgPath, overlayName, secrets)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate run service %s: %w", cfgPath, err)
+		}
+
+		r = append(r, cfg)
 	}
 
 	return r, nil
@@ -324,7 +333,7 @@ func up( //nolint:funlen
 func printInfo(
 	httpPort, postgresPort uint,
 	useTLS bool,
-	runServices []dockercompose.RunService,
+	runServices []*model.ConfigRunServiceConfig,
 ) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0) //nolint:gomnd
 	fmt.Fprintf(w, "URLs:\n")
@@ -341,7 +350,7 @@ func printInfo(
 	fmt.Fprintf(w, "- Mailhog:\t\t%s\n", dockercompose.URL("mailhog", httpPort, useTLS))
 
 	for _, svc := range runServices {
-		for _, port := range svc.Config.Ports {
+		for _, port := range svc.GetPorts() {
 			if deptr(port.GetPublish()) {
 				fmt.Fprintf(
 					w,

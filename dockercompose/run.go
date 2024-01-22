@@ -15,7 +15,6 @@ func runVolumeName(
 }
 
 func run(
-	name string,
 	cfg *model.ConfigRunServiceConfig,
 	branchName string,
 ) *Service {
@@ -44,7 +43,7 @@ func run(
 	for _, s := range cfg.GetResources().GetStorage() {
 		volumes = append(volumes, Volume{
 			Type:     "volume",
-			Source:   runVolumeName(name, s.GetName(), branchName),
+			Source:   runVolumeName(cfg.GetName(), s.GetName(), branchName),
 			Target:   s.GetPath(),
 			ReadOnly: ptr(false),
 		})

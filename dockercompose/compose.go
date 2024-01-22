@@ -439,11 +439,6 @@ func sanitizeBranch(name string) string {
 	return strings.ToLower(re.ReplaceAllString(name, ""))
 }
 
-type RunService struct {
-	Config *model.ConfigRunServiceConfig
-	Name   string
-}
-
 func getServices( //nolint: funlen,cyclop
 	cfg *model.ConfigConfig,
 	projectName string,
@@ -457,7 +452,7 @@ func getServices( //nolint: funlen,cyclop
 	ports ExposePorts,
 	branch string,
 	dashboardVersion string,
-	runServices ...RunService,
+	runServices ...*model.ConfigRunServiceConfig,
 ) (map[string]*Service, error) {
 	minio, err := minio(dataFolder)
 	if err != nil {
@@ -527,7 +522,7 @@ func getServices( //nolint: funlen,cyclop
 	}
 
 	for _, runService := range runServices {
-		services["run-"+runService.Name] = run(runService.Name, runService.Config, branch)
+		services["run-"+runService.Name] = run(runService, branch)
 	}
 
 	return services, nil
@@ -546,7 +541,7 @@ func ComposeFileFromConfig(
 	ports ExposePorts,
 	branch string,
 	dashboardVersion string,
-	runServices ...RunService,
+	runServices ...*model.ConfigRunServiceConfig,
 ) (*ComposeFile, error) {
 	services, err := getServices(
 		cfg,
@@ -574,7 +569,7 @@ func ComposeFileFromConfig(
 		pgVolumeName:                 {},
 	}
 	for _, runService := range runServices {
-		for _, s := range runService.Config.GetResources().GetStorage() {
+		for _, s := range runService.GetResources().GetStorage() {
 			volumes[runVolumeName(runService.Name, s.GetName(), branch)] = struct{}{}
 		}
 	}
