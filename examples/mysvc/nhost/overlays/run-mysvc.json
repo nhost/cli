@@ -1,0 +1,10 @@
+[
+  {
+    "value": {
+      "name": "ENVIRONMENT",
+      "value": "development"
+    },
+    "op": "add",
+    "path": "/environment/-"
+  }
+]

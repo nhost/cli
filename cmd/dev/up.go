@@ -199,6 +199,7 @@ func restart(
 }
 
 func processRunServices(
+	ce *clienv.CliEnv,
 	runServices []string,
 	secrets model.Secrets,
 ) ([]dockercompose.RunService, error) {
@@ -212,12 +213,7 @@ func processRunServices(
 			)
 		}
 
-		cfg, err := run.LoadConfig(parts[1])
-		if err != nil {
-			return nil, fmt.Errorf("failed to load run service %s: %w", parts[0], err)
-		}
-
-		cfg, err = run.ValidateLocal(cfg, secrets)
+		cfg, err := run.Validate(ce, parts[1], parts[0], secrets)
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate run service %s: %w", parts[0], err)
 		}
@@ -265,7 +261,7 @@ func up( //nolint:funlen
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	runServicesCfg, err := processRunServices(runServices, secrets)
+	runServicesCfg, err := processRunServices(ce, runServices, secrets)
 	if err != nil {
 		return err
 	}
