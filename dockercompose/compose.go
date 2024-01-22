@@ -26,6 +26,14 @@ const (
 	minimumHasuraVerson = "v2.18.0"
 )
 
+func rootNodeModules(branch string) string {
+	return fmt.Sprintf("%s-root_node_modules", sanitizeBranch(branch))
+}
+
+func functionsNodeModules(branch string) string {
+	return fmt.Sprintf("%s-functions_node_modules", sanitizeBranch(branch))
+}
+
 func ptr[T any](v T) *T {
 	return &v
 }
@@ -304,6 +312,7 @@ func functions( //nolint:funlen
 	rootFolder string,
 	jwtSecret string,
 	port uint,
+	branch string,
 ) *Service {
 	envVars := map[string]string{
 		"HASURA_GRAPHQL_ADMIN_SECRET": cfg.Hasura.AdminSecret,
@@ -361,12 +370,12 @@ func functions( //nolint:funlen
 			},
 			{
 				Type:   "volume",
-				Source: "root_node_modules",
+				Source: rootNodeModules(branch),
 				Target: "/opt/project/node_modules",
 			},
 			{
 				Type:   "volume",
-				Source: "functions_node_modules",
+				Source: functionsNodeModules(branch),
 				Target: "/opt/project/functions/node_modules",
 			},
 		},
@@ -503,6 +512,7 @@ func getServices( //nolint: funlen,cyclop
 			rootFolder,
 			jwtSecret,
 			ports.Functions,
+			branch,
 		),
 		"graphql":  graphql,
 		"minio":    minio,
@@ -517,7 +527,7 @@ func getServices( //nolint: funlen,cyclop
 	}
 
 	for _, runService := range runServices {
-		services[runService.Name] = run(runService.Name, runService.Config, branch)
+		services["run-"+runService.Name] = run(runService.Name, runService.Config, branch)
 	}
 
 	return services, nil
@@ -559,9 +569,9 @@ func ComposeFileFromConfig(
 
 	pgVolumeName := fmt.Sprintf("pgdata_%s", sanitizeBranch(branch))
 	volumes := map[string]struct{}{
-		"functions_node_modules": {},
-		"root_node_modules":      {},
-		pgVolumeName:             {},
+		rootNodeModules(branch):      {},
+		functionsNodeModules(branch): {},
+		pgVolumeName:                 {},
 	}
 	for _, runService := range runServices {
 		for _, s := range runService.Config.GetResources().GetStorage() {

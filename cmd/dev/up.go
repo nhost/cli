@@ -349,14 +349,14 @@ func printInfo(
 			if deptr(port.GetPublish()) {
 				fmt.Fprintf(
 					w,
-					"- %s (Run):\t\tFrom laptop:\t%s://localhost:%d\n",
+					"- run-%s:\t\tFrom laptop:\t%s://localhost:%d\n",
 					svc.Name,
 					port.GetType(),
 					port.GetPort(),
 				)
 				fmt.Fprintf(
 					w,
-					"\t\tFrom services:\t%s://%s:%d\n",
+					"\t\tFrom services:\t%s://run-%s:%d\n",
 					port.GetType(),
 					svc.Name,
 					port.GetPort(),

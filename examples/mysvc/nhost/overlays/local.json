@@ -1,0 +1,10 @@
+[
+  {
+    "value": {
+      "name": "MY_ENV2",
+      "value": "myvalue3"
+    },
+    "op": "add",
+    "path": "/environment/-"
+  }
+]
