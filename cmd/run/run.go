@@ -2,10 +2,6 @@ package run
 
 import "github.com/urfave/cli/v2"
 
-const (
-	flagSubdomain = "subdomain"
-)
-
 func Command() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:    "run",

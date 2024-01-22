@@ -70,14 +70,6 @@ func commandConfigDeploy(cCtx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	cfg, appID, err := ValidateRemote(
-		cCtx.Context,
-		ce,
-		cl,
-		cCtx.String(flagConfig),
-		cCtx.String(flagSubdomain),
-		cCtx.String(flagServiceID),
-	)
 
 	replaceConfig, err := transform[model.ConfigRunServiceConfig, graphql.ConfigRunServiceConfigInsertInput](
 		cfg,

@@ -57,15 +57,6 @@ func (p PathStructure) OverlaysFolder() string {
 	return filepath.Join(p.nhostFolder, "overlays")
 }
 
-func (p PathStructure) RunServiceOverlaysFolder(configPath string) string {
-	base := filepath.Dir(configPath)
-	return filepath.Join(base, "nhost", "overlays")
-}
-
-func (p PathStructure) RunServiceOverlay(configPath, subdomain string) string {
-	return filepath.Join(p.RunServiceOverlaysFolder(configPath), subdomain+".json")
-}
-
 func (p PathStructure) Overlay(subdomain string) string {
 	return filepath.Join(p.OverlaysFolder(), subdomain+".json")
 }

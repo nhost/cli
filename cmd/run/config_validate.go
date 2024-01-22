@@ -46,11 +46,6 @@ func CommandConfigValidate() *cli.Command {
 				Usage:   "If specified, apply this overlay and remote secrets for this service",
 				EnvVars: []string{"NHOST_RUN_SERVICE_ID"},
 			},
-			&cli.StringFlag{ //nolint:exhaustruct
-				Name:    flagSubdomain,
-				Usage:   "If specified, edit this subdomain's overlay, otherwise edit base configuation",
-				EnvVars: []string{"NHOST_SUBDOMAIN"},
-			},
 		},
 	}
 }
