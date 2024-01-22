@@ -181,4 +181,3 @@ func ValidateRemote(
 
 	return nil
 }
-
