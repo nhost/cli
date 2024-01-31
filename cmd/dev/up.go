@@ -249,7 +249,7 @@ func processRunServices(
 	return r, nil
 }
 
-func up( //nolint:funlen
+func up( //nolint:funlen,cyclop
 	ctx context.Context,
 	ce *clienv.CliEnv,
 	dc *dockercompose.DockerCompose,
