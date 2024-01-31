@@ -198,6 +198,19 @@ func restart(
 	return nil
 }
 
+func reload(
+	ctx context.Context,
+	ce *clienv.CliEnv,
+	dc *dockercompose.DockerCompose,
+) error {
+	ce.Infoln("Reapplying metadata...")
+	if err := dc.ReloadMetadata(ctx); err != nil {
+		return fmt.Errorf("failed to reapply metadata: %w", err)
+	}
+
+	return nil
+}
+
 func parseRunServiceConfigFlag(value string) (string, string, error) {
 	parts := strings.Split(value, ":")
 	switch len(parts) {
@@ -323,6 +336,10 @@ func up( //nolint:funlen
 		"--admin-secret", cfg.Hasura.AdminSecret,
 	); err != nil {
 		return fmt.Errorf("failed to create metadata: %w", err)
+	}
+
+	if err := reload(ctx, ce, dc); err != nil {
+		return err
 	}
 
 	ce.Infoln("Nhost development environment started.")
