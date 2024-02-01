@@ -38,7 +38,8 @@ func (i Ingress) Labels() map[string]string {
 		fmt.Sprintf("traefik.http.routers.%s.service", i.Name):     i.Name,
 		fmt.Sprintf("traefik.http.routers.%s.tls", i.Name):         strconv.FormatBool(i.TLS),
 		fmt.Sprintf("traefik.http.services.%s.loadbalancer.server.port", i.Name): strconv.FormatUint(
-			uint64(i.Port), 10,
+			uint64(i.Port),
+			10,
 		),
 	}
 
