@@ -110,6 +110,9 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 		},
 		Auth: &model.ConfigAuth{
 			Version: new(string),
+			ElevatedPrivileges: &model.ConfigAuthElevatedPrivileges{
+				Mode: ptr("required"),
+			},
 			Resources: &model.ConfigResources{
 				Compute: &model.ConfigResourcesCompute{
 					Cpu:    250,

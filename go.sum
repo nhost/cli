@@ -450,6 +450,10 @@ github.com/muesli/termenv v0.15.2 h1:GohcuySI0QmI3wN8Ok9PtKGkgkFIk7y6Vpb5PvrY+Wo
 github.com/muesli/termenv v0.15.2/go.mod h1:Epx+iuz8sNs7mNKhxzH4fWXGNpZwUaJKRS1noLXviQ8=
 github.com/nhost/be v0.0.0-20240201083835-43832925fd2c h1:j+mPis62WaiCh8WtDJ7OgeRZ735F0vfQ/UMymwmhEX4=
 github.com/nhost/be v0.0.0-20240201083835-43832925fd2c/go.mod h1:WdWQpN5qqMfttaGSv6cZsSc3QTOsStsL0n0Ay/skamQ=
+github.com/nhost/be v0.0.0-20240205185437-9ca54c27604f h1:6a0Ts5YPK7IhnxiozfLarv2rPdMmPvOL/Vev6x4sBrE=
+github.com/nhost/be v0.0.0-20240205185437-9ca54c27604f/go.mod h1:9XxyJdSY4oB7aymNHJEVmw4B9OtKJ4IYazjbtE0UPXk=
+github.com/nhost/be v0.0.0-20240205185719-8e9b5a821244 h1:Aqalx6UvBnE39WuoAVnG28GqjcmJ0ROMDUwOORRSyEQ=
+github.com/nhost/be v0.0.0-20240205185719-8e9b5a821244/go.mod h1:9XxyJdSY4oB7aymNHJEVmw4B9OtKJ4IYazjbtE0UPXk=
 github.com/onsi/gomega v1.27.10 h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=
 github.com/onsi/gomega v1.27.10/go.mod h1:RsS8tutOdbdgzbPtzzATp12yT7kM5I5aElG3evPbQ0M=
 github.com/pelletier/go-toml/v2 v2.1.1 h1:LWAJwfNvjQZCFIDKWYQaM62NcYeYViCmWIwmOStowAI=
