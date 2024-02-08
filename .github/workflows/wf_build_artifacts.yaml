@@ -15,9 +15,15 @@ on:
         type: string
         required: true
     secrets:
+      AWS_ACCOUNT_ID:
+        required: true
       CERT_FULL_CHAIN:
         required: true
       CERT_PRIV_KEY:
+        required: true
+      NIX_CACHE_PUB_KEY:
+        required: true
+      NIX_CACHE_PRIV_KEY:
         required: true
 
 jobs:
@@ -32,21 +38,36 @@ jobs:
         ref: ${{ inputs.GIT_REF }}
         submodules: true
 
+    - name: Configure aws
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-nhost-${{ github.event.repository.name }}
+        aws-region: eu-central-1
+
     - uses: nixbuild/nix-quick-install-action@v26
       with:
         nix_version: 2.16.2
         nix_conf: |
           experimental-features = nix-command flakes
           sandbox = false
-          substituters = https://cache.nixos.org/?priority=40
-          trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+          access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+          substituters = https://cache.nixos.org/?priority=40 s3://nhost-nix-cache?region=eu-central-1&priority=50
+          trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ${{ secrets.NIX_CACHE_PUB_KEY }}
           builders-use-substitutes = true
-          extra-platforms = aarch64-linux
 
     - name: Cache nix store
       uses: actions/cache@v3
       with:
-        path: /nix
+        path: |
+          /nix/store/**
+          /nix/var/nix/*/*
+          /nix/var/nix/db/*
+          /nix/var/nix/db/*/**
+          !/nix/var/nix/daemon-socket/socket
+          !/nix/var/nix/userpool/*
+          !/nix/var/nix/gc.lock
+          !/nix/var/nix/db/big-lock
+          !/nix/var/nix/db/reserved
         key: nix-build-${{ inputs.GOOS }}-${{ inputs.GOARCH}}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
     - name: Compute common env vars
       id: vars
@@ -74,3 +95,28 @@ jobs:
         name: cli-${{ steps.vars.outputs.VERSION }}-${{ inputs.GOOS }}-${{ inputs.GOARCH }}
         path: nhost-cli
         retention-days: 7
+
+    - name: "Build docker-image"
+      run: |
+        make build-docker-image ARCH=${{ inputs.GOARCH }}
+
+    - name: "Push docker-image to artifact repository"
+      uses: actions/upload-artifact@v3
+      with:
+        name: cli-docker-image-${{ steps.vars.outputs.VERSION }}-${{ inputs.GOOS }}-${{ inputs.GOARCH }}
+        path: result
+        retention-days: 7
+
+    - name: "Cache nix store on s3"
+      run: |
+        echo ${{ secrets.NIX_CACHE_PRIV_KEY }} > cache-priv-key.pem
+        nix store sign --key-file cache-priv-key.pem --all
+        find /nix/store -maxdepth 1 -name "*-*" -type d | grep -v source | xargs -n 1000 nix copy --to s3://nhost-nix-cache\?region=eu-central-1
+      if: always()
+
+    - name: "Cache nix store on s3 (docker-image)"
+      run: |
+        echo ${{ secrets.NIX_CACHE_PRIV_KEY }} > cache-priv-key.pem
+        nix store sign --key-file cache-priv-key.pem --all
+        nix copy --to s3://nhost-nix-cache\?region=eu-central-1 .\#docker-image-${{ GOARCH }}
+      if: always()

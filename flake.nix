@@ -94,13 +94,6 @@
               certbot-full
             ] ++ checkDeps ++ buildInputs ++ nativeBuildInputs;
           };
-
-          cibuild = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              go
-              goreleaser
-            ];
-          };
         };
 
         packages = flake-utils.lib.flattenTree rec {
