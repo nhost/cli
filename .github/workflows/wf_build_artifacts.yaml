@@ -116,7 +116,7 @@ jobs:
           rm ../result
           cp image ../result
       shell: bash
-      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH == "arm64" ) }}
+      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH == 'arm64' ) }}
 
     - name: "Push docker-image to artifact repository"
       uses: actions/upload-artifact@v4
