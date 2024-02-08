@@ -105,13 +105,17 @@ jobs:
 
     - name: "Build docker-image"
       run: |
-        make build-docker-image ARCH=${{ inputs.GOARCH }} HOST_ARCH="aarch64"
-      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH == 'arm64' ) }}
+        case ${{ inputs.GOARCH }} in
+        amd64)
+          export HOST_ARCH="x86_64"
+          ;;
+        arm64)
+          export HOST_ARCH="aarch64"
+          ;;
+        esac
 
-    - name: "Build docker-image"
-      run: |
-        make build-docker-image ARCH=${{ inputs.GOARCH }} HOST_ARTH="x86_64"
-      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH == 'amd64' ) }}
+        make build-docker-image ARCH=${{ inputs.GOARCH }}
+      if: ${{ ( inputs.GOOS == 'linux' }}
 
     - name: "Push docker-image to artifact repository"
       uses: actions/upload-artifact@v4

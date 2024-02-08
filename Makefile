@@ -12,6 +12,10 @@ else
   OS?=linux
 endif
 
+ifeq ($(CI),true)
+  docker-build-options=--option system $(ARCH)-linux --extra-platforms ${ARCH}-linux
+endif
+
 VER=$(shell echo $(VERSION) | sed -e 's/^v//g' -e 's/\//_/g')
 
 
@@ -30,7 +34,7 @@ build:  ## Build application and places the binary under ./result/bin
 
 .PHONY: build-docker-image
 build-docker-image:  ## Build docker image
-	nix build \
+	nix build $(docker-build-options) \
 		.\#packages.$(HOST_ARCH)-linux.docker-image-$(GOARCH) \
 		--print-build-logs
 	docker load < result
