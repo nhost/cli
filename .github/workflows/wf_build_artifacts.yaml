@@ -94,7 +94,7 @@ jobs:
         find -L result -type f -exec cp {} nhost-cli \;
 
     - name: "Push artifact to artifact repository"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: cli-${{ steps.vars.outputs.VERSION }}-${{ inputs.GOOS }}-${{ inputs.GOARCH }}
         path: nhost-cli
@@ -106,7 +106,7 @@ jobs:
       if: ${{ ( inputs.GOOS == 'linux' ) }}
 
     - name: "Push docker-image to artifact repository"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: cli-docker-image-${{ steps.vars.outputs.VERSION }}-${{ inputs.GOOS }}-${{ inputs.GOARCH }}
         path: result
@@ -125,4 +125,4 @@ jobs:
         echo ${{ secrets.NIX_CACHE_PRIV_KEY }} > cache-priv-key.pem
         nix store sign --key-file cache-priv-key.pem --all
         nix copy --to s3://nhost-nix-cache\?region=eu-central-1 .\#docker-image-${{ inputs.GOARCH }}
-      if: always()
+      if: ${{ ( inputs.GOOS == 'linux' ) }}
