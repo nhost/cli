@@ -59,7 +59,7 @@ jobs:
           docker push $CONTAINER_NAME:$VERSION-arm64
 
           docker manifest create \
-              cli:$VERSION \
+              $CONTAINER_NAME:$VERSION \
               --amend $CONTAINER_NAME:$VERSION-amd64 \
               --amend $CONTAINER_NAME:$VERSION-arm64
           docker manifest push $CONTAINER_NAME:$VERSION
