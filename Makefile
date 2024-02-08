@@ -27,7 +27,7 @@ check:  ## Run nix flake check
 
 .PHONY: build
 build:  ## Build application and places the binary under ./result/bin
-	nix build \
+	nix build $(docker-build-options) \
 		.\#cli-$(GOARCH)-$(OS) \
 		--print-build-logs
 

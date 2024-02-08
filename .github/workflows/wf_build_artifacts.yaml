@@ -76,6 +76,12 @@ jobs:
     - name: Compute common env vars
       id: vars
       run: |
+        if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "arm64" ]; then
+          export HOST_ARCH=aarch64
+        else
+          export HOST_ARCH=x86_64
+        fi
+        echo "HOST_ARCH=$HOST_ARCH" >> $GITHUB_OUTPUT
         echo "VERSION=$(make get-version VERSION=${{ inputs.VERSION }})" >> $GITHUB_OUTPUT
 
     - name: place let's encrypt cert
@@ -90,7 +96,10 @@ jobs:
 
     - name: "Build artifact"
       run: |
-        make build ARCH=${{ inputs.GOARCH }} OS=${{ inputs.GOOS }}
+        export HOST_ARCH=${{ steps.vars.outputs.HOST_ARCH }}
+        export ARCH=${{ inputs.GOARCH }}
+        export OS=${{ inputs.GOOS }}
+        make build
         find -L result -type f -exec cp {} nhost-cli \;
 
     - name: "Push artifact to artifact repository"
@@ -105,15 +114,9 @@ jobs:
 
     - name: "Build docker-image"
       run: |
-        case ${{ inputs.GOARCH }} in
-        amd64)
-          export HOST_ARCH="x86_64"
-          ;;
-        arm64)
-          export HOST_ARCH="aarch64"
-          ;;
-        esac
-        make build-docker-image ARCH=${{ inputs.GOARCH }}
+        export HOST_ARCH=${{ steps.vars.outputs.HOST_ARCH }}
+        export ARCH=${{ inputs.GOARCH }}
+        make build-docker-image
       if: ${{ inputs.GOOS == 'linux' }}
 
     - name: "Push docker-image to artifact repository"
