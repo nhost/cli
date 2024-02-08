@@ -42,19 +42,19 @@ jobs:
       - name: Upload docker images
         shell: bash
         run: |
-          docker load < ~/artifacts/cli-docker-image-${{ input.VERSION }}-linux-amd64/result
+          docker load < ~/artifacts/cli-docker-image-${{ inputs.VERSION }}-linux-amd64/result
           docker tag cli:${{ inputs.VERSION }} cli:${{ inputs.VERSION }}-amd64
           docker push cli:${{ inputs.VERSION }}-amd64
 
-          docker load < ~/artifacts/cli-docker-image-${{ input.VERSION }}-linux-arm64/result
+          docker load < ~/artifacts/cli-docker-image-${{ inputs.VERSION }}-linux-arm64/result
           docker tag cli:${{ inputs.VERSION }} cli:${{ inputs.VERSION }}-arm64
           docker push cli:${{ inputs.VERSION }}-arm64
 
           docker manifest create \
-              cli:${{ input.VERSION }} \
-              --amend $CONTAINER_NAME:${{ input.VERSION }}-amd64 \
-              --amend $CONTAINER_NAME:${{ input.VERSION }}-arm64
-          docker manifest push cli:${{ input.VERSION }}
+              cli:${{ inputs.VERSION }} \
+              --amend $CONTAINER_NAME:${{ inputs.VERSION }}-amd64 \
+              --amend $CONTAINER_NAME:${{ inputs.VERSION }}-arm64
+          docker manifest push cli:${{ inputs.VERSION }}
 
       - name: Upload assets
         shell: bash
