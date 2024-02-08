@@ -13,8 +13,15 @@ jobs:
       NHOST_PAT: ${{ secrets.NHOST_PAT }}
 
   build_artifacts:
+    strategy:
+      fail-fast: true
+      matrix:
+        GOOS: ["darwin", "linux"]
+        GOARCH: ["amd64", "arm64"]
     uses: ./.github/workflows/wf_build_artifacts.yaml
     with:
+      GOOS: ${{ matrix.GOOS }}
+      GOACH: ${{ matrix.GOARCH }}
       VERSION: ${{ github.sha }}
     secrets:
       CERT_FULL_CHAIN: ${{ secrets.CERT_FULL_CHAIN }}

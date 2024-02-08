@@ -21,9 +21,9 @@ jobs:
         ref: ${{ inputs.GIT_REF }}
         submodules: true
 
-    - uses: nixbuild/nix-quick-install-action@v22
+    - uses: nixbuild/nix-quick-install-action@v26
       with:
-        nix_version: 2.14.1
+        nix_version: 2.16.2
         nix_conf: |
           experimental-features = nix-command flakes
           sandbox = false

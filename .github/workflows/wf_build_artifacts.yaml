@@ -8,6 +8,12 @@ on:
       VERSION:
         type: string
         required: true
+      GOOS:
+        type: string
+        required: true
+      GOARCH:
+        type: string
+        required: true
     secrets:
       CERT_FULL_CHAIN:
         required: true
@@ -26,9 +32,9 @@ jobs:
         ref: ${{ inputs.GIT_REF }}
         submodules: true
 
-    - uses: nixbuild/nix-quick-install-action@v22
+    - uses: nixbuild/nix-quick-install-action@v26
       with:
-        nix_version: 2.14.1
+        nix_version: 2.16.2
         nix_conf: |
           experimental-features = nix-command flakes
           sandbox = false
@@ -41,7 +47,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /nix
-        key: nix-build-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
+        key: nix-build-${{ inputs.GOOS }}-${{ inputs.GOARCH}}-${{ hashFiles('flake.nix', 'flake.lock', '**.nix') }}
     - name: Compute common env vars
       id: vars
       run: |
@@ -59,33 +65,12 @@ jobs:
 
     - name: "Build artifact"
       run: |
-        export GORELEASER_CURRENT_TAG=${{ steps.vars.outputs.VERSION }}
-        nix develop .\#cibuild -c goreleaser release --skip-validate
+        make build ARCH=${{ inputs.GOARCH }} OS=${{ inputs.GOOS }}
+        find -L result -type f -exec cp {} nhost-cli \;
 
     - name: "Push artifact to artifact repository"
       uses: actions/upload-artifact@v3
       with:
-        name: cli-${{ steps.vars.outputs.VERSION }}-darwin-arm64.tar.gz
-        path: dist/cli-${{ steps.vars.outputs.VERSION }}-darwin-arm64.tar.gz
-        retention-days: 7
-
-    - name: "Push artifact to artifact repository"
-      uses: actions/upload-artifact@v3
-      with:
-        name: cli-${{ steps.vars.outputs.VERSION }}-darwin-amd64.tar.gz
-        path: dist/cli-${{ steps.vars.outputs.VERSION }}-darwin-amd64.tar.gz
-        retention-days: 7
-
-    - name: "Push artifact to artifact repository"
-      uses: actions/upload-artifact@v3
-      with:
-        name: cli-${{ steps.vars.outputs.VERSION }}-linux-arm64.tar.gz
-        path: dist/cli-${{ steps.vars.outputs.VERSION }}-linux-arm64.tar.gz
-        retention-days: 7
-
-    - name: "Push artifact to artifact repository"
-      uses: actions/upload-artifact@v3
-      with:
-        name: cli-${{ steps.vars.outputs.VERSION }}-linux-amd64.tar.gz
-        path: dist/cli-${{ steps.vars.outputs.VERSION }}-linux-amd64.tar.gz
+        name: cli-${{ steps.vars.outputs.VERSION }}-${{ inputs.GOOS }}-${{ inputs.GOARCH }}
+        path: nhost-cli
         retention-days: 7
