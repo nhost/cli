@@ -1,8 +1,8 @@
 ifeq ($(shell uname -m),x86_64)
-  HOST_ARCH=x86_64
+  HOST_ARCH?=x86_64
   GOARCH?=amd64
 else ifeq ($(shell uname -m),arm64)
-  HOST_ARCH=aarch64
+  HOST_ARCH?=aarch64
   GOARCH?=arm64
 endif
 
@@ -31,7 +31,7 @@ build:  ## Build application and places the binary under ./result/bin
 .PHONY: build-docker-image
 build-docker-image:  ## Build docker image
 	nix build \
-		.\#packages.$(GOARCH)-linux.docker-image-$(GOARCH) \
+		.\#packages.$(HOST_ARCH)-linux.docker-image-$(GOARCH) \
 		--print-build-logs
 	docker load < result
 
