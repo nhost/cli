@@ -28,6 +28,11 @@ jobs:
           ref: ${{ inputs.GIT_REF }}
           submodules: true
 
+      - name: Compute common env vars
+        id: vars
+        run: |
+          echo "VERSION=$(make get-version VERSION=${{ inputs.VERSION }})" >> $GITHUB_OUTPUT
+
       - name: "Get artifacts"
         uses: actions/download-artifact@v4
         with:
@@ -42,32 +47,37 @@ jobs:
       - name: Upload docker images
         shell: bash
         run: |
-          docker load < ~/artifacts/cli-docker-image-${{ inputs.VERSION }}-linux-amd64/result
-          docker tag cli:${{ inputs.VERSION }} cli:${{ inputs.VERSION }}-amd64
-          docker push cli:${{ inputs.VERSION }}-amd64
+          export VERSION=${{ steps.vars.outputs.VERSION }}
 
-          docker load < ~/artifacts/cli-docker-image-${{ inputs.VERSION }}-linux-arm64/result
-          docker tag cli:${{ inputs.VERSION }} cli:${{ inputs.VERSION }}-arm64
-          docker push cli:${{ inputs.VERSION }}-arm64
+          docker load < ~/artifacts/cli-docker-image-$VERSION-linux-amd64/result
+          docker tag cli:$VERSION cli:$VERSION-amd64
+          docker push cli:$VERSION-amd64
+
+          docker load < ~/artifacts/cli-docker-image-$VERSION-linux-arm64/result
+          docker tag cli:$VERSION cli:$VERSION-arm64
+          docker push cli:$VERSION-arm64
 
           docker manifest create \
-              cli:${{ inputs.VERSION }} \
-              --amend $CONTAINER_NAME:${{ inputs.VERSION }}-amd64 \
-              --amend $CONTAINER_NAME:${{ inputs.VERSION }}-arm64
-          docker manifest push cli:${{ inputs.VERSION }}
+              cli:$VERSION \
+              --amend $CONTAINER_NAME:$VERSION-amd64 \
+              --amend $CONTAINER_NAME:$VERSION-arm64
+          docker manifest push cli:$VERSION
 
       - name: Upload assets
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          export VERSION=${{ steps.vars.outputs.VERSION }}
+
           mkdir upload
-          tar cvzf ~/upload/cli-${{ inputs.VERSION }}-darwin-amd64.tar gz ~/artifacts/cli-${{ inputs.VERSION }}-darwin-amd64/nhost-cli
-          tar cvzf ~/upload/cli-${{ inputs.VERSION }}-darwin-arm64.tar gz ~/artifacts/cli-${{ inputs.VERSION }}-darwin-arm64/nhost-cli
-          tar cvzf ~/upload/cli-${{ inputs.VERSION }}-linux-amd64.tar gz ~/artifacts/cli-${{ inputs.VERSION }}-linux-amd64/nhost-cli
-          tar cvzf ~/upload/cli-${{ inputs.VERSION }}-linux-arm64.tar gz ~/artifacts/cli-${{ inputs.VERSION }}-linux-arm64/nhost-cli
+
+          tar cvzf ~/upload/cli-$VERSION-darwin-amd64.tar gz ~/artifacts/cli-$VERSION-darwin-amd64/nhost-cli
+          tar cvzf ~/upload/cli-$VERSION-darwin-arm64.tar gz ~/artifacts/cli-$VERSION-darwin-arm64/nhost-cli
+          tar cvzf ~/upload/cli-$VERSION-linux-amd64.tar gz ~/artifacts/cli-$VERSION-linux-amd64/nhost-cli
+          tar cvzf ~/upload/cli-$VERSION-linux-arm64.tar gz ~/artifacts/cli-$VERSION-linux-arm64/nhost-cli
+
           find ~/upload/ -type f -exec sha256sum {} + > ~/upload/checksums.txt
           gh release upload \
             --clobber "${{ github.ref_name }}" \
             ./dist/*
-
