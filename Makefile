@@ -12,10 +12,6 @@ else
   OS?=linux
 endif
 
-ifeq ($(CI),true)
-  docker-build-options=--option system $(HOST_ARCH)-linux --extra-platforms ${HOST_ARCH}-linux
-endif
-
 VER=$(shell echo $(VERSION) | sed -e 's/^v//g' -e 's/\//_/g')
 
 
