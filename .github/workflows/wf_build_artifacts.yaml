@@ -101,7 +101,7 @@ jobs:
         retention-days: 7
 
     - uses: docker/setup-qemu-action@v3
-      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH = 'arm64' ) }}
+      if: ${{ ( inputs.GOOS == 'linux' and inputs.GOARCH == 'arm64' ) }}
 
     - name: "Build docker-image"
       run: |
