@@ -6,8 +6,6 @@ on:
         type: string
         required: true
     secrets:
-      GITHUB_TOKEN:
-        required: true
       DOCKER_USERNAME:
         required: true
       DOCKER_PASSWORD:
