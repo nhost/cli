@@ -113,9 +113,8 @@ jobs:
           export HOST_ARCH="aarch64"
           ;;
         esac
-
         make build-docker-image ARCH=${{ inputs.GOARCH }}
-      if: ${{ ( inputs.GOOS == 'linux' }}
+      if: ${{ inputs.GOOS == 'linux' }}
 
     - name: "Push docker-image to artifact repository"
       uses: actions/upload-artifact@v4
@@ -123,7 +122,7 @@ jobs:
         name: cli-docker-image-${{ steps.vars.outputs.VERSION }}-${{ inputs.GOOS }}-${{ inputs.GOARCH }}
         path: result
         retention-days: 7
-      if: ${{ ( inputs.GOOS == 'linux' ) }}
+      if: ${{ inputs.GOOS == 'linux' }}
 
     - name: "Cache nix store on s3"
       run: |
