@@ -30,6 +30,10 @@ jobs:
   artifacts:
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: write
+
     steps:
     - name: "Check out repository"
       uses: actions/checkout@v3
