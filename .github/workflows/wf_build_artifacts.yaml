@@ -76,12 +76,6 @@ jobs:
     - name: Compute common env vars
       id: vars
       run: |
-        if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "arm64" ]; then
-          export HOST_ARCH=aarch64
-        else
-          export HOST_ARCH=x86_64
-        fi
-        echo "HOST_ARCH=$HOST_ARCH" >> $GITHUB_OUTPUT
         echo "VERSION=$(make get-version VERSION=${{ inputs.VERSION }})" >> $GITHUB_OUTPUT
 
     - name: place let's encrypt cert
@@ -96,10 +90,7 @@ jobs:
 
     - name: "Build artifact"
       run: |
-        export HOST_ARCH=${{ steps.vars.outputs.HOST_ARCH }}
-        export ARCH=${{ inputs.GOARCH }}
-        export OS=${{ inputs.GOOS }}
-        make build
+        make build ARCH=${{ inputs.GOARCH }} OS=${{ inputs.GOOS }}
         find -L result -type f -exec cp {} nhost-cli \;
 
     - name: "Push artifact to artifact repository"
@@ -109,15 +100,23 @@ jobs:
         path: nhost-cli
         retention-days: 7
 
-    - uses: docker/setup-qemu-action@v3
-      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH == 'arm64' ) }}
-
     - name: "Build docker-image"
       run: |
-        export HOST_ARCH=${{ steps.vars.outputs.HOST_ARCH }}
-        export ARCH=${{ inputs.GOARCH }}
-        make build-docker-image
-      if: ${{ inputs.GOOS == 'linux' }}
+        make build-docker-image ARCH=${{ inputs.GOARCH }}
+      if: ${{ ( inputs.GOOS == 'linux' ) }}
+
+    - name: "Ammend manifest"
+      run: |
+          # hack that speeds up build a lot by crosscompiling with nix/go
+          # and avoiding to use qemu
+          mkdir tmp && cd tmp
+          tar xvzf ../result
+          sed -i 's/amd64/arm64/g' *.json
+          tar cvzf image *
+          rm ../result
+          cp image ../result
+      shell: bash
+      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH == "arm64" ) }}
 
     - name: "Push docker-image to artifact repository"
       uses: actions/upload-artifact@v4
@@ -125,7 +124,7 @@ jobs:
         name: cli-docker-image-${{ steps.vars.outputs.VERSION }}-${{ inputs.GOOS }}-${{ inputs.GOARCH }}
         path: result
         retention-days: 7
-      if: ${{ inputs.GOOS == 'linux' }}
+      if: ${{ ( inputs.GOOS == 'linux' ) }}
 
     - name: "Cache nix store on s3"
       run: |
