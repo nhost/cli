@@ -3,7 +3,6 @@ name: "release"
 on:
   release:
     types: [published]
-  pull_request:
 
 jobs:
   tests:

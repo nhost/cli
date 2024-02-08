@@ -78,13 +78,13 @@ jobs:
           tar cvzf upload/cli-$VERSION-linux-amd64.tar.gz ~/artifacts/cli-$VERSION-linux-amd64/nhost-cli
           tar cvzf upload/cli-$VERSION-linux-arm64.tar.gz ~/artifacts/cli-$VERSION-linux-arm64/nhost-cli
 
-          find upload/ -type f -exec sha256sum {} + > upload/checksums.txt
+          find upload/ -type f -exec sha256sum {} + > checksums.txt
 
           cat upload/checksums.txt
 
           gh release upload \
             --clobber "${{ github.ref_name }}" \
-            ./upload/*
+            ./upload/* checksums.txt
 
   update-releases-file:
     name: Update Releases File
