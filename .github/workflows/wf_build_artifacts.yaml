@@ -76,7 +76,7 @@ jobs:
     - name: Compute common env vars
       id: vars
       run: |
-        echo "VERSION=$(make get-version VERSION=v0.0.0-${{ inputs.VERSION }})" >> $GITHUB_OUTPUT
+        echo "VERSION=$(make get-version VERSION=${{ inputs.VERSION }})" >> $GITHUB_OUTPUT
 
     - name: place let's encrypt cert
       run: |

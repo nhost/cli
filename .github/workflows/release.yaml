@@ -16,7 +16,6 @@ jobs:
 
   build_artifacts:
     strategy:
-      fail-fast: true
       matrix:
         GOOS: ["darwin", "linux"]
         GOARCH: ["amd64", "arm64"]

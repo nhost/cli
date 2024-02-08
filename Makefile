@@ -12,6 +12,8 @@ else
   OS?=linux
 endif
 
+VER=$(shell echo $(VERSION) | sed -e 's/^v//g' -e 's/\//_/g')
+
 
 .PHONY: check
 check:  ## Run nix flake check
@@ -36,5 +38,5 @@ build-docker-image:  ## Build docker image
 
 .PHONY: get-version
 get-version:  ## Return version
-	@echo $(VERSION) > VERSION
-	@echo $(VERSION)
+	@echo $(VER) > VERSION
+	@echo $(VER)
