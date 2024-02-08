@@ -1,0 +1,46 @@
+---
+on:
+  workflow_call:
+    inputs:
+      VERSION:
+        type: string
+        required: true
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+
+name: release
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - name: "Check out repository"
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.GIT_REF }}
+          submodules: true
+
+      - name: "Get artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          path: ~/artifacts
+
+      - name: Upload assets
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          find ~/artifacts/
+          # gh release upload \
+          #   --clobber "${{ github.ref_name }}" \
+          #   ./dist/*.tar.gz ./dist/checksums.txt
