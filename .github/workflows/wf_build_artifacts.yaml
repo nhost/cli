@@ -100,6 +100,9 @@ jobs:
         path: nhost-cli
         retention-days: 7
 
+    - uses: docker/setup-qemu-action@v3
+      if: ${{ ( inputs.GOOS == 'linux' && inputs.GOARCH = 'arm64' ) }}
+
     - name: "Build docker-image"
       run: |
         make build-docker-image ARCH=${{ inputs.GOARCH }}

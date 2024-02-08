@@ -31,7 +31,7 @@ build:  ## Build application and places the binary under ./result/bin
 .PHONY: build-docker-image
 build-docker-image:  ## Build docker image
 	nix build \
-		.\#packages.$(HOST_ARCH)-linux.docker-image-$(GOARCH) \
+		.\#packages.$(GOARCH)-linux.docker-image-$(GOARCH) \
 		--print-build-logs
 	docker load < result
 
