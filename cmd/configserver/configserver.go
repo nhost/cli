@@ -106,7 +106,7 @@ func serve(cCtx *cli.Context) error {
 	}
 
 	r := graph.SetupRouter(
-		cCtx.String("/v1"),
+		"/v1/configserver",
 		resolver,
 		dummyMiddleware,
 		dummyMiddleware,
