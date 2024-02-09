@@ -459,6 +459,7 @@ func getServices( //nolint: funlen,cyclop
 	ports ExposePorts,
 	branch string,
 	dashboardVersion string,
+	configserviceImage string,
 	runServices ...*model.ConfigRunServiceConfig,
 ) (map[string]*Service, error) {
 	minio, err := minio(dataFolder)
@@ -522,7 +523,7 @@ func getServices( //nolint: funlen,cyclop
 		"storage":      storage,
 		"mailhog":      mailhog,
 		"traefik":      traefik,
-		"configserver": configserver("0.0.0-dev", rootFolder, nhostFolder, useTLS),
+		"configserver": configserver(configserviceImage, rootFolder, nhostFolder, useTLS),
 	}
 
 	if cfg.Ai != nil {
@@ -549,6 +550,7 @@ func ComposeFileFromConfig(
 	ports ExposePorts,
 	branch string,
 	dashboardVersion string,
+	configserverImage string,
 	runServices ...*model.ConfigRunServiceConfig,
 ) (*ComposeFile, error) {
 	services, err := getServices(
@@ -564,6 +566,7 @@ func ComposeFileFromConfig(
 		ports,
 		branch,
 		dashboardVersion,
+		configserverImage,
 		runServices...,
 	)
 	if err != nil {

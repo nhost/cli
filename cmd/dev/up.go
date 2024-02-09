@@ -38,6 +38,7 @@ const (
 	flagsHasuraPort        = "hasura-port"
 	flagsHasuraConsolePort = "hasura-console-port"
 	flagDashboardVersion   = "dashboard-version"
+	flagConfigserverImage  = "configserver-image"
 	flagRunService         = "run-service"
 )
 
@@ -108,6 +109,12 @@ func CommandUp() *cli.Command { //nolint:funlen
 				Value:   "nhost/dashboard:1.6.3",
 				EnvVars: []string{"NHOST_DASHBOARD_VERSION"},
 			},
+			&cli.StringFlag{ //nolint:exhaustruct
+				Name:    flagConfigserverImage,
+				Hidden:  true,
+				Value:   "",
+				EnvVars: []string{"NHOST_CONFIGSERVER_IMAGE"},
+			},
 			&cli.StringSliceFlag{ //nolint:exhaustruct
 				Name:    flagRunService,
 				Usage:   "Run service to add to the development environment. Can be passed multiple times. Comma-separated values are also accepted. Format: /path/to/run-service.toml[:overlay_name]", //nolint:lll
@@ -133,6 +140,11 @@ func commandUp(cCtx *cli.Context) error {
 		)
 	}
 
+	configserverImage := cCtx.String(flagConfigserverImage)
+	if configserverImage == "" {
+		configserverImage = "nhost/cli:" + cCtx.App.Version
+	}
+
 	applySeeds := cCtx.Bool(flagApplySeeds) || !clienv.PathExists(ce.Path.DotNhostFolder())
 	return Up(
 		cCtx.Context,
@@ -149,6 +161,7 @@ func commandUp(cCtx *cli.Context) error {
 			Functions: cCtx.Uint(flagsFunctionsPort),
 		},
 		cCtx.String(flagDashboardVersion),
+		configserverImage,
 		cCtx.StringSlice(flagRunService),
 	)
 }
@@ -259,6 +272,7 @@ func up( //nolint:funlen,cyclop
 	applySeeds bool,
 	ports dockercompose.ExposePorts,
 	dashboardVersion string,
+	configserverImage string,
 	runServices []string,
 ) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -302,6 +316,7 @@ func up( //nolint:funlen,cyclop
 		ports,
 		ce.Branch(),
 		dashboardVersion,
+		configserverImage,
 		runServicesCfg...,
 	)
 	if err != nil {
@@ -408,12 +423,13 @@ func Up(
 	applySeeds bool,
 	ports dockercompose.ExposePorts,
 	dashboardVersion string,
+	configserverImage string,
 	runServices []string,
 ) error {
 	dc := dockercompose.New(ce.Path.WorkingDir(), ce.Path.DockerCompose(), ce.ProjectName())
 
 	if err := up(
-		ctx, ce, dc, httpPort, useTLS, postgresPort, applySeeds, ports, dashboardVersion, runServices,
+		ctx, ce, dc, httpPort, useTLS, postgresPort, applySeeds, ports, dashboardVersion, configserverImage, runServices,
 	); err != nil {
 		ce.Warnln(err.Error())
 

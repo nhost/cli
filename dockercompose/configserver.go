@@ -2,9 +2,9 @@ package dockercompose
 
 import "fmt"
 
-func configserver(version, rootPath, nhostPath string, useTLS bool) *Service {
+func configserver(image, rootPath, nhostPath string, useTLS bool) *Service {
 	return &Service{
-		Image:      "cli:" + version,
+		Image:      image,
 		DependsOn:  map[string]DependsOn{},
 		EntryPoint: []string{},
 		Command: []string{
