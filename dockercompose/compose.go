@@ -13,14 +13,15 @@ import (
 )
 
 const (
-	authPort      = 4000
-	mailhogPort   = 8025
-	dashboardPort = 3000
-	storagePort   = 5000
-	functionsPort = 3000
-	hasuraPort    = 8080
-	consolePort   = 9695
-	postgresPort  = 5432
+	authPort         = 4000
+	mailhogPort      = 8025
+	dashboardPort    = 3000
+	storagePort      = 5000
+	functionsPort    = 3000
+	hasuraPort       = 8080
+	consolePort      = 9695
+	postgresPort     = 5432
+	configserverPort = 8088
 )
 
 const (
@@ -515,12 +516,13 @@ func getServices( //nolint: funlen,cyclop
 			ports.Functions,
 			branch,
 		),
-		"graphql":  graphql,
-		"minio":    minio,
-		"postgres": postgres,
-		"storage":  storage,
-		"mailhog":  mailhog,
-		"traefik":  traefik,
+		"graphql":      graphql,
+		"minio":        minio,
+		"postgres":     postgres,
+		"storage":      storage,
+		"mailhog":      mailhog,
+		"traefik":      traefik,
+		"configserver": configserver("0.0.0-dev", rootFolder, nhostFolder, useTLS),
 	}
 
 	if cfg.Ai != nil {
