@@ -8,6 +8,7 @@ import (
 
 func (r *queryResolver) runServiceConfigs(
 	_ context.Context,
+	appID *string,
 	resolve bool,
 	where *model.ConfigRunServiceConfigComparisonExp,
 ) ([]*model.ConfigRunServiceConfigWithID, error) {
@@ -16,6 +17,9 @@ func (r *queryResolver) runServiceConfigs(
 
 	services := make([]*model.ConfigRunServiceConfigWithID, 0, 10) //nolint:gomnd
 	for _, app := range r.data {
+		if appID != nil && app.AppID != *appID {
+			continue
+		}
 		for _, svc := range app.Services {
 			cfg, err := svc.ResolveConfig(r.schema, false, app.Secrets)
 			if err != nil {

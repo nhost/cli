@@ -13,8 +13,9 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/google/go-cmp v0.6.0
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.7.3
-	github.com/nhost/be v0.0.0-20240201083835-43832925fd2c
+	github.com/nhost/be v0.0.0-20240213174037-192ddb75c14c
 	github.com/pelletier/go-toml/v2 v2.1.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.1
@@ -58,12 +59,11 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.16.0 // indirect
+	github.com/go-playground/validator/v10 v10.17.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
@@ -77,11 +77,10 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
-	github.com/leodido/go-urn v1.2.4 // indirect
+	github.com/leodido/go-urn v1.3.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -92,9 +91,9 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.17.0 // indirect
+	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.45.0 // indirect
+	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.4.6 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
@@ -119,7 +118,7 @@ require (
 	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
-	golang.org/x/arch v0.6.0 // indirect
+	golang.org/x/arch v0.7.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect

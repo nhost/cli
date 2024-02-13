@@ -1,4 +1,4 @@
-{ pkgs, nix-filter, nhost }:
+{ pkgs, nix-filter, nixops-lib }:
 let
   name = "graphql";
   submodule = "lib/${name}";
@@ -47,16 +47,16 @@ in
 rec{
   inherit name description version;
 
-  check = nhost.go.check {
+  check = nixops-lib.go.check {
     inherit src submodule ldflags tags checkDeps buildInputs nativeBuildInputs;
   };
 
-  devShell = nhost.go.devShell {
+  devShell = nixops-lib.go.devShell {
     buildInputs = with pkgs; [
     ] ++ checkDeps ++ buildInputs ++ nativeBuildInputs;
   };
 
-  package = nhost.go.package {
+  package = nixops-lib.go.package {
     inherit name description version src submodule ldflags buildInputs nativeBuildInputs;
   };
 }

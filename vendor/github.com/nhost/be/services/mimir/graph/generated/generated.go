@@ -86,14 +86,19 @@ type ComplexityRoot struct {
 	}
 
 	ConfigAuth struct {
-		Method       func(childComplexity int) int
-		Redirections func(childComplexity int) int
-		Resources    func(childComplexity int) int
-		Session      func(childComplexity int) int
-		SignUp       func(childComplexity int) int
-		Totp         func(childComplexity int) int
-		User         func(childComplexity int) int
-		Version      func(childComplexity int) int
+		ElevatedPrivileges func(childComplexity int) int
+		Method             func(childComplexity int) int
+		Redirections       func(childComplexity int) int
+		Resources          func(childComplexity int) int
+		Session            func(childComplexity int) int
+		SignUp             func(childComplexity int) int
+		Totp               func(childComplexity int) int
+		User               func(childComplexity int) int
+		Version            func(childComplexity int) int
+	}
+
+	ConfigAuthElevatedPrivileges struct {
+		Mode func(childComplexity int) int
 	}
 
 	ConfigAuthMethod struct {
@@ -560,7 +565,8 @@ type ComplexityRoot struct {
 		Configs                 func(childComplexity int, resolve bool, where *model.ConfigConfigComparisonExp) int
 		RunServiceConfig        func(childComplexity int, appID string, serviceID string, resolve bool) int
 		RunServiceConfigRawJSON func(childComplexity int, appID string, serviceID string, resolve bool) int
-		RunServiceConfigs       func(childComplexity int, resolve bool, where *model.ConfigRunServiceConfigComparisonExp) int
+		RunServiceConfigs       func(childComplexity int, appID string, resolve bool) int
+		RunServiceConfigsAll    func(childComplexity int, resolve bool, where *model.ConfigRunServiceConfigComparisonExp) int
 		SystemConfig            func(childComplexity int, appID string) int
 		SystemConfigs           func(childComplexity int, where *model.ConfigSystemConfigComparisonExp) int
 	}
@@ -590,7 +596,8 @@ type QueryResolver interface {
 	SystemConfigs(ctx context.Context, where *model.ConfigSystemConfigComparisonExp) ([]*model.ConfigAppSystemConfig, error)
 	RunServiceConfigRawJSON(ctx context.Context, appID string, serviceID string, resolve bool) (string, error)
 	RunServiceConfig(ctx context.Context, appID string, serviceID string, resolve bool) (*model.ConfigRunServiceConfig, error)
-	RunServiceConfigs(ctx context.Context, resolve bool, where *model.ConfigRunServiceConfigComparisonExp) ([]*model.ConfigRunServiceConfigWithID, error)
+	RunServiceConfigs(ctx context.Context, appID string, resolve bool) ([]*model.ConfigRunServiceConfigWithID, error)
+	RunServiceConfigsAll(ctx context.Context, resolve bool, where *model.ConfigRunServiceConfigComparisonExp) ([]*model.ConfigRunServiceConfigWithID, error)
 }
 
 type executableSchema struct {
@@ -717,6 +724,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ConfigAppSystemConfig.SystemConfig(childComplexity), true
 
+	case "ConfigAuth.elevatedPrivileges":
+		if e.complexity.ConfigAuth.ElevatedPrivileges == nil {
+			break
+		}
+
+		return e.complexity.ConfigAuth.ElevatedPrivileges(childComplexity), true
+
 	case "ConfigAuth.method":
 		if e.complexity.ConfigAuth.Method == nil {
 			break
@@ -772,6 +786,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ConfigAuth.Version(childComplexity), true
+
+	case "ConfigAuthElevatedPrivileges.mode":
+		if e.complexity.ConfigAuthElevatedPrivileges.Mode == nil {
+			break
+		}
+
+		return e.complexity.ConfigAuthElevatedPrivileges.Mode(childComplexity), true
 
 	case "ConfigAuthMethod.anonymous":
 		if e.complexity.ConfigAuthMethod.Anonymous == nil {
@@ -2623,7 +2644,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.RunServiceConfigs(childComplexity, args["resolve"].(bool), args["where"].(*model.ConfigRunServiceConfigComparisonExp)), true
+		return e.complexity.Query.RunServiceConfigs(childComplexity, args["appID"].(string), args["resolve"].(bool)), true
+
+	case "Query.runServiceConfigsAll":
+		if e.complexity.Query.RunServiceConfigsAll == nil {
+			break
+		}
+
+		args, err := ec.field_Query_runServiceConfigsAll_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.RunServiceConfigsAll(childComplexity, args["resolve"].(bool), args["where"].(*model.ConfigRunServiceConfigComparisonExp)), true
 
 	case "Query.systemConfig":
 		if e.complexity.Query.SystemConfig == nil {
@@ -2666,6 +2699,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputConfigAIResourcesComparisonExp,
 		ec.unmarshalInputConfigAIResourcesInsertInput,
 		ec.unmarshalInputConfigAuthComparisonExp,
+		ec.unmarshalInputConfigAuthElevatedPrivilegesComparisonExp,
+		ec.unmarshalInputConfigAuthElevatedPrivilegesInsertInput,
 		ec.unmarshalInputConfigAuthInsertInput,
 		ec.unmarshalInputConfigAuthMethodAnonymousComparisonExp,
 		ec.unmarshalInputConfigAuthMethodAnonymousInsertInput,
@@ -2991,6 +3026,10 @@ type Query {
         resolve: Boolean!,
     ): ConfigRunServiceConfig
     runServiceConfigs(
+        appID: uuid! @hasAppVisibility(),
+        resolve: Boolean!,
+    ): [ConfigRunServiceConfigWithID!]!
+    runServiceConfigsAll(
         resolve: Boolean!,
         where: ConfigRunServiceConfigComparisonExp, @isAdmin(),
     ): [ConfigRunServiceConfigWithID!]!
@@ -3323,6 +3362,10 @@ type ConfigAuth {
     """
 
     """
+    elevatedPrivileges: ConfigAuthElevatedPrivileges
+    """
+
+    """
     redirections: ConfigAuthRedirections
     """
 
@@ -3349,6 +3392,7 @@ type ConfigAuth {
 input ConfigAuthUpdateInput {
     version: String
     resources: ConfigResourcesUpdateInput
+    elevatedPrivileges: ConfigAuthElevatedPrivilegesUpdateInput
     redirections: ConfigAuthRedirectionsUpdateInput
     signUp: ConfigAuthSignUpUpdateInput
     user: ConfigAuthUserUpdateInput
@@ -3360,6 +3404,7 @@ input ConfigAuthUpdateInput {
 input ConfigAuthInsertInput {
     version: String
     resources: ConfigResourcesInsertInput
+    elevatedPrivileges: ConfigAuthElevatedPrivilegesInsertInput
     redirections: ConfigAuthRedirectionsInsertInput
     signUp: ConfigAuthSignUpInsertInput
     user: ConfigAuthUserInsertInput
@@ -3374,12 +3419,38 @@ input ConfigAuthComparisonExp {
     _or: [ConfigAuthComparisonExp!]
     version: ConfigStringComparisonExp
     resources: ConfigResourcesComparisonExp
+    elevatedPrivileges: ConfigAuthElevatedPrivilegesComparisonExp
     redirections: ConfigAuthRedirectionsComparisonExp
     signUp: ConfigAuthSignUpComparisonExp
     user: ConfigAuthUserComparisonExp
     session: ConfigAuthSessionComparisonExp
     method: ConfigAuthMethodComparisonExp
     totp: ConfigAuthTotpComparisonExp
+}
+
+"""
+
+"""
+type ConfigAuthElevatedPrivileges {
+    """
+
+    """
+    mode: String
+}
+
+input ConfigAuthElevatedPrivilegesUpdateInput {
+    mode: String
+}
+
+input ConfigAuthElevatedPrivilegesInsertInput {
+    mode: String
+}
+
+input ConfigAuthElevatedPrivilegesComparisonExp {
+    _and: [ConfigAuthElevatedPrivilegesComparisonExp!]
+    _not: ConfigAuthElevatedPrivilegesComparisonExp
+    _or: [ConfigAuthElevatedPrivilegesComparisonExp!]
+    mode: ConfigStringComparisonExp
 }
 
 """
@@ -7004,7 +7075,7 @@ func (ec *executionContext) field_Query_runServiceConfig_args(ctx context.Contex
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_runServiceConfigs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_runServiceConfigsAll_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 bool
@@ -7042,6 +7113,43 @@ func (ec *executionContext) field_Query_runServiceConfigs_args(ctx context.Conte
 		}
 	}
 	args["where"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_runServiceConfigs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["appID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("appID"))
+		directive0 := func(ctx context.Context) (interface{}, error) { return ec.unmarshalNuuid2string(ctx, tmp) }
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.HasAppVisibility == nil {
+				return nil, errors.New("directive hasAppVisibility is not implemented")
+			}
+			return ec.directives.HasAppVisibility(ctx, rawArgs, directive0)
+		}
+
+		tmp, err = directive1(ctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if data, ok := tmp.(string); ok {
+			arg0 = data
+		} else {
+			return nil, graphql.ErrorOnPath(ctx, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp))
+		}
+	}
+	args["appID"] = arg0
+	var arg1 bool
+	if tmp, ok := rawArgs["resolve"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolve"))
+		arg1, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["resolve"] = arg1
 	return args, nil
 }
 
@@ -7933,6 +8041,51 @@ func (ec *executionContext) fieldContext_ConfigAuth_resources(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _ConfigAuth_elevatedPrivileges(ctx context.Context, field graphql.CollectedField, obj *model.ConfigAuth) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConfigAuth_elevatedPrivileges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ElevatedPrivileges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.ConfigAuthElevatedPrivileges)
+	fc.Result = res
+	return ec.marshalOConfigAuthElevatedPrivileges2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivileges(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConfigAuth_elevatedPrivileges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConfigAuth",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "mode":
+				return ec.fieldContext_ConfigAuthElevatedPrivileges_mode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConfigAuthElevatedPrivileges", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ConfigAuth_redirections(ctx context.Context, field graphql.CollectedField, obj *model.ConfigAuth) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ConfigAuth_redirections(ctx, field)
 	if err != nil {
@@ -8224,6 +8377,47 @@ func (ec *executionContext) fieldContext_ConfigAuth_totp(ctx context.Context, fi
 				return ec.fieldContext_ConfigAuthTotp_issuer(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ConfigAuthTotp", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConfigAuthElevatedPrivileges_mode(ctx context.Context, field graphql.CollectedField, obj *model.ConfigAuthElevatedPrivileges) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConfigAuthElevatedPrivileges_mode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Mode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConfigAuthElevatedPrivileges_mode(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConfigAuthElevatedPrivileges",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -12277,6 +12471,8 @@ func (ec *executionContext) fieldContext_ConfigConfig_auth(ctx context.Context, 
 				return ec.fieldContext_ConfigAuth_version(ctx, field)
 			case "resources":
 				return ec.fieldContext_ConfigAuth_resources(ctx, field)
+			case "elevatedPrivileges":
+				return ec.fieldContext_ConfigAuth_elevatedPrivileges(ctx, field)
 			case "redirections":
 				return ec.fieldContext_ConfigAuth_redirections(ctx, field)
 			case "signUp":
@@ -19905,7 +20101,7 @@ func (ec *executionContext) _Query_runServiceConfigs(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().RunServiceConfigs(rctx, fc.Args["resolve"].(bool), fc.Args["where"].(*model.ConfigRunServiceConfigComparisonExp))
+		return ec.resolvers.Query().RunServiceConfigs(rctx, fc.Args["appID"].(string), fc.Args["resolve"].(bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -19946,6 +20142,67 @@ func (ec *executionContext) fieldContext_Query_runServiceConfigs(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_runServiceConfigs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_runServiceConfigsAll(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_runServiceConfigsAll(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().RunServiceConfigsAll(rctx, fc.Args["resolve"].(bool), fc.Args["where"].(*model.ConfigRunServiceConfigComparisonExp))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ConfigRunServiceConfigWithID)
+	fc.Result = res
+	return ec.marshalNConfigRunServiceConfigWithID2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigRunServiceConfigWithIDᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_runServiceConfigsAll(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "serviceID":
+				return ec.fieldContext_ConfigRunServiceConfigWithID_serviceID(ctx, field)
+			case "config":
+				return ec.fieldContext_ConfigRunServiceConfigWithID_config(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConfigRunServiceConfigWithID", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_runServiceConfigsAll_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -22231,7 +22488,7 @@ func (ec *executionContext) unmarshalInputConfigAuthComparisonExp(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_and", "_not", "_or", "version", "resources", "redirections", "signUp", "user", "session", "method", "totp"}
+	fieldsInOrder := [...]string{"_and", "_not", "_or", "version", "resources", "elevatedPrivileges", "redirections", "signUp", "user", "session", "method", "totp"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -22273,6 +22530,13 @@ func (ec *executionContext) unmarshalInputConfigAuthComparisonExp(ctx context.Co
 				return it, err
 			}
 			it.Resources = data
+		case "elevatedPrivileges":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("elevatedPrivileges"))
+			data, err := ec.unmarshalOConfigAuthElevatedPrivilegesComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ElevatedPrivileges = data
 		case "redirections":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirections"))
 			data, err := ec.unmarshalOConfigAuthRedirectionsComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthRedirectionsComparisonExp(ctx, v)
@@ -22321,6 +22585,81 @@ func (ec *executionContext) unmarshalInputConfigAuthComparisonExp(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputConfigAuthElevatedPrivilegesComparisonExp(ctx context.Context, obj interface{}) (model.ConfigAuthElevatedPrivilegesComparisonExp, error) {
+	var it model.ConfigAuthElevatedPrivilegesComparisonExp
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_and", "_not", "_or", "mode"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_and"))
+			data, err := ec.unmarshalOConfigAuthElevatedPrivilegesComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExpᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "_not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_not"))
+			data, err := ec.unmarshalOConfigAuthElevatedPrivilegesComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "_or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_or"))
+			data, err := ec.unmarshalOConfigAuthElevatedPrivilegesComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExpᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "mode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mode"))
+			data, err := ec.unmarshalOConfigStringComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐGenericComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Mode = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputConfigAuthElevatedPrivilegesInsertInput(ctx context.Context, obj interface{}) (model.ConfigAuthElevatedPrivilegesInsertInput, error) {
+	var it model.ConfigAuthElevatedPrivilegesInsertInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"mode"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "mode":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mode"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Mode = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputConfigAuthInsertInput(ctx context.Context, obj interface{}) (model.ConfigAuthInsertInput, error) {
 	var it model.ConfigAuthInsertInput
 	asMap := map[string]interface{}{}
@@ -22328,7 +22667,7 @@ func (ec *executionContext) unmarshalInputConfigAuthInsertInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"version", "resources", "redirections", "signUp", "user", "session", "method", "totp"}
+	fieldsInOrder := [...]string{"version", "resources", "elevatedPrivileges", "redirections", "signUp", "user", "session", "method", "totp"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -22349,6 +22688,13 @@ func (ec *executionContext) unmarshalInputConfigAuthInsertInput(ctx context.Cont
 				return it, err
 			}
 			it.Resources = data
+		case "elevatedPrivileges":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("elevatedPrivileges"))
+			data, err := ec.unmarshalOConfigAuthElevatedPrivilegesInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesInsertInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ElevatedPrivileges = data
 		case "redirections":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirections"))
 			data, err := ec.unmarshalOConfigAuthRedirectionsInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthRedirectionsInsertInput(ctx, v)
@@ -30993,6 +31339,8 @@ func (ec *executionContext) _ConfigAuth(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._ConfigAuth_version(ctx, field, obj)
 		case "resources":
 			out.Values[i] = ec._ConfigAuth_resources(ctx, field, obj)
+		case "elevatedPrivileges":
+			out.Values[i] = ec._ConfigAuth_elevatedPrivileges(ctx, field, obj)
 		case "redirections":
 			out.Values[i] = ec._ConfigAuth_redirections(ctx, field, obj)
 		case "signUp":
@@ -31005,6 +31353,42 @@ func (ec *executionContext) _ConfigAuth(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._ConfigAuth_method(ctx, field, obj)
 		case "totp":
 			out.Values[i] = ec._ConfigAuth_totp(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var configAuthElevatedPrivilegesImplementors = []string{"ConfigAuthElevatedPrivileges"}
+
+func (ec *executionContext) _ConfigAuthElevatedPrivileges(ctx context.Context, sel ast.SelectionSet, obj *model.ConfigAuthElevatedPrivileges) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, configAuthElevatedPrivilegesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ConfigAuthElevatedPrivileges")
+		case "mode":
+			out.Values[i] = ec._ConfigAuthElevatedPrivileges_mode(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -34364,6 +34748,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "runServiceConfigsAll":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_runServiceConfigsAll(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -34906,6 +35312,11 @@ func (ec *executionContext) marshalNConfigAppSystemConfig2ᚖgithubᚗcomᚋnhos
 
 func (ec *executionContext) unmarshalNConfigAuthComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthComparisonExp(ctx context.Context, v interface{}) (*model.ConfigAuthComparisonExp, error) {
 	res, err := ec.unmarshalInputConfigAuthComparisonExp(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNConfigAuthElevatedPrivilegesComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExp(ctx context.Context, v interface{}) (*model.ConfigAuthElevatedPrivilegesComparisonExp, error) {
+	res, err := ec.unmarshalInputConfigAuthElevatedPrivilegesComparisonExp(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -36587,6 +36998,58 @@ func (ec *executionContext) unmarshalOConfigAuthComparisonExp2ᚖgithubᚗcomᚋ
 	}
 	res, err := ec.unmarshalInputConfigAuthComparisonExp(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOConfigAuthElevatedPrivileges2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivileges(ctx context.Context, sel ast.SelectionSet, v *model.ConfigAuthElevatedPrivileges) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ConfigAuthElevatedPrivileges(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOConfigAuthElevatedPrivilegesComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExpᚄ(ctx context.Context, v interface{}) ([]*model.ConfigAuthElevatedPrivilegesComparisonExp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.ConfigAuthElevatedPrivilegesComparisonExp, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNConfigAuthElevatedPrivilegesComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExp(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOConfigAuthElevatedPrivilegesComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesComparisonExp(ctx context.Context, v interface{}) (*model.ConfigAuthElevatedPrivilegesComparisonExp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputConfigAuthElevatedPrivilegesComparisonExp(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOConfigAuthElevatedPrivilegesInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesInsertInput(ctx context.Context, v interface{}) (*model.ConfigAuthElevatedPrivilegesInsertInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputConfigAuthElevatedPrivilegesInsertInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOConfigAuthElevatedPrivilegesUpdateInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthElevatedPrivilegesUpdateInput(ctx context.Context, v interface{}) (*model.ConfigAuthElevatedPrivilegesUpdateInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.ConfigAuthElevatedPrivilegesUpdateInput)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOConfigAuthInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthInsertInput(ctx context.Context, v interface{}) (*model.ConfigAuthInsertInput, error) {
