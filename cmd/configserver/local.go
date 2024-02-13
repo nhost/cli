@@ -20,14 +20,16 @@ const zeroUUID = "00000000-0000-0000-0000-000000000000"
 var ErrNotImpl = fmt.Errorf("not implemented")
 
 type Local struct {
-	config  io.Writer
-	secrets io.Writer
+	config      io.Writer
+	secrets     io.Writer
+	runServices map[string]*os.File
 }
 
-func NewLocal(config, secrets io.Writer) *Local {
+func NewLocal(config, secrets io.Writer, runServices map[string]*os.File) *Local {
 	return &Local{
-		config:  config,
-		secrets: secrets,
+		config:      config,
+		secrets:     secrets,
+		runServices: runServices,
 	}
 }
 
@@ -73,7 +75,31 @@ func overwriteFile(wr io.Writer, b []byte) error {
 	return nil
 }
 
-func (l *Local) GetApps(configr, secretsr io.Reader) ([]*graph.App, error) {
+func (l *Local) GetServices(runServices map[string]*os.File) (graph.Services, error) {
+	services := make(graph.Services, 0, len(runServices))
+	for id, r := range runServices {
+		b, err := io.ReadAll(r)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read run service file: %w", err)
+		}
+
+		var cfg model.ConfigRunServiceConfig
+		if err := toml.Unmarshal(b, &cfg); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal run service config: %w", err)
+		}
+
+		services = append(services, &graph.Service{
+			ServiceID: id,
+			Config:    &cfg,
+		})
+	}
+
+	return services, nil
+}
+
+func (l *Local) GetApps(
+	configr, secretsr io.Reader, runServicesr map[string]*os.File,
+) ([]*graph.App, error) {
 	b, err := io.ReadAll(configr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
@@ -102,12 +128,17 @@ func (l *Local) GetApps(configr, secretsr io.Reader) ([]*graph.App, error) {
 		)
 	}
 
+	services, err := l.GetServices(runServicesr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get services: %w", err)
+	}
+
 	return []*graph.App{
 		{
 			Config:       cfg,
 			SystemConfig: nil,
 			Secrets:      secrets,
-			Services:     nil,
+			Services:     services,
 			AppID:        zeroUUID,
 		},
 	}, nil
@@ -163,12 +194,23 @@ func (l *Local) CreateRunServiceConfig(
 }
 
 func (l *Local) UpdateRunServiceConfig(
-	_ context.Context,
-	_ string,
-	_, _ *graph.Service,
-	_ logrus.FieldLogger,
+	_ context.Context, _ string, _, newSvc *graph.Service, _ logrus.FieldLogger,
 ) error {
-	return ErrNotImpl
+	wr, ok := l.runServices[newSvc.ServiceID]
+	if !ok {
+		return fmt.Errorf("run service not found: %s", newSvc.ServiceID) //nolint:goerr113
+	}
+
+	b, err := toml.Marshal(newSvc.Config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal run service config: %w", err)
+	}
+
+	if err := overwriteFile(wr, b); err != nil {
+		return fmt.Errorf("failed to write run service config: %w", err)
+	}
+
+	return nil
 }
 
 func (l *Local) DeleteRunServiceConfig(

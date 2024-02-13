@@ -243,8 +243,8 @@ func processRunServices(
 	ce *clienv.CliEnv,
 	runServices []string,
 	secrets model.Secrets,
-) ([]*model.ConfigRunServiceConfig, error) {
-	r := make([]*model.ConfigRunServiceConfig, 0, len(runServices))
+) ([]*dockercompose.RunService, error) {
+	r := make([]*dockercompose.RunService, 0, len(runServices))
 	for _, runService := range runServices {
 		cfgPath, overlayName, err := parseRunServiceConfigFlag(runService)
 		if err != nil {
@@ -256,7 +256,10 @@ func processRunServices(
 			return nil, fmt.Errorf("failed to validate run service %s: %w", cfgPath, err)
 		}
 
-		r = append(r, cfg)
+		r = append(r, &dockercompose.RunService{
+			Path:   cfgPath,
+			Config: cfg,
+		})
 	}
 
 	return r, nil
@@ -365,7 +368,7 @@ func up( //nolint:funlen,cyclop
 func printInfo(
 	httpPort, postgresPort uint,
 	useTLS bool,
-	runServices []*model.ConfigRunServiceConfig,
+	runServices []*dockercompose.RunService,
 ) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0) //nolint:gomnd
 	fmt.Fprintf(w, "URLs:\n")
@@ -382,12 +385,12 @@ func printInfo(
 	fmt.Fprintf(w, "- Mailhog:\t\t%s\n", dockercompose.URL("mailhog", httpPort, useTLS))
 
 	for _, svc := range runServices {
-		for _, port := range svc.GetPorts() {
+		for _, port := range svc.Config.GetPorts() {
 			if deptr(port.GetPublish()) {
 				fmt.Fprintf(
 					w,
 					"- run-%s:\t\tFrom laptop:\t%s://localhost:%d\n",
-					svc.Name,
+					svc.Config.Name,
 					port.GetType(),
 					port.GetPort(),
 				)
@@ -395,7 +398,7 @@ func printInfo(
 					w,
 					"\t\tFrom services:\t%s://run-%s:%d\n",
 					port.GetType(),
-					svc.Name,
+					svc.Config.Name,
 					port.GetPort(),
 				)
 			}

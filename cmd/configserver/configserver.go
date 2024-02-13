@@ -8,17 +8,19 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/nhost/be/services/mimir/graph"
 	"github.com/urfave/cli/v2"
 )
 
 const (
-	bindFlag                = "bind"
-	debugFlag               = "debug"
-	logFormatJSONFlag       = "log-format-json"
-	enablePlaygroundFlag    = "enable-playground"
-	storageLocalConfigPath  = "storage-local-config-path"
-	storageLocalSecretsPath = "storage-local-secrets-path"
+	bindFlag                    = "bind"
+	debugFlag                   = "debug"
+	logFormatJSONFlag           = "log-format-json"
+	enablePlaygroundFlag        = "enable-playground"
+	storageLocalConfigPath      = "storage-local-config-path"
+	storageLocalSecretsPath     = "storage-local-secrets-path"
+	storageLocalRunServicesPath = "storage-local-run-services-path"
 )
 
 func Command() *cli.Command {
@@ -63,6 +65,12 @@ func Command() *cli.Command {
 				Category: "plugins",
 				EnvVars:  []string{"STORAGE_LOCAL_SECRETS_PATH"},
 			},
+			&cli.StringSliceFlag{ //nolint: exhaustruct
+				Name:     storageLocalRunServicesPath,
+				Usage:    "Path to the local mimir run services files",
+				Category: "plugins",
+				EnvVars:  []string{"STORAGE_LOCAL_RUN_SERVICES_PATH"},
+			},
 		},
 		Action: serve,
 	}
@@ -74,6 +82,20 @@ func dummyMiddleware(
 	next graphql.Resolver,
 ) (any, error) {
 	return next(ctx)
+}
+
+func runServicesFiles(runServices ...string) (map[string]*os.File, error) {
+	m := make(map[string]*os.File)
+	for _, path := range runServices {
+		id := uuid.NewString()
+		f, err := os.OpenFile(path, os.O_RDWR, 0o644) //nolint:gomnd
+		if err != nil {
+			return nil, fmt.Errorf("failed to open run service file: %w", err)
+		}
+		m[id] = f
+	}
+
+	return m, nil
 }
 
 func serve(cCtx *cli.Context) error {
@@ -93,8 +115,13 @@ func serve(cCtx *cli.Context) error {
 	}
 	defer s.Close()
 
-	st := NewLocal(c, s)
-	data, err := st.GetApps(c, s)
+	runServices, err := runServicesFiles(cCtx.StringSlice(storageLocalRunServicesPath)...)
+	if err != nil {
+		return err
+	}
+
+	st := NewLocal(c, s, runServices)
+	data, err := st.GetApps(c, s, runServices)
 	if err != nil {
 		return fmt.Errorf("failed to get data from plugin: %w", err)
 	}

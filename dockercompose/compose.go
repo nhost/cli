@@ -460,7 +460,7 @@ func getServices( //nolint: funlen,cyclop
 	branch string,
 	dashboardVersion string,
 	configserviceImage string,
-	runServices ...*model.ConfigRunServiceConfig,
+	runServices ...*RunService,
 ) (map[string]*Service, error) {
 	minio, err := minio(dataFolder)
 	if err != nil {
@@ -523,7 +523,7 @@ func getServices( //nolint: funlen,cyclop
 		"storage":      storage,
 		"mailhog":      mailhog,
 		"traefik":      traefik,
-		"configserver": configserver(configserviceImage, rootFolder, nhostFolder, useTLS),
+		"configserver": configserver(configserviceImage, rootFolder, nhostFolder, useTLS, runServices...),
 	}
 
 	if cfg.Ai != nil {
@@ -531,10 +531,15 @@ func getServices( //nolint: funlen,cyclop
 	}
 
 	for _, runService := range runServices {
-		services["run-"+runService.Name] = run(runService, branch)
+		services["run-"+runService.Config.Name] = run(runService.Config, branch)
 	}
 
 	return services, nil
+}
+
+type RunService struct {
+	Config *model.ConfigRunServiceConfig
+	Path   string
 }
 
 func ComposeFileFromConfig(
@@ -551,7 +556,7 @@ func ComposeFileFromConfig(
 	branch string,
 	dashboardVersion string,
 	configserverImage string,
-	runServices ...*model.ConfigRunServiceConfig,
+	runServices ...*RunService,
 ) (*ComposeFile, error) {
 	services, err := getServices(
 		cfg,
@@ -580,8 +585,8 @@ func ComposeFileFromConfig(
 		pgVolumeName:                 {},
 	}
 	for _, runService := range runServices {
-		for _, s := range runService.GetResources().GetStorage() {
-			volumes[runVolumeName(runService.Name, s.GetName(), branch)] = struct{}{}
+		for _, s := range runService.Config.GetResources().GetStorage() {
+			volumes[runVolumeName(runService.Config.Name, s.GetName(), branch)] = struct{}{}
 		}
 	}
 

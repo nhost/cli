@@ -66,7 +66,7 @@ func newApp() *graph.App {
 				Value: "asdasd",
 			},
 		},
-		Services: nil,
+		Services: graph.Services{},
 		AppID:    "00000000-0000-0000-0000-000000000000",
 	}
 }
@@ -94,8 +94,8 @@ func TestLocalGetApps(t *testing.T) {
 			t.Parallel()
 			tc := tc
 
-			st := configserver.NewLocal(tc.configf, tc.secretsf)
-			got, err := st.GetApps(tc.configf, tc.secretsf)
+			st := configserver.NewLocal(tc.configf, tc.secretsf, nil)
+			got, err := st.GetApps(tc.configf, tc.secretsf, nil)
 			if err != nil {
 				t.Errorf("GetApps() got error: %v", err)
 			}
@@ -134,7 +134,7 @@ func TestLocalUpdateConfig(t *testing.T) { //nolint:dupl
 			t.Parallel()
 			tc := tc
 
-			st := configserver.NewLocal(tc.configf, tc.secretsf)
+			st := configserver.NewLocal(tc.configf, tc.secretsf, nil)
 
 			if err := st.UpdateConfig(
 				context.Background(),
@@ -182,7 +182,7 @@ func TestLocalUpdateSecrets(t *testing.T) { //nolint:dupl
 			t.Parallel()
 			tc := tc
 
-			st := configserver.NewLocal(tc.configf, tc.secretsf)
+			st := configserver.NewLocal(tc.configf, tc.secretsf, nil)
 
 			if err := st.UpdateSecrets(
 				context.Background(),
