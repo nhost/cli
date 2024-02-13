@@ -517,13 +517,18 @@ func getServices( //nolint: funlen,cyclop
 			ports.Functions,
 			branch,
 		),
-		"graphql":      graphql,
-		"minio":        minio,
-		"postgres":     postgres,
-		"storage":      storage,
-		"mailhog":      mailhog,
-		"traefik":      traefik,
-		"configserver": configserver(configserviceImage, rootFolder, nhostFolder, useTLS, runServices...),
+		"graphql":  graphql,
+		"minio":    minio,
+		"postgres": postgres,
+		"storage":  storage,
+		"mailhog":  mailhog,
+		"traefik":  traefik,
+		"configserver": configserver(
+			configserviceImage,
+			rootFolder,
+			nhostFolder,
+			useTLS,
+			runServices...),
 	}
 
 	if cfg.Ai != nil {
