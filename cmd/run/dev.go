@@ -2,6 +2,7 @@ package run
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/clienv"
@@ -12,6 +13,8 @@ import (
 const (
 	flagDevPrependExport = "prepend-export"
 )
+
+const dotenvEscapeRegex = `[\\\"!\$]`
 
 func CommandEnv() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
@@ -62,11 +65,13 @@ func commandConfigDev(cCtx *cli.Context) error {
 		return err
 	}
 
+	re := regexp.MustCompile(dotenvEscapeRegex)
 	for _, v := range cfg.GetEnvironment() {
+		value := re.ReplaceAllString(v.Value, "\\$0")
 		if cCtx.Bool(flagDevPrependExport) {
-			fmt.Printf("export %s=%s\n", v.Name, v.Value)
+			ce.Println(fmt.Sprintf("export %s=\"%s\"", v.Name, value))
 		} else {
-			fmt.Printf("%s=%s\n", v.Name, v.Value)
+			ce.Println(fmt.Sprintf("%s=\"%s\"", v.Name, value))
 		}
 	}
 
