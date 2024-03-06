@@ -44,6 +44,11 @@ func CommandEnv() *cli.Command {
 	}
 }
 
+func escape(s string) string {
+	re := regexp.MustCompile(dotenvEscapeRegex)
+	return re.ReplaceAllString(s, "\\$0")
+}
+
 func commandConfigDev(cCtx *cli.Context) error {
 	ce := clienv.FromCLI(cCtx)
 
@@ -65,9 +70,8 @@ func commandConfigDev(cCtx *cli.Context) error {
 		return err
 	}
 
-	re := regexp.MustCompile(dotenvEscapeRegex)
 	for _, v := range cfg.GetEnvironment() {
-		value := re.ReplaceAllString(v.Value, "\\$0")
+		value := escape(v.Value)
 		if cCtx.Bool(flagDevPrependExport) {
 			ce.Println(fmt.Sprintf("export %s=\"%s\"", v.Name, value))
 		} else {
