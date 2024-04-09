@@ -53,14 +53,14 @@ func Command() *cli.Command {
 			&cli.StringFlag{ //nolint: exhaustruct
 				Name:     storageLocalConfigPath,
 				Usage:    "Path to the local mimir config file",
-				Value:    "/tmp/config.toml",
+				Value:    "/tmp/root/nhost/nhost.toml",
 				Category: "plugins",
 				EnvVars:  []string{"STORAGE_LOCAL_CONFIG_PATH"},
 			},
 			&cli.StringFlag{ //nolint: exhaustruct
 				Name:     storageLocalSecretsPath,
 				Usage:    "Path to the local mimir secrets file",
-				Value:    "/tmp/secrets.toml",
+				Value:    "/tmp/root/.secrets",
 				Category: "plugins",
 				EnvVars:  []string{"STORAGE_LOCAL_SECRETS_PATH"},
 			},
