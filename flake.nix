@@ -70,7 +70,7 @@
         tags = [ ];
 
         ldflags = [
-          "-X main.Version=v${version}"
+          "-X main.Version=${version}"
         ];
       in
       {
