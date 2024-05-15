@@ -50,7 +50,7 @@ func checkCLIVersion(
 
 	ce.Warnln("🟡 A new version of Nhost CLI is available: %s", latest.TagName)
 	ce.Println("   You can upgrade the CLI by running `nhost sw upgrade`")
-	ce.Println("   For details on what's new, visit https://github.com/nhost/cli/releases")
+	ce.Println("   More info: https://github.com/nhost/cli/releases")
 
 	return nil
 }
@@ -71,10 +71,12 @@ func checkServiceVersion(
 			recommendedVersions = append(recommendedVersions, v.GetVersion())
 		}
 	}
-	ce.Warnln("🟡 %s is not on a recommended version: %s", software, curVersion)
-	ce.Println("   Recommended version(s) are: %s", strings.Join(recommendedVersions, ", "))
+	ce.Warnln(
+		"🟡 %s is not on a recommended version. Recommended: %s",
+		software, strings.Join(recommendedVersions, ", "),
+	)
 	if changelog != "" {
-		ce.Println("   For details on what's new, visit %s", changelog)
+		ce.Println("   More info: %s", changelog)
 	}
 }
 
@@ -123,40 +125,6 @@ func CheckVersions(
 	return checkCLIVersion(ctx, ce, appVersion)
 }
 
-func CheckVersions2(
-	ce *clienv.CliEnv,
-) {
-	check := clienv.Column{
-		Header: "",
-		Rows:   []string{"🟡", "✅", "🟡", "✅", "🟡", "🟡"},
-	}
-	num := clienv.Column{
-		Header: "Software",
-		Rows:   []string{"Nhost CLI", "Hasura", "Auth", "Storage", "Postgres", "Graphite"},
-	}
-	subdomain := clienv.Column{
-		Header: "Running Version",
-		Rows:   []string{"v1.16.1", "v2.33.4-ce", "0.21.2", "0.4.0", "14.6-20231218-1", "0.3.1"},
-	}
-	project := clienv.Column{
-		Header: "Recommended Versions",
-		Rows:   []string{"v1.16.4", "v2.38.0-ce", "0.24.1, 0.25.0, 0.26.0, 0.28.1, 0.29.4", "0.6.0", "14.11-20240429-1, 15.2-20240429-1, 16.2-20240429-1", "0.5.2"},
-	}
-	changelog := clienv.Column{
-		Header: "Changelog",
-		Rows: []string{
-			"https://github.com/nhost/cli/releases",
-			"",
-			"https://github.com/nhost/hasura-auth/releases",
-			"https://github.com/nhost/hasura-storage/releases",
-			"https://hub.docker.com/r/nhost/postgres",
-			"",
-		},
-	}
-
-	ce.Println(clienv.Table(check, num, subdomain, project, changelog))
-}
-
 func commandVersion(cCtx *cli.Context) error {
 	ce := clienv.FromCLI(cCtx)
 
@@ -178,8 +146,6 @@ func commandVersion(cCtx *cli.Context) error {
 	} else {
 		ce.Warnln("🟡 No Nhost project found")
 	}
-
-	CheckVersions2(ce)
 
 	return CheckVersions(cCtx.Context, ce, cfg, cCtx.App.Version)
 }

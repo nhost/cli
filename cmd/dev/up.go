@@ -320,6 +320,7 @@ func up( //nolint:funlen,cyclop
 
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second) //nolint:gomnd
 	defer cancel()
+	ce.Infoln("Checking versions...")
 	if err := software.CheckVersions(ctxWithTimeout, ce, cfg, appVersion); err != nil {
 		ce.Warnln("Problem verifying recommended versions: %s", err.Error())
 	}
