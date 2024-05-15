@@ -193,6 +193,10 @@ func (l *Local) DeleteRunServiceConfig(
 	return ErrNotImpl
 }
 
-func (l *Local) ChangeDatabaseVersion(_ context.Context, _, _ *graph.App, _ logrus.FieldLogger) error {
+func (l *Local) ChangeDatabaseVersion(
+	_ context.Context,
+	_, _ *graph.App,
+	_ logrus.FieldLogger,
+) error {
 	return ErrNotImpl
 }
