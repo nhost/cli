@@ -119,7 +119,9 @@ func CheckVersions(
 	checkServiceVersion(ce, graphql.SoftwareTypeEnumHasura, *cfg.GetHasura().GetVersion(), swv, "")
 
 	if cfg.GetAi() != nil {
-		checkServiceVersion(ce, graphql.SoftwareTypeEnumGraphite, *cfg.GetAi().GetVersion(), swv, "")
+		checkServiceVersion(
+			ce, graphql.SoftwareTypeEnumGraphite, *cfg.GetAi().GetVersion(), swv, "",
+		)
 	}
 
 	return checkCLIVersion(ctx, ce, appVersion)

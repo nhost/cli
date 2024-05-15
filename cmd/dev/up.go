@@ -458,7 +458,8 @@ func Up(
 	dc := dockercompose.New(ce.Path.WorkingDir(), ce.Path.DockerCompose(), ce.ProjectName())
 
 	if err := up(
-		ctx, ce, appVersion, dc, httpPort, useTLS, postgresPort, applySeeds, ports, dashboardVersion, configserverImage, runServices,
+		ctx, ce, appVersion, dc, httpPort, useTLS, postgresPort,
+		applySeeds, ports, dashboardVersion, configserverImage, runServices,
 	); err != nil {
 		ce.Warnln(err.Error())
 
