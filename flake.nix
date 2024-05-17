@@ -85,28 +85,6 @@
               export NHOST_ACCESS_TOKEN=$(bash ${src}/get_access_token.sh)
             '';
           };
-
-          init-project = pkgs.runCommand "init-project"
-            {
-              buildInputs = with pkgs; [
-                docker-client
-                curl
-                git
-                cacert
-              ];
-            }
-            ''
-              export PAT=$(awk -F'"' '/personalAccessToken/{gsub(/\\/, "", $5); print $5}' \
-                  ${src}/get_access_token.sh)
-              export HOME=$out
-              export NHOST_DOMAIN=staging.nhost.run
-              mkdir -p $out
-              cd $out
-              ${self.packages.${system}.cli}/bin/cli login --pat $PAT
-              ${self.packages.${system}.cli}/bin/cli init
-              ${self.packages.${system}.cli}/bin/cli up --down-on-error
-              ${self.packages.${system}.cli}/bin/cli down
-            '';
         };
 
         devShells = flake-utils.lib.flattenTree rec {
