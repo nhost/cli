@@ -126,7 +126,7 @@ jobs:
 
         mkdir new-project
         cd new-project
-        ../nhost-cli/bin/cli login --pat ${{ secrets.NHOST_PAT }}
+        ../nhost-cli --pat ${{ secrets.NHOST_PAT }}
         ../nhost-cli init
         ../nhost-cli up --down-on-error
         ../nhost-cli down
