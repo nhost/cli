@@ -123,7 +123,7 @@ jobs:
     - name: "Create a new project"
       run: |
         export NHOST_DOMAIN=staging.nhost.run
-        export NHOST_CONFIGSERVER_IMAGE=cli:0.0.0-dev
+        export NHOST_CONFIGSERVER_IMAGE=cli:${{ steps.vars.outputs.VERSION }}
 
         mkdir new-project
         cd new-project
