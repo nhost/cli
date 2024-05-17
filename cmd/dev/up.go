@@ -473,11 +473,11 @@ func upErr(
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	if err := dc.Stop(ctx, false); err != nil { //nolint:contextcheck
+	if err := dc.Stop(ctx, false); err != nil {
 		ce.Warnln("failed to stop Nhost development environment: %s", err)
 	}
 
-	return err //nolint:wrapcheck
+	return err
 }
 
 func Up(
@@ -500,7 +500,7 @@ func Up(
 		ctx, ce, appVersion, dc, httpPort, useTLS, postgresPort,
 		applySeeds, ports, dashboardVersion, configserverImage, runServices,
 	); err != nil {
-		return upErr(ce, dc, downOnError, err)
+		return upErr(ce, dc, downOnError, err) //nolint:contextcheck
 	}
 
 	return nil
