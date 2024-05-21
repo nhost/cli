@@ -26,7 +26,7 @@ liveQueriesMultiplexedRefetchInterval = 3000
 version = 18
 
 [auth]
-version = '0.21.2'
+version = '0.29.6'
 
 [auth.redirections]
 clientUrl = 'http://localhost:3000'
@@ -131,7 +131,7 @@ timeout = 60000
 enabled = false
 
 [postgres]
-version = '14.6-20231218-1'
+version = '14.11-20240429-1'
 
 [postgres.settings]
 maxConnections = 100
@@ -155,22 +155,7 @@ maxParallelMaintenanceWorkers = 2
 [provider]
 
 [storage]
-version = '0.4.0'
-
-[ai]
-version = '0.3.1'
-webhookSecret = '{{ secrets.GRAPHITE_WEBHOOK_SECRET }}'
-
-[ai.resources]
-[ai.resources.compute]
-cpu = 64
-memory = 128
-
-[ai.openai]
-apiKey = '{{ secrets.OPENAI_API_KEY }}'
-
-[ai.autoEmbeddings]
-synchPeriodMinutes = 10
+version = '0.6.0'
 
 [observability]
 [observability.grafana]
