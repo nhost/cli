@@ -14,7 +14,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.7.4
-	github.com/nhost/be v0.0.0-20240522105117-f86ada1a687b
+	github.com/nhost/be v0.0.0-20240522130445-f516015e8d7e
 	github.com/pelletier/go-toml/v2 v2.2.1
 	github.com/rs/cors/wrapper/gin v0.0.0-20240429123903-3d336ea9b505
 	github.com/sirupsen/logrus v1.9.3
