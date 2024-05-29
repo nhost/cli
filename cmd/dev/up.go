@@ -190,15 +190,6 @@ func migrations(
 		ce.Warnln("No migrations found, make sure this is intentional or it could lead to unexpected behavior")
 	}
 
-	if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "metadata", "version.yaml")) {
-		ce.Infoln("Applying metadata...")
-		if err := dc.ApplyMetadata(ctx); err != nil {
-			return fmt.Errorf("failed to apply metadata: %w", err)
-		}
-	} else {
-		ce.Warnln("No metadata found, make sure this is intentional or it could lead to unexpected behavior")
-	}
-
 	if applySeeds {
 		if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "seeds", "default")) {
 			ce.Infoln("Applying seeds...")
@@ -206,6 +197,17 @@ func migrations(
 				return fmt.Errorf("failed to apply seeds: %w", err)
 			}
 		}
+	}
+
+	time.Sleep(10 * time.Second) //nolint:gomnd
+
+	if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "metadata", "version.yaml")) {
+		ce.Infoln("Applying metadata...")
+		if err := dc.ApplyMetadata(ctx); err != nil {
+			return fmt.Errorf("failed to apply metadata: %w", err)
+		}
+	} else {
+		ce.Warnln("No metadata found, make sure this is intentional or it could lead to unexpected behavior")
 	}
 
 	return nil
