@@ -42,6 +42,7 @@ const (
 	flagConfigserverImage  = "configserver-image"
 	flagRunService         = "run-service"
 	flagDownOnError        = "down-on-error"
+	flagWaitBeforeMetadata = "wait-before-metadata"
 )
 
 const (
@@ -127,6 +128,12 @@ func CommandUp() *cli.Command { //nolint:funlen
 				Usage:   "Skip confirmation",
 				EnvVars: []string{"NHOST_YES"},
 			},
+			&cli.DurationFlag{ //nolint:exhaustruct
+				Name:    flagWaitBeforeMetadata,
+				Usage:   "Wait before applying metadata",
+				Value:   0,
+				EnvVars: []string{"NHOST_WAIT_BEFORE_METADATA"},
+			},
 		},
 	}
 }
@@ -172,6 +179,7 @@ func commandUp(cCtx *cli.Context) error {
 		configserverImage,
 		cCtx.StringSlice(flagRunService),
 		cCtx.Bool(flagDownOnError),
+		cCtx.Duration(flagWaitBeforeMetadata),
 	)
 }
 
@@ -179,6 +187,7 @@ func migrations(
 	ctx context.Context,
 	ce *clienv.CliEnv,
 	dc *dockercompose.DockerCompose,
+	sleepBeforeMetadata time.Duration,
 	applySeeds bool,
 ) error {
 	if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "migrations", "default")) {
@@ -199,7 +208,7 @@ func migrations(
 		}
 	}
 
-	time.Sleep(10 * time.Second) //nolint:gomnd
+	time.Sleep(sleepBeforeMetadata)
 
 	if clienv.PathExists(filepath.Join(ce.Path.NhostFolder(), "metadata", "version.yaml")) {
 		ce.Infoln("Applying metadata...")
@@ -304,6 +313,7 @@ func up( //nolint:funlen,cyclop
 	dashboardVersion string,
 	configserverImage string,
 	runServices []string,
+	sleepBeforeMetadata time.Duration,
 ) error {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -368,7 +378,7 @@ func up( //nolint:funlen,cyclop
 		return fmt.Errorf("failed to start Nhost development environment: %w", err)
 	}
 
-	if err := migrations(ctx, ce, dc, applySeeds); err != nil {
+	if err := migrations(ctx, ce, dc, sleepBeforeMetadata, applySeeds); err != nil {
 		return err
 	}
 
@@ -495,12 +505,13 @@ func Up(
 	configserverImage string,
 	runServices []string,
 	downOnError bool,
+	sleepBeforeMetadata time.Duration,
 ) error {
 	dc := dockercompose.New(ce.Path.WorkingDir(), ce.Path.DockerCompose(), ce.ProjectName())
 
 	if err := up(
 		ctx, ce, appVersion, dc, httpPort, useTLS, postgresPort,
-		applySeeds, ports, dashboardVersion, configserverImage, runServices,
+		applySeeds, ports, dashboardVersion, configserverImage, runServices, sleepBeforeMetadata,
 	); err != nil {
 		return upErr(ce, dc, downOnError, err) //nolint:contextcheck
 	}
