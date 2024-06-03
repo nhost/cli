@@ -89,7 +89,7 @@ func auth( //nolint:funlen
 		Volumes: []Volume{
 			{
 				Type:     "bind",
-				Source:   nhostFolder + "%s/emails",
+				Source:   nhostFolder + "/emails",
 				Target:   "/app/email-templates",
 				ReadOnly: ptr(false),
 			},
