@@ -19,13 +19,14 @@ func sanitizeName(name string) string {
 }
 
 type CliEnv struct {
-	stdout      io.Writer
-	stderr      io.Writer
-	Path        *PathStructure
-	domain      string
-	branch      string
-	nhclient    *nhostclient.Client
-	projectName string
+	stdout         io.Writer
+	stderr         io.Writer
+	Path           *PathStructure
+	domain         string
+	branch         string
+	nhclient       *nhostclient.Client
+	nhpublicclient *nhostclient.Client
+	projectName    string
 }
 
 func New(
@@ -93,4 +94,11 @@ func (ce *CliEnv) GetNhostClient(ctx context.Context) (*nhostclient.Client, erro
 		)
 	}
 	return ce.nhclient, nil
+}
+
+func (ce *CliEnv) GetNhostPublicClient(ctx context.Context) (*nhostclient.Client, error) {
+	if ce.nhpublicclient == nil {
+		ce.nhpublicclient = nhostclient.New(ce.domain)
+	}
+	return ce.nhpublicclient, nil
 }
