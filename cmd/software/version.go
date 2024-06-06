@@ -94,7 +94,7 @@ func CheckVersions(
 		)
 	}
 
-	cl, err := ce.GetNhostPublicClient(ctx)
+	cl, err := ce.GetNhostPublicClient()
 	if err != nil {
 		return fmt.Errorf("failed to get nhost client: %w", err)
 	}
