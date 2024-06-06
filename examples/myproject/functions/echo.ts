@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import process from 'process'
 
+
 export default (req: Request, res: Response) => {
     res.status(200).json(
         {
