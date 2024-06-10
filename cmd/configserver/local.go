@@ -15,10 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 const zeroUUID = "00000000-0000-0000-0000-000000000000"
 
 var ErrNotImpl = errors.New("not implemented")
