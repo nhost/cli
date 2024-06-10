@@ -113,12 +113,16 @@ func (l *Local) GetApps(
 		return nil, fmt.Errorf("failed to get services: %w", err)
 	}
 
+	pgMajorVersion := "14"
+	if cfg.GetPostgres().GetVersion() != nil {
+		pgMajorVersion = strings.Split(*cfg.GetPostgres().GetVersion(), ".")[0]
+	}
 	return []*graph.App{
 		{
 			Config: cfg,
 			SystemConfig: &model.ConfigSystemConfig{ //nolint:exhaustruct
 				Postgres: &model.ConfigSystemConfigPostgres{ //nolint:exhaustruct
-					MajorVersion: ptr(strings.Split(*cfg.GetPostgres().GetVersion(), ".")[0]),
+					MajorVersion: &pgMajorVersion,
 					Database:     "local",
 					ConnectionString: &model.ConfigSystemConfigPostgresConnectionString{
 						Backup:  "a",
