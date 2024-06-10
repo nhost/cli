@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/nhost/be/services/mimir/graph"
 	"github.com/nhost/be/services/mimir/model"
@@ -13,6 +14,10 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"github.com/sirupsen/logrus"
 )
+
+func ptr[T any](v T) *T {
+	return &v
+}
 
 const zeroUUID = "00000000-0000-0000-0000-000000000000"
 
@@ -110,11 +115,22 @@ func (l *Local) GetApps(
 
 	return []*graph.App{
 		{
-			Config:       cfg,
-			SystemConfig: nil,
-			Secrets:      secrets,
-			Services:     services,
-			AppID:        zeroUUID,
+			Config: cfg,
+			SystemConfig: &model.ConfigSystemConfig{ //nolint:exhaustruct
+				Postgres: &model.ConfigSystemConfigPostgres{ //nolint:exhaustruct
+					MajorVersion: ptr(strings.Split(*cfg.GetPostgres().GetVersion(), ".")[0]),
+					Database:     "local",
+					ConnectionString: &model.ConfigSystemConfigPostgresConnectionString{
+						Backup:  "a",
+						Hasura:  "a",
+						Auth:    "a",
+						Storage: "a",
+					},
+				},
+			},
+			Secrets:  secrets,
+			Services: services,
+			AppID:    zeroUUID,
 		},
 	}, nil
 }
