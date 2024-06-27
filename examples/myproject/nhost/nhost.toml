@@ -1,4 +1,7 @@
 [global]
+[[global.environment]]
+name = 'GREET'
+value = 'Sayonara'
 
 [hasura]
 version = 'v2.33.4-ce'
