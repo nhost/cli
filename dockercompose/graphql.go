@@ -66,9 +66,11 @@ func graphql( //nolint:funlen
 				},
 			},
 			{
-				Name:    "hasura",
-				TLS:     useTLS,
-				Rule:    traefikHostMatch("hasura") + "&& ( PathPrefix(`/v1`) || PathPrefix(`/v2`) || PathPrefix(`/api/`) || PathPrefix(`/console/assets`) )", //nolint:lll
+				Name: "hasura",
+				TLS:  useTLS,
+				Rule: traefikHostMatch(
+					"hasura",
+				) + "&& ( PathPrefix(`/v1`) || PathPrefix(`/v2`) || PathPrefix(`/api/`) || PathPrefix(`/console/assets`) )", //nolint:lll
 				Port:    hasuraPort,
 				Rewrite: nil,
 			},

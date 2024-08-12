@@ -27,8 +27,7 @@
             ".golangci.yaml"
             "go.mod"
             "go.sum"
-            "ssl/.ssl/fullchain.pem"
-            "ssl/.ssl/privkey.pem"
+            (inDirectory "ssl/.ssl")
             (inDirectory "vendor")
             (inDirectory "cmd/config/testdata")
             (inDirectory "cmd/project/templates")
