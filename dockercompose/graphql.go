@@ -28,7 +28,7 @@ func graphql( //nolint:funlen
 
 	env := make(map[string]string, len(envars))
 	for _, v := range envars {
-		if v.Name == "HASURA_GRAPHQL_CORS_DOMAIN" {
+		if v.Name == "HASURA_GRAPHQL_CORS_DOMAIN" && v.Value != "*" {
 			v.Value += "," + URLNewFormat("*", "hasura", httpPort, useTLS)
 		}
 		env[v.Name] = v.Value
@@ -116,7 +116,7 @@ func console( //nolint:funlen
 
 	env := make(map[string]string, len(envars))
 	for _, v := range envars {
-		if v.Name == "HASURA_GRAPHQL_CORS_DOMAIN" {
+		if v.Name == "HASURA_GRAPHQL_CORS_DOMAIN" && v.Value != "*" {
 			v.Value += "," + URLNewFormat("*", "hasura", httpPort, useTLS)
 		}
 		env[v.Name] = v.Value
