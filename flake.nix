@@ -92,8 +92,8 @@
           default = nixops-lib.go.devShell {
             buildInputs = with pkgs; [
               goreleaser
-              certbot
-              python311Packages.certbot-dns-route53
+              certbot-full
+              python312Packages.certbot-dns-route53
             ] ++ checkDeps ++ buildInputs ++ nativeBuildInputs;
           };
         };
@@ -101,7 +101,6 @@
         packages = flake-utils.lib.flattenTree rec {
           cli = nixops-lib.go.package {
             inherit name submodule description src version ldflags buildInputs nativeBuildInputs;
-
             cgoEnabled = 0;
           };
 
