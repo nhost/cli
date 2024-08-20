@@ -19,7 +19,6 @@ const (
 	storagePort      = 5000
 	functionsPort    = 3000
 	hasuraPort       = 8080
-	migratePort      = 9693
 	consolePort      = 9695
 	postgresPort     = 5432
 	configserverPort = 8088
