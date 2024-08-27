@@ -31,8 +31,10 @@ func commandConfigExample(cCtx *cli.Context) error { //nolint:funlen
 	cfg := &model.ConfigRunServiceConfig{
 		Name: "my-run-service",
 		Image: &model.ConfigRunServiceImage{
-			Image:           "docker.io/org/img:latest",
-			PullCredentials: ptr(`{"https://myregistry.com/v1": {"username": "myuser", "password": "mypassword"}}`),
+			Image: "docker.io/org/img:latest",
+			PullCredentials: ptr(
+				`{"https://myregistry.com/v1": {"username": "myuser", "password": "mypassword"}}`,
+			),
 		},
 		Command: []string{
 			"start",
