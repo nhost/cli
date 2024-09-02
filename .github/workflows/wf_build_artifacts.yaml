@@ -50,6 +50,11 @@ jobs:
         diagnostic-endpoint: ""
         use-flakehub: false
 
+    - name: Compute common env vars
+      id: vars
+      run: |
+        echo "VERSION=$(make get-version VERSION=${{ inputs.VERSION }})" >> $GITHUB_OUTPUT
+
     - name: "Build artifact"
       run: |
         make build ARCH=${{ inputs.GOARCH }} OS=${{ inputs.GOOS }}
