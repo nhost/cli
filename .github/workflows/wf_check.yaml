@@ -45,10 +45,3 @@ jobs:
       run: |
         export NHOST_PAT=${{ secrets.NHOST_PAT }}
         make check
-
-    - name: "Cache nix store on s3"
-      run: |
-        echo ${{ secrets.NIX_CACHE_PRIV_KEY }} > cache-priv-key.pem
-        nix store sign --key-file cache-priv-key.pem --all
-        find /nix/store -maxdepth 1 -name "*-*" -type d | grep -v source | xargs -n 1000 nix copy --to s3://nhost-nix-cache\?region=eu-central-1
-      if: always()
