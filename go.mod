@@ -1,6 +1,6 @@
 module github.com/nhost/cli
 
-go 1.22.4
+go 1.23.1
 
 replace cuelang.org/go => cuelang.org/go v0.4.3
 
