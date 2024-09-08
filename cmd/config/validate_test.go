@@ -47,6 +47,7 @@ func expectedConfig() *model.ConfigConfig {
 					"pgdump",
 					"config",
 				},
+				InferFunctionPermissions:              ptr(true),
 				LiveQueriesMultiplexedRefetchInterval: ptr(uint32(1000)),
 				StringifyNumericTypes:                 ptr(false),
 			},
