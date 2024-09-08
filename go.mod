@@ -1,6 +1,6 @@
 module github.com/nhost/cli
 
-go 1.23
+go 1.22.4
 
 replace cuelang.org/go => cuelang.org/go v0.4.3
 
@@ -20,7 +20,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.4
 	github.com/wI2L/jsondiff v0.6.0
-	golang.org/x/mod v0.20.0
+	golang.org/x/mod v0.21.0
 	golang.org/x/term v0.23.0
 	gopkg.in/evanphx/json-patch.v5 v5.9.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -127,7 +127,7 @@ require (
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	google.golang.org/api v0.195.0 // indirect
 	google.golang.org/genproto v0.0.0-20240827150818-7e3bb234dfed // indirect

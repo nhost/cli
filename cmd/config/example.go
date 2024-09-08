@@ -77,6 +77,7 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 				EnabledAPIs: []string{
 					"metadata",
 				},
+				InferFunctionPermissions:              ptr(true),
 				LiveQueriesMultiplexedRefetchInterval: ptr(uint32(1000)),
 				StringifyNumericTypes:                 ptr(false),
 			},
