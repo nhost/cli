@@ -541,8 +541,8 @@ github.com/muesli/termenv
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/nhost/be v0.0.0-20240908163314-496619d1918a
-## explicit; go 1.22.4
+# github.com/nhost/be v0.0.0-20240909125313-7c9f5c9566d0
+## explicit; go 1.23
 github.com/nhost/be/lib/graphql
 github.com/nhost/be/lib/graphql/context
 github.com/nhost/be/lib/graphql/handler
