@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixops.url = "github:nhost/nixops";
+    nixops.url = "github:nhost/nixops?ref=override-go-build";
     nixpkgs.follows = "nixops/nixpkgs";
     flake-utils.follows = "nixops/flake-utils";
     nix-filter.follows = "nixops/nix-filter";
@@ -90,7 +90,6 @@
         devShells = flake-utils.lib.flattenTree rec {
           default = nixops-lib.go.devShell {
             buildInputs = with pkgs; [
-              goreleaser
               certbot-full
               python312Packages.certbot-dns-route53
             ] ++ checkDeps ++ buildInputs ++ nativeBuildInputs;
