@@ -257,7 +257,7 @@ func TestValidate(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(tc.expected(), cfg); diff != "" {
-				t.Errorf(diff)
+				t.Errorf("%s", diff)
 			}
 		})
 	}

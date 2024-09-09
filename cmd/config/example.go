@@ -444,7 +444,7 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 		return fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	ce.Println(string(b))
+	ce.Println("%s", b)
 
 	return nil
 }
