@@ -7144,6 +7144,8 @@ type ConfigAuthSignUp struct {
 	Enabled *bool `json:"enabled" toml:"enabled"`
 	// AUTH_DISABLE_NEW_USERS
 	DisableNewUsers *bool `json:"disableNewUsers" toml:"disableNewUsers"`
+
+	Turnstile *ConfigAuthSignUpTurnstile `json:"turnstile,omitempty" toml:"turnstile,omitempty"`
 }
 
 func (o *ConfigAuthSignUp) MarshalJSON() ([]byte, error) {
@@ -7153,6 +7155,9 @@ func (o *ConfigAuthSignUp) MarshalJSON() ([]byte, error) {
 	}
 	if o.DisableNewUsers != nil {
 		m["disableNewUsers"] = o.DisableNewUsers
+	}
+	if o.Turnstile != nil {
+		m["turnstile"] = o.Turnstile
 	}
 	return json.Marshal(m)
 }
@@ -7171,11 +7176,20 @@ func (o *ConfigAuthSignUp) GetDisableNewUsers() *bool {
 	return o.DisableNewUsers
 }
 
+func (o *ConfigAuthSignUp) GetTurnstile() *ConfigAuthSignUpTurnstile {
+	if o == nil {
+		return nil
+	}
+	return o.Turnstile
+}
+
 type ConfigAuthSignUpUpdateInput struct {
-	Enabled              *bool `json:"enabled,omitempty" toml:"enabled,omitempty"`
-	IsSetEnabled         bool  `json:"-"`
-	DisableNewUsers      *bool `json:"disableNewUsers,omitempty" toml:"disableNewUsers,omitempty"`
-	IsSetDisableNewUsers bool  `json:"-"`
+	Enabled              *bool                                 `json:"enabled,omitempty" toml:"enabled,omitempty"`
+	IsSetEnabled         bool                                  `json:"-"`
+	DisableNewUsers      *bool                                 `json:"disableNewUsers,omitempty" toml:"disableNewUsers,omitempty"`
+	IsSetDisableNewUsers bool                                  `json:"-"`
+	Turnstile            *ConfigAuthSignUpTurnstileUpdateInput `json:"turnstile,omitempty" toml:"turnstile,omitempty"`
+	IsSetTurnstile       bool                                  `json:"-"`
 }
 
 func (o *ConfigAuthSignUpUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -7217,6 +7231,16 @@ func (o *ConfigAuthSignUpUpdateInput) UnmarshalGQL(v interface{}) error {
 		}
 		o.IsSetDisableNewUsers = true
 	}
+	if x, ok := m["turnstile"]; ok {
+		if x != nil {
+			t := &ConfigAuthSignUpTurnstileUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Turnstile = t
+		}
+		o.IsSetTurnstile = true
+	}
 
 	return nil
 }
@@ -7242,6 +7266,13 @@ func (o *ConfigAuthSignUpUpdateInput) GetDisableNewUsers() *bool {
 	return o.DisableNewUsers
 }
 
+func (o *ConfigAuthSignUpUpdateInput) GetTurnstile() *ConfigAuthSignUpTurnstileUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Turnstile
+}
+
 func (s *ConfigAuthSignUp) Update(v *ConfigAuthSignUpUpdateInput) {
 	if v == nil {
 		return
@@ -7252,11 +7283,22 @@ func (s *ConfigAuthSignUp) Update(v *ConfigAuthSignUpUpdateInput) {
 	if v.IsSetDisableNewUsers || v.DisableNewUsers != nil {
 		s.DisableNewUsers = v.DisableNewUsers
 	}
+	if v.IsSetTurnstile || v.Turnstile != nil {
+		if v.Turnstile == nil {
+			s.Turnstile = nil
+		} else {
+			if s.Turnstile == nil {
+				s.Turnstile = &ConfigAuthSignUpTurnstile{}
+			}
+			s.Turnstile.Update(v.Turnstile)
+		}
+	}
 }
 
 type ConfigAuthSignUpInsertInput struct {
-	Enabled         *bool `json:"enabled,omitempty" toml:"enabled,omitempty"`
-	DisableNewUsers *bool `json:"disableNewUsers,omitempty" toml:"disableNewUsers,omitempty"`
+	Enabled         *bool                                 `json:"enabled,omitempty" toml:"enabled,omitempty"`
+	DisableNewUsers *bool                                 `json:"disableNewUsers,omitempty" toml:"disableNewUsers,omitempty"`
+	Turnstile       *ConfigAuthSignUpTurnstileInsertInput `json:"turnstile,omitempty" toml:"turnstile,omitempty"`
 }
 
 func (o *ConfigAuthSignUpInsertInput) GetEnabled() *bool {
@@ -7273,9 +7315,22 @@ func (o *ConfigAuthSignUpInsertInput) GetDisableNewUsers() *bool {
 	return o.DisableNewUsers
 }
 
+func (o *ConfigAuthSignUpInsertInput) GetTurnstile() *ConfigAuthSignUpTurnstileInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Turnstile
+}
+
 func (s *ConfigAuthSignUp) Insert(v *ConfigAuthSignUpInsertInput) {
 	s.Enabled = v.Enabled
 	s.DisableNewUsers = v.DisableNewUsers
+	if v.Turnstile != nil {
+		if s.Turnstile == nil {
+			s.Turnstile = &ConfigAuthSignUpTurnstile{}
+		}
+		s.Turnstile.Insert(v.Turnstile)
+	}
 }
 
 func (s *ConfigAuthSignUp) Clone() *ConfigAuthSignUp {
@@ -7286,15 +7341,17 @@ func (s *ConfigAuthSignUp) Clone() *ConfigAuthSignUp {
 	v := &ConfigAuthSignUp{}
 	v.Enabled = s.Enabled
 	v.DisableNewUsers = s.DisableNewUsers
+	v.Turnstile = s.Turnstile.Clone()
 	return v
 }
 
 type ConfigAuthSignUpComparisonExp struct {
-	And             []*ConfigAuthSignUpComparisonExp `json:"_and,omitempty"`
-	Not             *ConfigAuthSignUpComparisonExp   `json:"_not,omitempty"`
-	Or              []*ConfigAuthSignUpComparisonExp `json:"_or,omitempty"`
-	Enabled         *ConfigBooleanComparisonExp      `json:"enabled,omitempty"`
-	DisableNewUsers *ConfigBooleanComparisonExp      `json:"disableNewUsers,omitempty"`
+	And             []*ConfigAuthSignUpComparisonExp        `json:"_and,omitempty"`
+	Not             *ConfigAuthSignUpComparisonExp          `json:"_not,omitempty"`
+	Or              []*ConfigAuthSignUpComparisonExp        `json:"_or,omitempty"`
+	Enabled         *ConfigBooleanComparisonExp             `json:"enabled,omitempty"`
+	DisableNewUsers *ConfigBooleanComparisonExp             `json:"disableNewUsers,omitempty"`
+	Turnstile       *ConfigAuthSignUpTurnstileComparisonExp `json:"turnstile,omitempty"`
 }
 
 func (exp *ConfigAuthSignUpComparisonExp) Matches(o *ConfigAuthSignUp) bool {
@@ -7303,12 +7360,149 @@ func (exp *ConfigAuthSignUpComparisonExp) Matches(o *ConfigAuthSignUp) bool {
 	}
 
 	if o == nil {
-		o = &ConfigAuthSignUp{}
+		o = &ConfigAuthSignUp{
+			Turnstile: &ConfigAuthSignUpTurnstile{},
+		}
 	}
 	if o.Enabled != nil && !exp.Enabled.Matches(*o.Enabled) {
 		return false
 	}
 	if o.DisableNewUsers != nil && !exp.DisableNewUsers.Matches(*o.DisableNewUsers) {
+		return false
+	}
+	if !exp.Turnstile.Matches(o.Turnstile) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigAuthSignUpTurnstile struct {
+	SecretKey string `json:"secretKey" toml:"secretKey"`
+}
+
+func (o *ConfigAuthSignUpTurnstile) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	m["secretKey"] = o.SecretKey
+	return json.Marshal(m)
+}
+
+func (o *ConfigAuthSignUpTurnstile) GetSecretKey() string {
+	if o == nil {
+		o = &ConfigAuthSignUpTurnstile{}
+	}
+	return o.SecretKey
+}
+
+type ConfigAuthSignUpTurnstileUpdateInput struct {
+	SecretKey      *string `json:"secretKey,omitempty" toml:"secretKey,omitempty"`
+	IsSetSecretKey bool    `json:"-"`
+}
+
+func (o *ConfigAuthSignUpTurnstileUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["secretKey"]; ok {
+		if v == nil {
+			o.SecretKey = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.SecretKey = &x
+		}
+		o.IsSetSecretKey = true
+	}
+
+	return nil
+}
+
+func (o *ConfigAuthSignUpTurnstileUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigAuthSignUpTurnstileUpdateInput) GetSecretKey() *string {
+	if o == nil {
+		o = &ConfigAuthSignUpTurnstileUpdateInput{}
+	}
+	return o.SecretKey
+}
+
+func (s *ConfigAuthSignUpTurnstile) Update(v *ConfigAuthSignUpTurnstileUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetSecretKey || v.SecretKey != nil {
+		if v.SecretKey != nil {
+			s.SecretKey = *v.SecretKey
+		}
+	}
+}
+
+type ConfigAuthSignUpTurnstileInsertInput struct {
+	SecretKey string `json:"secretKey,omitempty" toml:"secretKey,omitempty"`
+}
+
+func (o *ConfigAuthSignUpTurnstileInsertInput) GetSecretKey() string {
+	if o == nil {
+		o = &ConfigAuthSignUpTurnstileInsertInput{}
+	}
+	return o.SecretKey
+}
+
+func (s *ConfigAuthSignUpTurnstile) Insert(v *ConfigAuthSignUpTurnstileInsertInput) {
+	s.SecretKey = v.SecretKey
+}
+
+func (s *ConfigAuthSignUpTurnstile) Clone() *ConfigAuthSignUpTurnstile {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigAuthSignUpTurnstile{}
+	v.SecretKey = s.SecretKey
+	return v
+}
+
+type ConfigAuthSignUpTurnstileComparisonExp struct {
+	And       []*ConfigAuthSignUpTurnstileComparisonExp `json:"_and,omitempty"`
+	Not       *ConfigAuthSignUpTurnstileComparisonExp   `json:"_not,omitempty"`
+	Or        []*ConfigAuthSignUpTurnstileComparisonExp `json:"_or,omitempty"`
+	SecretKey *ConfigStringComparisonExp                `json:"secretKey,omitempty"`
+}
+
+func (exp *ConfigAuthSignUpTurnstileComparisonExp) Matches(o *ConfigAuthSignUpTurnstile) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigAuthSignUpTurnstile{}
+	}
+	if !exp.SecretKey.Matches(o.SecretKey) {
 		return false
 	}
 

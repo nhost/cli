@@ -321,6 +321,10 @@ import (
 
 		// AUTH_DISABLE_NEW_USERS
 		disableNewUsers: bool | *false
+
+        turnstile?: {
+            secretKey: string
+        }
 	}
 
 	user: {

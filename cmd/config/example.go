@@ -162,6 +162,9 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 			SignUp: &model.ConfigAuthSignUp{
 				Enabled:         ptr(true),
 				DisableNewUsers: ptr(false),
+				Turnstile: &model.ConfigAuthSignUpTurnstile{
+					SecretKey: "turnstileSecretKey",
+				},
 			},
 			User: &model.ConfigAuthUser{
 				Roles: &model.ConfigAuthUserRoles{

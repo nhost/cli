@@ -228,6 +228,11 @@ type ComplexityRoot struct {
 	ConfigAuthSignUp struct {
 		DisableNewUsers func(childComplexity int) int
 		Enabled         func(childComplexity int) int
+		Turnstile       func(childComplexity int) int
+	}
+
+	ConfigAuthSignUpTurnstile struct {
+		SecretKey func(childComplexity int) int
 	}
 
 	ConfigAuthTotp struct {
@@ -1407,6 +1412,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ConfigAuthSignUp.Enabled(childComplexity), true
+
+	case "ConfigAuthSignUp.turnstile":
+		if e.complexity.ConfigAuthSignUp.Turnstile == nil {
+			break
+		}
+
+		return e.complexity.ConfigAuthSignUp.Turnstile(childComplexity), true
+
+	case "ConfigAuthSignUpTurnstile.secretKey":
+		if e.complexity.ConfigAuthSignUpTurnstile.SecretKey == nil {
+			break
+		}
+
+		return e.complexity.ConfigAuthSignUpTurnstile.SecretKey(childComplexity), true
 
 	case "ConfigAuthTotp.enabled":
 		if e.complexity.ConfigAuthTotp.Enabled == nil {
@@ -3429,6 +3448,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputConfigAuthSessionRefreshTokenInsertInput,
 		ec.unmarshalInputConfigAuthSignUpComparisonExp,
 		ec.unmarshalInputConfigAuthSignUpInsertInput,
+		ec.unmarshalInputConfigAuthSignUpTurnstileComparisonExp,
+		ec.unmarshalInputConfigAuthSignUpTurnstileInsertInput,
 		ec.unmarshalInputConfigAuthTotpComparisonExp,
 		ec.unmarshalInputConfigAuthTotpInsertInput,
 		ec.unmarshalInputConfigAuthUserComparisonExp,
@@ -5007,16 +5028,22 @@ type ConfigAuthSignUp {
     AUTH_DISABLE_NEW_USERS
     """
     disableNewUsers: Boolean
+    """
+
+    """
+    turnstile: ConfigAuthSignUpTurnstile
 }
 
 input ConfigAuthSignUpUpdateInput {
     enabled: Boolean
     disableNewUsers: Boolean
+    turnstile: ConfigAuthSignUpTurnstileUpdateInput
 }
 
 input ConfigAuthSignUpInsertInput {
     enabled: Boolean
     disableNewUsers: Boolean
+    turnstile: ConfigAuthSignUpTurnstileInsertInput
 }
 
 input ConfigAuthSignUpComparisonExp {
@@ -5025,6 +5052,32 @@ input ConfigAuthSignUpComparisonExp {
     _or: [ConfigAuthSignUpComparisonExp!]
     enabled: ConfigBooleanComparisonExp
     disableNewUsers: ConfigBooleanComparisonExp
+    turnstile: ConfigAuthSignUpTurnstileComparisonExp
+}
+
+"""
+
+"""
+type ConfigAuthSignUpTurnstile {
+    """
+
+    """
+    secretKey: String!
+}
+
+input ConfigAuthSignUpTurnstileUpdateInput {
+    secretKey: String
+}
+
+input ConfigAuthSignUpTurnstileInsertInput {
+    secretKey: String!
+}
+
+input ConfigAuthSignUpTurnstileComparisonExp {
+    _and: [ConfigAuthSignUpTurnstileComparisonExp!]
+    _not: ConfigAuthSignUpTurnstileComparisonExp
+    _or: [ConfigAuthSignUpTurnstileComparisonExp!]
+    secretKey: ConfigStringComparisonExp
 }
 
 """
@@ -9831,6 +9884,8 @@ func (ec *executionContext) fieldContext_ConfigAuth_signUp(_ context.Context, fi
 				return ec.fieldContext_ConfigAuthSignUp_enabled(ctx, field)
 			case "disableNewUsers":
 				return ec.fieldContext_ConfigAuthSignUp_disableNewUsers(ctx, field)
+			case "turnstile":
+				return ec.fieldContext_ConfigAuthSignUp_turnstile(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ConfigAuthSignUp", field.Name)
 		},
@@ -13191,6 +13246,95 @@ func (ec *executionContext) fieldContext_ConfigAuthSignUp_disableNewUsers(_ cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConfigAuthSignUp_turnstile(ctx context.Context, field graphql.CollectedField, obj *model.ConfigAuthSignUp) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConfigAuthSignUp_turnstile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Turnstile, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.ConfigAuthSignUpTurnstile)
+	fc.Result = res
+	return ec.marshalOConfigAuthSignUpTurnstile2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstile(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConfigAuthSignUp_turnstile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConfigAuthSignUp",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "secretKey":
+				return ec.fieldContext_ConfigAuthSignUpTurnstile_secretKey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConfigAuthSignUpTurnstile", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConfigAuthSignUpTurnstile_secretKey(ctx context.Context, field graphql.CollectedField, obj *model.ConfigAuthSignUpTurnstile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConfigAuthSignUpTurnstile_secretKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SecretKey, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConfigAuthSignUpTurnstile_secretKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConfigAuthSignUpTurnstile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -30086,7 +30230,7 @@ func (ec *executionContext) unmarshalInputConfigAuthSignUpComparisonExp(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_and", "_not", "_or", "enabled", "disableNewUsers"}
+	fieldsInOrder := [...]string{"_and", "_not", "_or", "enabled", "disableNewUsers", "turnstile"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -30128,6 +30272,13 @@ func (ec *executionContext) unmarshalInputConfigAuthSignUpComparisonExp(ctx cont
 				return it, err
 			}
 			it.DisableNewUsers = data
+		case "turnstile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("turnstile"))
+			data, err := ec.unmarshalOConfigAuthSignUpTurnstileComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Turnstile = data
 		}
 	}
 
@@ -30141,7 +30292,7 @@ func (ec *executionContext) unmarshalInputConfigAuthSignUpInsertInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"enabled", "disableNewUsers"}
+	fieldsInOrder := [...]string{"enabled", "disableNewUsers", "turnstile"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -30162,6 +30313,88 @@ func (ec *executionContext) unmarshalInputConfigAuthSignUpInsertInput(ctx contex
 				return it, err
 			}
 			it.DisableNewUsers = data
+		case "turnstile":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("turnstile"))
+			data, err := ec.unmarshalOConfigAuthSignUpTurnstileInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileInsertInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Turnstile = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputConfigAuthSignUpTurnstileComparisonExp(ctx context.Context, obj interface{}) (model.ConfigAuthSignUpTurnstileComparisonExp, error) {
+	var it model.ConfigAuthSignUpTurnstileComparisonExp
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_and", "_not", "_or", "secretKey"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_and"))
+			data, err := ec.unmarshalOConfigAuthSignUpTurnstileComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExpᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "_not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_not"))
+			data, err := ec.unmarshalOConfigAuthSignUpTurnstileComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "_or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_or"))
+			data, err := ec.unmarshalOConfigAuthSignUpTurnstileComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExpᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "secretKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secretKey"))
+			data, err := ec.unmarshalOConfigStringComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐGenericComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SecretKey = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputConfigAuthSignUpTurnstileInsertInput(ctx context.Context, obj interface{}) (model.ConfigAuthSignUpTurnstileInsertInput, error) {
+	var it model.ConfigAuthSignUpTurnstileInsertInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"secretKey"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "secretKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("secretKey"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SecretKey = data
 		}
 	}
 
@@ -39547,6 +39780,47 @@ func (ec *executionContext) _ConfigAuthSignUp(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._ConfigAuthSignUp_enabled(ctx, field, obj)
 		case "disableNewUsers":
 			out.Values[i] = ec._ConfigAuthSignUp_disableNewUsers(ctx, field, obj)
+		case "turnstile":
+			out.Values[i] = ec._ConfigAuthSignUp_turnstile(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var configAuthSignUpTurnstileImplementors = []string{"ConfigAuthSignUpTurnstile"}
+
+func (ec *executionContext) _ConfigAuthSignUpTurnstile(ctx context.Context, sel ast.SelectionSet, obj *model.ConfigAuthSignUpTurnstile) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, configAuthSignUpTurnstileImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ConfigAuthSignUpTurnstile")
+		case "secretKey":
+			out.Values[i] = ec._ConfigAuthSignUpTurnstile_secretKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -43609,6 +43883,11 @@ func (ec *executionContext) unmarshalNConfigAuthSignUpComparisonExp2ᚖgithubᚗ
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNConfigAuthSignUpTurnstileComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExp(ctx context.Context, v interface{}) (*model.ConfigAuthSignUpTurnstileComparisonExp, error) {
+	res, err := ec.unmarshalInputConfigAuthSignUpTurnstileComparisonExp(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNConfigAuthTotpComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthTotpComparisonExp(ctx context.Context, v interface{}) (*model.ConfigAuthTotpComparisonExp, error) {
 	res, err := ec.unmarshalInputConfigAuthTotpComparisonExp(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -46500,6 +46779,58 @@ func (ec *executionContext) unmarshalOConfigAuthSignUpInsertInput2ᚖgithubᚗco
 	}
 	res, err := ec.unmarshalInputConfigAuthSignUpInsertInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOConfigAuthSignUpTurnstile2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstile(ctx context.Context, sel ast.SelectionSet, v *model.ConfigAuthSignUpTurnstile) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ConfigAuthSignUpTurnstile(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOConfigAuthSignUpTurnstileComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExpᚄ(ctx context.Context, v interface{}) ([]*model.ConfigAuthSignUpTurnstileComparisonExp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.ConfigAuthSignUpTurnstileComparisonExp, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNConfigAuthSignUpTurnstileComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExp(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOConfigAuthSignUpTurnstileComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileComparisonExp(ctx context.Context, v interface{}) (*model.ConfigAuthSignUpTurnstileComparisonExp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputConfigAuthSignUpTurnstileComparisonExp(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOConfigAuthSignUpTurnstileInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileInsertInput(ctx context.Context, v interface{}) (*model.ConfigAuthSignUpTurnstileInsertInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputConfigAuthSignUpTurnstileInsertInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOConfigAuthSignUpTurnstileUpdateInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpTurnstileUpdateInput(ctx context.Context, v interface{}) (*model.ConfigAuthSignUpTurnstileUpdateInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.ConfigAuthSignUpTurnstileUpdateInput)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOConfigAuthSignUpUpdateInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigAuthSignUpUpdateInput(ctx context.Context, v interface{}) (*model.ConfigAuthSignUpUpdateInput, error) {
