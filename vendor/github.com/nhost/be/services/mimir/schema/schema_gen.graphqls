@@ -2686,14 +2686,20 @@ type ConfigIngress {
 
     """
     fqdn: [String!]
+    """
+
+    """
+    tls: ConfigIngressTls
 }
 
 input ConfigIngressUpdateInput {
         fqdn: [String!]
+    tls: ConfigIngressTlsUpdateInput
 }
 
 input ConfigIngressInsertInput {
         fqdn: [String!]
+    tls: ConfigIngressTlsInsertInput
 }
 
 input ConfigIngressComparisonExp {
@@ -2701,6 +2707,32 @@ input ConfigIngressComparisonExp {
     _not: ConfigIngressComparisonExp
     _or: [ConfigIngressComparisonExp!]
     fqdn: ConfigStringComparisonExp
+    tls: ConfigIngressTlsComparisonExp
+}
+
+"""
+
+"""
+type ConfigIngressTls {
+    """
+
+    """
+    clientCA: String
+}
+
+input ConfigIngressTlsUpdateInput {
+    clientCA: String
+}
+
+input ConfigIngressTlsInsertInput {
+    clientCA: String
+}
+
+input ConfigIngressTlsComparisonExp {
+    _and: [ConfigIngressTlsComparisonExp!]
+    _not: ConfigIngressTlsComparisonExp
+    _or: [ConfigIngressTlsComparisonExp!]
+    clientCA: ConfigStringComparisonExp
 }
 
 """

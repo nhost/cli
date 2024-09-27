@@ -455,6 +455,11 @@ type ComplexityRoot struct {
 
 	ConfigIngress struct {
 		Fqdn func(childComplexity int) int
+		Tls  func(childComplexity int) int
+	}
+
+	ConfigIngressTls struct {
+		ClientCA func(childComplexity int) int
 	}
 
 	ConfigInsertConfigResponse struct {
@@ -2246,6 +2251,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ConfigIngress.Fqdn(childComplexity), true
 
+	case "ConfigIngress.tls":
+		if e.complexity.ConfigIngress.Tls == nil {
+			break
+		}
+
+		return e.complexity.ConfigIngress.Tls(childComplexity), true
+
+	case "ConfigIngressTls.clientCA":
+		if e.complexity.ConfigIngressTls.ClientCA == nil {
+			break
+		}
+
+		return e.complexity.ConfigIngressTls.ClientCA(childComplexity), true
+
 	case "ConfigInsertConfigResponse.config":
 		if e.complexity.ConfigInsertConfigResponse.Config == nil {
 			break
@@ -3524,6 +3543,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputConfigHealthCheckInsertInput,
 		ec.unmarshalInputConfigIngressComparisonExp,
 		ec.unmarshalInputConfigIngressInsertInput,
+		ec.unmarshalInputConfigIngressTlsComparisonExp,
+		ec.unmarshalInputConfigIngressTlsInsertInput,
 		ec.unmarshalInputConfigInt16ComparisonExp,
 		ec.unmarshalInputConfigInt32ComparisonExp,
 		ec.unmarshalInputConfigInt64ComparisonExp,
@@ -6533,14 +6554,20 @@ type ConfigIngress {
 
     """
     fqdn: [String!]
+    """
+
+    """
+    tls: ConfigIngressTls
 }
 
 input ConfigIngressUpdateInput {
         fqdn: [String!]
+    tls: ConfigIngressTlsUpdateInput
 }
 
 input ConfigIngressInsertInput {
         fqdn: [String!]
+    tls: ConfigIngressTlsInsertInput
 }
 
 input ConfigIngressComparisonExp {
@@ -6548,6 +6575,32 @@ input ConfigIngressComparisonExp {
     _not: ConfigIngressComparisonExp
     _or: [ConfigIngressComparisonExp!]
     fqdn: ConfigStringComparisonExp
+    tls: ConfigIngressTlsComparisonExp
+}
+
+"""
+
+"""
+type ConfigIngressTls {
+    """
+
+    """
+    clientCA: String
+}
+
+input ConfigIngressTlsUpdateInput {
+    clientCA: String
+}
+
+input ConfigIngressTlsInsertInput {
+    clientCA: String
+}
+
+input ConfigIngressTlsComparisonExp {
+    _and: [ConfigIngressTlsComparisonExp!]
+    _not: ConfigIngressTlsComparisonExp
+    _or: [ConfigIngressTlsComparisonExp!]
+    clientCA: ConfigStringComparisonExp
 }
 
 """
@@ -18599,6 +18652,92 @@ func (ec *executionContext) fieldContext_ConfigIngress_fqdn(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _ConfigIngress_tls(ctx context.Context, field graphql.CollectedField, obj *model.ConfigIngress) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConfigIngress_tls(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tls, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.ConfigIngressTls)
+	fc.Result = res
+	return ec.marshalOConfigIngressTls2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTls(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConfigIngress_tls(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConfigIngress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "clientCA":
+				return ec.fieldContext_ConfigIngressTls_clientCA(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConfigIngressTls", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConfigIngressTls_clientCA(ctx context.Context, field graphql.CollectedField, obj *model.ConfigIngressTls) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConfigIngressTls_clientCA(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientCA, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConfigIngressTls_clientCA(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConfigIngressTls",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ConfigInsertConfigResponse_config(ctx context.Context, field graphql.CollectedField, obj *model.ConfigInsertConfigResponse) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ConfigInsertConfigResponse_config(ctx, field)
 	if err != nil {
@@ -19266,6 +19405,8 @@ func (ec *executionContext) fieldContext_ConfigNetworking_ingresses(_ context.Co
 			switch field.Name {
 			case "fqdn":
 				return ec.fieldContext_ConfigIngress_fqdn(ctx, field)
+			case "tls":
+				return ec.fieldContext_ConfigIngress_tls(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ConfigIngress", field.Name)
 		},
@@ -21833,6 +21974,8 @@ func (ec *executionContext) fieldContext_ConfigRunServicePort_ingresses(_ contex
 			switch field.Name {
 			case "fqdn":
 				return ec.fieldContext_ConfigIngress_fqdn(ctx, field)
+			case "tls":
+				return ec.fieldContext_ConfigIngress_tls(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ConfigIngress", field.Name)
 		},
@@ -34298,7 +34441,7 @@ func (ec *executionContext) unmarshalInputConfigIngressComparisonExp(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_and", "_not", "_or", "fqdn"}
+	fieldsInOrder := [...]string{"_and", "_not", "_or", "fqdn", "tls"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -34333,6 +34476,13 @@ func (ec *executionContext) unmarshalInputConfigIngressComparisonExp(ctx context
 				return it, err
 			}
 			it.Fqdn = data
+		case "tls":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tls"))
+			data, err := ec.unmarshalOConfigIngressTlsComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tls = data
 		}
 	}
 
@@ -34346,7 +34496,7 @@ func (ec *executionContext) unmarshalInputConfigIngressInsertInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"fqdn"}
+	fieldsInOrder := [...]string{"fqdn", "tls"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -34360,6 +34510,88 @@ func (ec *executionContext) unmarshalInputConfigIngressInsertInput(ctx context.C
 				return it, err
 			}
 			it.Fqdn = data
+		case "tls":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tls"))
+			data, err := ec.unmarshalOConfigIngressTlsInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsInsertInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tls = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputConfigIngressTlsComparisonExp(ctx context.Context, obj interface{}) (model.ConfigIngressTlsComparisonExp, error) {
+	var it model.ConfigIngressTlsComparisonExp
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_and", "_not", "_or", "clientCA"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_and"))
+			data, err := ec.unmarshalOConfigIngressTlsComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExpᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "_not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_not"))
+			data, err := ec.unmarshalOConfigIngressTlsComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "_or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_or"))
+			data, err := ec.unmarshalOConfigIngressTlsComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExpᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "clientCA":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientCA"))
+			data, err := ec.unmarshalOConfigStringComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐGenericComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientCA = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputConfigIngressTlsInsertInput(ctx context.Context, obj interface{}) (model.ConfigIngressTlsInsertInput, error) {
+	var it model.ConfigIngressTlsInsertInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"clientCA"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "clientCA":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientCA"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientCA = data
 		}
 	}
 
@@ -41383,6 +41615,44 @@ func (ec *executionContext) _ConfigIngress(ctx context.Context, sel ast.Selectio
 			out.Values[i] = graphql.MarshalString("ConfigIngress")
 		case "fqdn":
 			out.Values[i] = ec._ConfigIngress_fqdn(ctx, field, obj)
+		case "tls":
+			out.Values[i] = ec._ConfigIngress_tls(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var configIngressTlsImplementors = []string{"ConfigIngressTls"}
+
+func (ec *executionContext) _ConfigIngressTls(ctx context.Context, sel ast.SelectionSet, obj *model.ConfigIngressTls) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, configIngressTlsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ConfigIngressTls")
+		case "clientCA":
+			out.Values[i] = ec._ConfigIngressTls_clientCA(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -44396,6 +44666,11 @@ func (ec *executionContext) unmarshalNConfigIngressComparisonExp2ᚖgithubᚗcom
 
 func (ec *executionContext) unmarshalNConfigIngressInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressInsertInput(ctx context.Context, v interface{}) (*model.ConfigIngressInsertInput, error) {
 	res, err := ec.unmarshalInputConfigIngressInsertInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNConfigIngressTlsComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExp(ctx context.Context, v interface{}) (*model.ConfigIngressTlsComparisonExp, error) {
+	res, err := ec.unmarshalInputConfigIngressTlsComparisonExp(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -49301,6 +49576,58 @@ func (ec *executionContext) unmarshalOConfigIngressInsertInput2ᚕᚖgithubᚗco
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) marshalOConfigIngressTls2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTls(ctx context.Context, sel ast.SelectionSet, v *model.ConfigIngressTls) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ConfigIngressTls(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOConfigIngressTlsComparisonExp2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExpᚄ(ctx context.Context, v interface{}) ([]*model.ConfigIngressTlsComparisonExp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.ConfigIngressTlsComparisonExp, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNConfigIngressTlsComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExp(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOConfigIngressTlsComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsComparisonExp(ctx context.Context, v interface{}) (*model.ConfigIngressTlsComparisonExp, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputConfigIngressTlsComparisonExp(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOConfigIngressTlsInsertInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsInsertInput(ctx context.Context, v interface{}) (*model.ConfigIngressTlsInsertInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputConfigIngressTlsInsertInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOConfigIngressTlsUpdateInput2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressTlsUpdateInput(ctx context.Context, v interface{}) (*model.ConfigIngressTlsUpdateInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.ConfigIngressTlsUpdateInput)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOConfigIngressUpdateInput2ᚕᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐConfigIngressUpdateInputᚄ(ctx context.Context, v interface{}) ([]*model.ConfigIngressUpdateInput, error) {

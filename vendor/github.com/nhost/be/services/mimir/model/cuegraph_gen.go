@@ -17245,12 +17245,17 @@ func (exp *ConfigHealthCheckComparisonExp) Matches(o *ConfigHealthCheck) bool {
 
 type ConfigIngress struct {
 	Fqdn []string `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
+
+	Tls *ConfigIngressTls `json:"tls,omitempty" toml:"tls,omitempty"`
 }
 
 func (o *ConfigIngress) MarshalJSON() ([]byte, error) {
 	m := make(map[string]any)
 	if o.Fqdn != nil {
 		m["fqdn"] = o.Fqdn
+	}
+	if o.Tls != nil {
+		m["tls"] = o.Tls
 	}
 	return json.Marshal(m)
 }
@@ -17262,9 +17267,18 @@ func (o *ConfigIngress) GetFqdn() []string {
 	return o.Fqdn
 }
 
+func (o *ConfigIngress) GetTls() *ConfigIngressTls {
+	if o == nil {
+		return nil
+	}
+	return o.Tls
+}
+
 type ConfigIngressUpdateInput struct {
-	Fqdn      []string `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
-	IsSetFqdn bool     `json:"-"`
+	Fqdn      []string                     `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
+	IsSetFqdn bool                         `json:"-"`
+	Tls       *ConfigIngressTlsUpdateInput `json:"tls,omitempty" toml:"tls,omitempty"`
+	IsSetTls  bool                         `json:"-"`
 }
 
 func (o *ConfigIngressUpdateInput) UnmarshalGQL(v interface{}) error {
@@ -17287,6 +17301,16 @@ func (o *ConfigIngressUpdateInput) UnmarshalGQL(v interface{}) error {
 		}
 		o.IsSetFqdn = true
 	}
+	if x, ok := m["tls"]; ok {
+		if x != nil {
+			t := &ConfigIngressTlsUpdateInput{}
+			if err := t.UnmarshalGQL(x); err != nil {
+				return err
+			}
+			o.Tls = t
+		}
+		o.IsSetTls = true
+	}
 
 	return nil
 }
@@ -17305,6 +17329,13 @@ func (o *ConfigIngressUpdateInput) GetFqdn() []string {
 	return o.Fqdn
 }
 
+func (o *ConfigIngressUpdateInput) GetTls() *ConfigIngressTlsUpdateInput {
+	if o == nil {
+		return nil
+	}
+	return o.Tls
+}
+
 func (s *ConfigIngress) Update(v *ConfigIngressUpdateInput) {
 	if v == nil {
 		return
@@ -17319,10 +17350,21 @@ func (s *ConfigIngress) Update(v *ConfigIngressUpdateInput) {
 			}
 		}
 	}
+	if v.IsSetTls || v.Tls != nil {
+		if v.Tls == nil {
+			s.Tls = nil
+		} else {
+			if s.Tls == nil {
+				s.Tls = &ConfigIngressTls{}
+			}
+			s.Tls.Update(v.Tls)
+		}
+	}
 }
 
 type ConfigIngressInsertInput struct {
-	Fqdn []string `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
+	Fqdn []string                     `json:"fqdn,omitempty" toml:"fqdn,omitempty"`
+	Tls  *ConfigIngressTlsInsertInput `json:"tls,omitempty" toml:"tls,omitempty"`
 }
 
 func (o *ConfigIngressInsertInput) GetFqdn() []string {
@@ -17332,12 +17374,25 @@ func (o *ConfigIngressInsertInput) GetFqdn() []string {
 	return o.Fqdn
 }
 
+func (o *ConfigIngressInsertInput) GetTls() *ConfigIngressTlsInsertInput {
+	if o == nil {
+		return nil
+	}
+	return o.Tls
+}
+
 func (s *ConfigIngress) Insert(v *ConfigIngressInsertInput) {
 	if v.Fqdn != nil {
 		s.Fqdn = make([]string, len(v.Fqdn))
 		for i, e := range v.Fqdn {
 			s.Fqdn[i] = e
 		}
+	}
+	if v.Tls != nil {
+		if s.Tls == nil {
+			s.Tls = &ConfigIngressTls{}
+		}
+		s.Tls.Insert(v.Tls)
 	}
 }
 
@@ -17351,14 +17406,16 @@ func (s *ConfigIngress) Clone() *ConfigIngress {
 		v.Fqdn = make([]string, len(s.Fqdn))
 		copy(v.Fqdn, s.Fqdn)
 	}
+	v.Tls = s.Tls.Clone()
 	return v
 }
 
 type ConfigIngressComparisonExp struct {
-	And  []*ConfigIngressComparisonExp `json:"_and,omitempty"`
-	Not  *ConfigIngressComparisonExp   `json:"_not,omitempty"`
-	Or   []*ConfigIngressComparisonExp `json:"_or,omitempty"`
-	Fqdn *ConfigStringComparisonExp    `json:"fqdn,omitempty"`
+	And  []*ConfigIngressComparisonExp  `json:"_and,omitempty"`
+	Not  *ConfigIngressComparisonExp    `json:"_not,omitempty"`
+	Or   []*ConfigIngressComparisonExp  `json:"_or,omitempty"`
+	Fqdn *ConfigStringComparisonExp     `json:"fqdn,omitempty"`
+	Tls  *ConfigIngressTlsComparisonExp `json:"tls,omitempty"`
 }
 
 func (exp *ConfigIngressComparisonExp) Matches(o *ConfigIngress) bool {
@@ -17369,6 +17426,7 @@ func (exp *ConfigIngressComparisonExp) Matches(o *ConfigIngress) bool {
 	if o == nil {
 		o = &ConfigIngress{
 			Fqdn: []string{},
+			Tls:  &ConfigIngressTls{},
 		}
 	}
 	{
@@ -17382,6 +17440,141 @@ func (exp *ConfigIngressComparisonExp) Matches(o *ConfigIngress) bool {
 		if !found && exp.Fqdn != nil {
 			return false
 		}
+	}
+	if !exp.Tls.Matches(o.Tls) {
+		return false
+	}
+
+	if exp.And != nil && !all(exp.And, o) {
+		return false
+	}
+
+	if exp.Or != nil && !or(exp.Or, o) {
+		return false
+	}
+
+	if exp.Not != nil && exp.Not.Matches(o) {
+		return false
+	}
+
+	return true
+}
+
+type ConfigIngressTls struct {
+	ClientCA *string `json:"clientCA" toml:"clientCA"`
+}
+
+func (o *ConfigIngressTls) MarshalJSON() ([]byte, error) {
+	m := make(map[string]any)
+	if o.ClientCA != nil {
+		m["clientCA"] = o.ClientCA
+	}
+	return json.Marshal(m)
+}
+
+func (o *ConfigIngressTls) GetClientCA() *string {
+	if o == nil {
+		o = &ConfigIngressTls{}
+	}
+	return o.ClientCA
+}
+
+type ConfigIngressTlsUpdateInput struct {
+	ClientCA      *string `json:"clientCA,omitempty" toml:"clientCA,omitempty"`
+	IsSetClientCA bool    `json:"-"`
+}
+
+func (o *ConfigIngressTlsUpdateInput) UnmarshalGQL(v interface{}) error {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return fmt.Errorf("must be map[string]interface{}, got %T", v)
+	}
+	if v, ok := m["clientCA"]; ok {
+		if v == nil {
+			o.ClientCA = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x string
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.ClientCA = &x
+		}
+		o.IsSetClientCA = true
+	}
+
+	return nil
+}
+
+func (o *ConfigIngressTlsUpdateInput) MarshalGQL(w io.Writer) {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(o); err != nil {
+		panic(err)
+	}
+}
+
+func (o *ConfigIngressTlsUpdateInput) GetClientCA() *string {
+	if o == nil {
+		o = &ConfigIngressTlsUpdateInput{}
+	}
+	return o.ClientCA
+}
+
+func (s *ConfigIngressTls) Update(v *ConfigIngressTlsUpdateInput) {
+	if v == nil {
+		return
+	}
+	if v.IsSetClientCA || v.ClientCA != nil {
+		s.ClientCA = v.ClientCA
+	}
+}
+
+type ConfigIngressTlsInsertInput struct {
+	ClientCA *string `json:"clientCA,omitempty" toml:"clientCA,omitempty"`
+}
+
+func (o *ConfigIngressTlsInsertInput) GetClientCA() *string {
+	if o == nil {
+		o = &ConfigIngressTlsInsertInput{}
+	}
+	return o.ClientCA
+}
+
+func (s *ConfigIngressTls) Insert(v *ConfigIngressTlsInsertInput) {
+	s.ClientCA = v.ClientCA
+}
+
+func (s *ConfigIngressTls) Clone() *ConfigIngressTls {
+	if s == nil {
+		return nil
+	}
+
+	v := &ConfigIngressTls{}
+	v.ClientCA = s.ClientCA
+	return v
+}
+
+type ConfigIngressTlsComparisonExp struct {
+	And      []*ConfigIngressTlsComparisonExp `json:"_and,omitempty"`
+	Not      *ConfigIngressTlsComparisonExp   `json:"_not,omitempty"`
+	Or       []*ConfigIngressTlsComparisonExp `json:"_or,omitempty"`
+	ClientCA *ConfigStringComparisonExp       `json:"clientCA,omitempty"`
+}
+
+func (exp *ConfigIngressTlsComparisonExp) Matches(o *ConfigIngressTls) bool {
+	if exp == nil {
+		return true
+	}
+
+	if o == nil {
+		o = &ConfigIngressTls{}
+	}
+	if o.ClientCA != nil && !exp.ClientCA.Matches(*o.ClientCA) {
+		return false
 	}
 
 	if exp.And != nil && !all(exp.And, o) {

@@ -102,6 +102,10 @@ import (
 
 #Ingress: {
 	fqdn: [string & net.FQDN & strings.MinRunes(1) & strings.MaxRunes(63)]
+
+    tls?: {
+        clientCA?: string
+    }
 }
 
 #Autoscaler: {
@@ -700,11 +704,11 @@ import (
 
 #RunServicePort: {
 	port:    #Port
-	type:    "http" | "tcp" | "udp"
+	type:    "http" | "grpc" | "tcp" | "udp"
 	publish: bool | *false
 	ingresses: [#Ingress] | *[]
 	_publish_supported_only_over_http: (
-						publish == false || type == "http" ) & true @cuegraph(skip)
+						publish == false || type == "http" || type == "grpc" ) & true @cuegraph(skip)
 
 	rateLimit?: #RateLimit
 }
