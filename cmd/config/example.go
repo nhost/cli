@@ -103,7 +103,9 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 						{
 							Fqdn: []string{"hasura.example.com"},
 							Tls: &model.ConfigIngressTls{
-								ClientCA: ptr("---BEGIN CERTIFICATE---\n...\n---END CERTIFICATE---"),
+								ClientCA: ptr(
+									"---BEGIN CERTIFICATE---\n...\n---END CERTIFICATE---",
+								),
 							},
 						},
 					},
@@ -125,7 +127,9 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 						{
 							Fqdn: []string{"hasura.example.com"},
 							Tls: &model.ConfigIngressTls{
-								ClientCA: ptr("---BEGIN CERTIFICATE---\n...\n---END CERTIFICATE---"),
+								ClientCA: ptr(
+									"---BEGIN CERTIFICATE---\n...\n---END CERTIFICATE---",
+								),
 							},
 						},
 					},
@@ -155,7 +159,9 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 						{
 							Fqdn: []string{"auth.example.com"},
 							Tls: &model.ConfigIngressTls{
-								ClientCA: ptr("---BEGIN CERTIFICATE---\n...\n---END CERTIFICATE---"),
+								ClientCA: ptr(
+									"---BEGIN CERTIFICATE---\n...\n---END CERTIFICATE---",
+								),
 							},
 						},
 					},
