@@ -33,7 +33,6 @@ export default (req: Request, res: Response) => {
         }, verifyOptions, (err, decoded) => {
             if (err) reject(err);
             else resolve(decoded);
-            return decoded
         });
     });
 
