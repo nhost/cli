@@ -27,6 +27,7 @@ query GetDeploymentLogs($deploymentID: uuid!) {
     id: $deploymentID
   ) {
     deploymentEndedAt
+    deploymentStatus
   }
 }
 

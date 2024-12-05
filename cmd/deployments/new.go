@@ -29,7 +29,7 @@ func CommandNew() *cli.Command {
 			[]cli.Flag{
 				&cli.BoolFlag{ //nolint:exhaustruct
 					Name:  flagFollow,
-					Usage: "Specify if the logs should be streamed",
+					Usage: "Specify if the logs should be streamed. If set, the command will wait for the deployment to finish and stream the logs. If the deployment fails the command will return an error.", //nolint:lll
 					Value: false,
 				},
 				&cli.DurationFlag{ //nolint:exhaustruct
@@ -103,7 +103,14 @@ func commandNew(cCtx *cli.Context) error {
 		ctx, cancel := context.WithTimeout(cCtx.Context, cCtx.Duration(flagTimeout))
 		defer cancel()
 
-		return showLogsFollow(ctx, ce, cl, resp.InsertDeployment.ID)
+		status, err := showLogsFollow(ctx, ce, cl, resp.InsertDeployment.ID)
+		if err != nil {
+			return fmt.Errorf("error streaming logs: %w", err)
+		}
+
+		if status != "DEPLOYED" {
+			return fmt.Errorf("deployment failed: %s", status) //nolint:goerr113
+		}
 	}
 
 	return nil

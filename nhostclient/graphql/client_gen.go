@@ -239,6 +239,7 @@ func (t *GetDeploymentLogs_DeploymentLogs) GetMessage() string {
 
 type GetDeploymentLogs_Deployment struct {
 	DeploymentEndedAt *time.Time "json:\"deploymentEndedAt,omitempty\" graphql:\"deploymentEndedAt\""
+	DeploymentStatus  *string    "json:\"deploymentStatus,omitempty\" graphql:\"deploymentStatus\""
 }
 
 func (t *GetDeploymentLogs_Deployment) GetDeploymentEndedAt() *time.Time {
@@ -246,6 +247,12 @@ func (t *GetDeploymentLogs_Deployment) GetDeploymentEndedAt() *time.Time {
 		t = &GetDeploymentLogs_Deployment{}
 	}
 	return t.DeploymentEndedAt
+}
+func (t *GetDeploymentLogs_Deployment) GetDeploymentStatus() *string {
+	if t == nil {
+		t = &GetDeploymentLogs_Deployment{}
+	}
+	return t.DeploymentStatus
 }
 
 type InsertDeployment_InsertDeployment struct {
@@ -722,6 +729,7 @@ const GetDeploymentLogsDocument = `query GetDeploymentLogs ($deploymentID: uuid!
 	}
 	deployment(id: $deploymentID) {
 		deploymentEndedAt
+		deploymentStatus
 	}
 }
 `

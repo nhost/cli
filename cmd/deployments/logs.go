@@ -68,7 +68,7 @@ func showLogsFollow(
 	ce *clienv.CliEnv,
 	cl *nhostclient.Client,
 	deploymentID string,
-) error {
+) (string, error) {
 	ticker := time.NewTicker(time.Second * 2) //nolint:mnd
 
 	printed := make(map[string]struct{})
@@ -76,11 +76,11 @@ func showLogsFollow(
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return "", nil
 		case <-ticker.C:
 			resp, err := cl.GetDeploymentLogs(ctx, deploymentID)
 			if err != nil {
-				return fmt.Errorf("failed to get deployments: %w", err)
+				return "", fmt.Errorf("failed to get deployments: %w", err)
 			}
 
 			for _, log := range resp.GetDeploymentLogs() {
@@ -95,7 +95,7 @@ func showLogsFollow(
 			}
 
 			if resp.Deployment.DeploymentEndedAt != nil {
-				return nil
+				return *resp.Deployment.DeploymentStatus, nil
 			}
 		}
 	}
@@ -118,7 +118,7 @@ func commandLogs(cCtx *cli.Context) error {
 		ctx, cancel := context.WithTimeout(cCtx.Context, cCtx.Duration(flagTimeout))
 		defer cancel()
 
-		if err := showLogsFollow(ctx, ce, cl, deploymentID); err != nil {
+		if _, err := showLogsFollow(ctx, ce, cl, deploymentID); err != nil {
 			return err
 		}
 	} else {
