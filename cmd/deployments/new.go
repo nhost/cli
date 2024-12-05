@@ -21,7 +21,7 @@ func CommandNew() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:      "new",
 		Aliases:   []string{},
-		Usage:     "Create a new deployment",
+		Usage:     "[EXPERIMENTAL] Create a new deployment",
 		ArgsUsage: "<git_ref>",
 		Action:    commandNew,
 		Flags: append(
