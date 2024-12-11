@@ -118,7 +118,7 @@ func (ce *CliEnv) loginEmailPassword(
 	email string,
 	password string,
 ) (credentials.Credentials, error) {
-	cl := nhostclient.New(ce.Domain())
+	cl := nhostclient.New(ce.AuthURL(), ce.GraphqlURL())
 	var err error
 	if email == "" {
 		ce.PromptMessage("email: ")
@@ -167,8 +167,8 @@ func (ce *CliEnv) loginGithub(ctx context.Context) (credentials.Credentials, err
 	}()
 
 	signinPage := fmt.Sprintf(
-		"https://%s/v1/auth/signin/provider/github/?redirectTo=https://local.dashboard.nhost.run:8099/signin",
-		ce.Domain(),
+		"%s/signin/provider/github/?redirectTo=https://local.dashboard.nhost.run:8099/signin",
+		ce.AuthURL(),
 	)
 	ce.Infoln("Opening browser to sign-in")
 	if err := openBrowser(signinPage); err != nil {
@@ -178,7 +178,7 @@ func (ce *CliEnv) loginGithub(ctx context.Context) (credentials.Credentials, err
 
 	refreshTokenValue := <-refreshToken
 
-	cl := nhostclient.New(ce.Domain())
+	cl := nhostclient.New(ce.AuthURL(), ce.GraphqlURL())
 	refreshTokenResp, err := cl.RefreshToken(ctx, refreshTokenValue)
 	if err != nil {
 		return credentials.Credentials{}, fmt.Errorf("failed to get access token: %w", err)
@@ -228,7 +228,7 @@ func (ce *CliEnv) verifyEmail(
 ) error {
 	ce.Infoln("Your email address is not verified")
 
-	cl := nhostclient.New(ce.Domain())
+	cl := nhostclient.New(ce.AuthURL(), ce.GraphqlURL())
 	if err := cl.VerifyEmail(ctx, email); err != nil {
 		return fmt.Errorf("failed to send verification email: %w", err)
 	}
