@@ -7950,8 +7950,6 @@ type SoftwareTypeEnum string
 const (
 	// Hasura Auth
 	SoftwareTypeEnumAuth SoftwareTypeEnum = "Auth"
-	// Graphite
-	SoftwareTypeEnumGraphite SoftwareTypeEnum = "Graphite"
 	// Hasura GraphQL Engine
 	SoftwareTypeEnumHasura SoftwareTypeEnum = "Hasura"
 	// PostgreSQL Database
@@ -7962,7 +7960,6 @@ const (
 
 var AllSoftwareTypeEnum = []SoftwareTypeEnum{
 	SoftwareTypeEnumAuth,
-	SoftwareTypeEnumGraphite,
 	SoftwareTypeEnumHasura,
 	SoftwareTypeEnumPostgreSQL,
 	SoftwareTypeEnumStorage,
@@ -7970,7 +7967,7 @@ var AllSoftwareTypeEnum = []SoftwareTypeEnum{
 
 func (e SoftwareTypeEnum) IsValid() bool {
 	switch e {
-	case SoftwareTypeEnumAuth, SoftwareTypeEnumGraphite, SoftwareTypeEnumHasura, SoftwareTypeEnumPostgreSQL, SoftwareTypeEnumStorage:
+	case SoftwareTypeEnumAuth, SoftwareTypeEnumHasura, SoftwareTypeEnumPostgreSQL, SoftwareTypeEnumStorage:
 		return true
 	}
 	return false
