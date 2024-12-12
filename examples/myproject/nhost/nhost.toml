@@ -155,10 +155,6 @@ maxParallelMaintenanceWorkers = 2
 [storage]
 version = '0.6.1'
 
-[ai]
-version = '0.6.1'
-webhookSecret = '{{ secrets.GRAPHITE_WEBHOOK_SECRET }}'
-
 [observability]
 [observability.grafana]
 adminPassword = '{{ secrets.GRAFANA_ADMIN_PASSWORD }}'
