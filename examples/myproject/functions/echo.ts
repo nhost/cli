@@ -17,15 +17,6 @@ export default (req: Request, res: Response) => {
     res.setHeader('Content-Encoding', 'gzip')
     res.setHeader('Content-Type', 'application/json')
 
-    if (req.headers['accept-encoding'].includes('gzip')) {
-        if (req.headers['host'] === 'local.functions.local.nhost.run') {
             const compressedResponse = zlib.gzipSync(JSON.stringify(response))
             res.send(compressedResponse)
-        } else {
-            const compressedResponse = zlib.gzipSync(JSON.stringify(response)).toString('base64')
-            res.send(compressedResponse)
-        }
-    } else {
-        res.send(response)
-    }
 }
