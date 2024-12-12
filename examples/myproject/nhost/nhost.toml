@@ -129,7 +129,7 @@ timeout = 60000
 enabled = false
 
 [postgres]
-version = '16.2-20240901-1'
+version = '14.13-20240909-1'
 
 [postgres.settings]
 maxConnections = 100
