@@ -1,12 +1,11 @@
 import { Request, Response } from 'express'
-import process from 'process'
 
-export default (req: Request, res: Response) => {
+export default (_: Request, res: Response) => {
     try {
         throw new Error('This is an error')
     } catch (error) {
         console.log(error)
-        res.status(502).json({
+        res.status(500).json({
             error: error.message,
         })
     }
