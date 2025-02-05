@@ -255,10 +255,10 @@ import (
 	version: string | *"14.13-20250108-1"
 
 	// Resources for the service
-	resources?: {
+	resources: {
 		#Resources
-		storage?: {
-			capacity: uint32 & >=10 & <=1000 | *10 // GiB
+		storage: {
+			capacity: uint32 & >=1 & <=1000 | *1 // GiB
 		}
 
 		enablePublicAccess?: bool | *false
@@ -620,7 +620,7 @@ import (
 
 	postgres: {
 		enabled:      bool | *true
-		majorVersion: "14" | "15" | "16" | *"14"
+		majorVersion: "14" | "15" | "16" | "17" | *"14"
 		if enabled {
 			database: string
 		}
