@@ -1033,8 +1033,8 @@ github.com/muesli/termenv v0.15.2 h1:GohcuySI0QmI3wN8Ok9PtKGkgkFIk7y6Vpb5PvrY+Wo
 github.com/muesli/termenv v0.15.2/go.mod h1:Epx+iuz8sNs7mNKhxzH4fWXGNpZwUaJKRS1noLXviQ8=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/nhost/be v0.0.0-20250205155533-215ad731bde2 h1:xc14dv93KZNqUZkeJrfnbSq/kzWGLTHxyL8wIss9V/4=
-github.com/nhost/be v0.0.0-20250205155533-215ad731bde2/go.mod h1:ptZc9rgaLJcew/L9b8w0nN4AfOGxqUINqMvCe4uMV/M=
+github.com/nhost/be v0.0.0-20250206085705-d58c2e4dc6b9 h1:pRGRBbNAVFS/QSHULpXogU6v2rNDr2/EYGIQZcUP3qY=
+github.com/nhost/be v0.0.0-20250206085705-d58c2e4dc6b9/go.mod h1:ptZc9rgaLJcew/L9b8w0nN4AfOGxqUINqMvCe4uMV/M=
 github.com/onsi/gomega v1.34.1 h1:EUMJIKUjM8sKjYbtxQI9A4z2o+rruxnzNvpknOXie6k=
 github.com/onsi/gomega v1.34.1/go.mod h1:kU1QgUvBDLXBJq618Xvm2LUX6rSAfRaFRTcdOeDLwwY=
 github.com/pelletier/go-toml/v2 v2.2.3 h1:YmeHyLY8mFWbdkNWwpr+qIL2bEqT0o95WSdkNHvL12M=

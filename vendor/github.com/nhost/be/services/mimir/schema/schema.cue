@@ -128,13 +128,13 @@ import (
 	}
 
 	// Number of replicas for a service
-	replicas:    uint8 & >=1 & <=10 | *1
+	replicas?:    uint8 & >=1 & <=10 | *1
 	autoscaler?: #Autoscaler
 
 	_validateReplicasMustBeSmallerThanMaxReplicas: (replicas <= autoscaler.maxReplicas) & true @cuegraph(skip)
 
 	_validateMultipleReplicasNeedsCompute: (
-						replicas == 1 && autoscaler == _|_ |
+						(replicas == _|_ | replicas == 1) && autoscaler == _|_ |
 							compute != _|_) & true @cuegraph(skip)
 	_validateMultipleReplicasRatioMustBe1For2: (
 							replicas == 1 && autoscaler == _|_ |
@@ -258,12 +258,12 @@ import (
 	resources: {
 		#Resources
 		storage: {
-			capacity: uint32 & >=1 & <=1000 | *1 // GiB
+			capacity: uint32 & >=1 & <=1000 // GiB
 		}
 
 		enablePublicAccess?: bool | *false
 	} & {
-		replicas:    1
+		replicas?:   1
 		networking?: null
 		autoscaler?: null
 	}
