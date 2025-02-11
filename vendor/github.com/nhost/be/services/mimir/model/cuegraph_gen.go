@@ -19437,6 +19437,8 @@ type ConfigPostgresResources struct {
 
 	Storage *ConfigPostgresResourcesStorage `json:"storage,omitempty" toml:"storage,omitempty"`
 
+	Replicas *int `json:"replicas" toml:"replicas"`
+
 	EnablePublicAccess *bool `json:"enablePublicAccess" toml:"enablePublicAccess"`
 }
 
@@ -19447,6 +19449,9 @@ func (o *ConfigPostgresResources) MarshalJSON() ([]byte, error) {
 	}
 	if o.Storage != nil {
 		m["storage"] = o.Storage
+	}
+	if o.Replicas != nil {
+		m["replicas"] = o.Replicas
 	}
 	if o.EnablePublicAccess != nil {
 		m["enablePublicAccess"] = o.EnablePublicAccess
@@ -19468,6 +19473,13 @@ func (o *ConfigPostgresResources) GetStorage() *ConfigPostgresResourcesStorage {
 	return o.Storage
 }
 
+func (o *ConfigPostgresResources) GetReplicas() *int {
+	if o == nil {
+		o = &ConfigPostgresResources{}
+	}
+	return o.Replicas
+}
+
 func (o *ConfigPostgresResources) GetEnablePublicAccess() *bool {
 	if o == nil {
 		o = &ConfigPostgresResources{}
@@ -19480,6 +19492,8 @@ type ConfigPostgresResourcesUpdateInput struct {
 	IsSetCompute            bool                                       `json:"-"`
 	Storage                 *ConfigPostgresResourcesStorageUpdateInput `json:"storage,omitempty" toml:"storage,omitempty"`
 	IsSetStorage            bool                                       `json:"-"`
+	Replicas                *int                                       `json:"replicas,omitempty" toml:"replicas,omitempty"`
+	IsSetReplicas           bool                                       `json:"-"`
 	EnablePublicAccess      *bool                                      `json:"enablePublicAccess,omitempty" toml:"enablePublicAccess,omitempty"`
 	IsSetEnablePublicAccess bool                                       `json:"-"`
 }
@@ -19508,6 +19522,23 @@ func (o *ConfigPostgresResourcesUpdateInput) UnmarshalGQL(v interface{}) error {
 			o.Storage = t
 		}
 		o.IsSetStorage = true
+	}
+	if v, ok := m["replicas"]; ok {
+		if v == nil {
+			o.Replicas = nil
+		} else {
+			// clearly a not very efficient shortcut
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			var x int
+			if err := json.Unmarshal(b, &x); err != nil {
+				return err
+			}
+			o.Replicas = &x
+		}
+		o.IsSetReplicas = true
 	}
 	if v, ok := m["enablePublicAccess"]; ok {
 		if v == nil {
@@ -19551,6 +19582,13 @@ func (o *ConfigPostgresResourcesUpdateInput) GetStorage() *ConfigPostgresResourc
 	return o.Storage
 }
 
+func (o *ConfigPostgresResourcesUpdateInput) GetReplicas() *int {
+	if o == nil {
+		o = &ConfigPostgresResourcesUpdateInput{}
+	}
+	return o.Replicas
+}
+
 func (o *ConfigPostgresResourcesUpdateInput) GetEnablePublicAccess() *bool {
 	if o == nil {
 		o = &ConfigPostgresResourcesUpdateInput{}
@@ -19582,6 +19620,9 @@ func (s *ConfigPostgresResources) Update(v *ConfigPostgresResourcesUpdateInput) 
 			s.Storage.Update(v.Storage)
 		}
 	}
+	if v.IsSetReplicas || v.Replicas != nil {
+		s.Replicas = v.Replicas
+	}
 	if v.IsSetEnablePublicAccess || v.EnablePublicAccess != nil {
 		s.EnablePublicAccess = v.EnablePublicAccess
 	}
@@ -19590,6 +19631,7 @@ func (s *ConfigPostgresResources) Update(v *ConfigPostgresResourcesUpdateInput) 
 type ConfigPostgresResourcesInsertInput struct {
 	Compute            *ConfigResourcesComputeInsertInput         `json:"compute,omitempty" toml:"compute,omitempty"`
 	Storage            *ConfigPostgresResourcesStorageInsertInput `json:"storage,omitempty" toml:"storage,omitempty"`
+	Replicas           *int                                       `json:"replicas,omitempty" toml:"replicas,omitempty"`
 	EnablePublicAccess *bool                                      `json:"enablePublicAccess,omitempty" toml:"enablePublicAccess,omitempty"`
 }
 
@@ -19605,6 +19647,13 @@ func (o *ConfigPostgresResourcesInsertInput) GetStorage() *ConfigPostgresResourc
 		return nil
 	}
 	return o.Storage
+}
+
+func (o *ConfigPostgresResourcesInsertInput) GetReplicas() *int {
+	if o == nil {
+		o = &ConfigPostgresResourcesInsertInput{}
+	}
+	return o.Replicas
 }
 
 func (o *ConfigPostgresResourcesInsertInput) GetEnablePublicAccess() *bool {
@@ -19627,6 +19676,7 @@ func (s *ConfigPostgresResources) Insert(v *ConfigPostgresResourcesInsertInput) 
 		}
 		s.Storage.Insert(v.Storage)
 	}
+	s.Replicas = v.Replicas
 	s.EnablePublicAccess = v.EnablePublicAccess
 }
 
@@ -19638,6 +19688,7 @@ func (s *ConfigPostgresResources) Clone() *ConfigPostgresResources {
 	v := &ConfigPostgresResources{}
 	v.Compute = s.Compute.Clone()
 	v.Storage = s.Storage.Clone()
+	v.Replicas = s.Replicas
 	v.EnablePublicAccess = s.EnablePublicAccess
 	return v
 }
@@ -19648,6 +19699,7 @@ type ConfigPostgresResourcesComparisonExp struct {
 	Or                 []*ConfigPostgresResourcesComparisonExp      `json:"_or,omitempty"`
 	Compute            *ConfigResourcesComputeComparisonExp         `json:"compute,omitempty"`
 	Storage            *ConfigPostgresResourcesStorageComparisonExp `json:"storage,omitempty"`
+	Replicas           *ConfigIntComparisonExp                      `json:"replicas,omitempty"`
 	EnablePublicAccess *ConfigBooleanComparisonExp                  `json:"enablePublicAccess,omitempty"`
 }
 
@@ -19666,6 +19718,9 @@ func (exp *ConfigPostgresResourcesComparisonExp) Matches(o *ConfigPostgresResour
 		return false
 	}
 	if !exp.Storage.Matches(o.Storage) {
+		return false
+	}
+	if o.Replicas != nil && !exp.Replicas.Matches(*o.Replicas) {
 		return false
 	}
 	if o.EnablePublicAccess != nil && !exp.EnablePublicAccess.Matches(*o.EnablePublicAccess) {

@@ -511,6 +511,7 @@ type ComplexityRoot struct {
 	ConfigPostgresResources struct {
 		Compute            func(childComplexity int) int
 		EnablePublicAccess func(childComplexity int) int
+		Replicas           func(childComplexity int) int
 		Storage            func(childComplexity int) int
 	}
 
@@ -2469,6 +2470,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ConfigPostgresResources.EnablePublicAccess(childComplexity), true
+
+	case "ConfigPostgresResources.replicas":
+		if e.complexity.ConfigPostgresResources.Replicas == nil {
+			break
+		}
+
+		return e.complexity.ConfigPostgresResources.Replicas(childComplexity), true
 
 	case "ConfigPostgresResources.storage":
 		if e.complexity.ConfigPostgresResources.Storage == nil {
@@ -6972,18 +6980,24 @@ type ConfigPostgresResources {
     """
 
     """
+    replicas: Int
+    """
+
+    """
     enablePublicAccess: Boolean
 }
 
 input ConfigPostgresResourcesUpdateInput {
     compute: ConfigResourcesComputeUpdateInput
     storage: ConfigPostgresResourcesStorageUpdateInput
+    replicas: Int
     enablePublicAccess: Boolean
 }
 
 input ConfigPostgresResourcesInsertInput {
     compute: ConfigResourcesComputeInsertInput
     storage: ConfigPostgresResourcesStorageInsertInput!
+    replicas: Int
     enablePublicAccess: Boolean
 }
 
@@ -6993,6 +7007,7 @@ input ConfigPostgresResourcesComparisonExp {
     _or: [ConfigPostgresResourcesComparisonExp!]
     compute: ConfigResourcesComputeComparisonExp
     storage: ConfigPostgresResourcesStorageComparisonExp
+    replicas: ConfigIntComparisonExp
     enablePublicAccess: ConfigBooleanComparisonExp
 }
 
@@ -20919,6 +20934,8 @@ func (ec *executionContext) fieldContext_ConfigPostgres_resources(_ context.Cont
 				return ec.fieldContext_ConfigPostgresResources_compute(ctx, field)
 			case "storage":
 				return ec.fieldContext_ConfigPostgresResources_storage(ctx, field)
+			case "replicas":
+				return ec.fieldContext_ConfigPostgresResources_replicas(ctx, field)
 			case "enablePublicAccess":
 				return ec.fieldContext_ConfigPostgresResources_enablePublicAccess(ctx, field)
 			}
@@ -21103,6 +21120,47 @@ func (ec *executionContext) fieldContext_ConfigPostgresResources_storage(_ conte
 				return ec.fieldContext_ConfigPostgresResourcesStorage_capacity(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ConfigPostgresResourcesStorage", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConfigPostgresResources_replicas(ctx context.Context, field graphql.CollectedField, obj *model.ConfigPostgresResources) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConfigPostgresResources_replicas(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Replicas, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConfigPostgresResources_replicas(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConfigPostgresResources",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -37031,7 +37089,7 @@ func (ec *executionContext) unmarshalInputConfigPostgresResourcesComparisonExp(c
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"_and", "_not", "_or", "compute", "storage", "enablePublicAccess"}
+	fieldsInOrder := [...]string{"_and", "_not", "_or", "compute", "storage", "replicas", "enablePublicAccess"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -37073,6 +37131,13 @@ func (ec *executionContext) unmarshalInputConfigPostgresResourcesComparisonExp(c
 				return it, err
 			}
 			it.Storage = data
+		case "replicas":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("replicas"))
+			data, err := ec.unmarshalOConfigIntComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐGenericComparisonExp(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Replicas = data
 		case "enablePublicAccess":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enablePublicAccess"))
 			data, err := ec.unmarshalOConfigBooleanComparisonExp2ᚖgithubᚗcomᚋnhostᚋbeᚋservicesᚋmimirᚋmodelᚐGenericComparisonExp(ctx, v)
@@ -37093,7 +37158,7 @@ func (ec *executionContext) unmarshalInputConfigPostgresResourcesInsertInput(ctx
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"compute", "storage", "enablePublicAccess"}
+	fieldsInOrder := [...]string{"compute", "storage", "replicas", "enablePublicAccess"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -37114,6 +37179,13 @@ func (ec *executionContext) unmarshalInputConfigPostgresResourcesInsertInput(ctx
 				return it, err
 			}
 			it.Storage = data
+		case "replicas":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("replicas"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Replicas = data
 		case "enablePublicAccess":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enablePublicAccess"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -43608,6 +43680,8 @@ func (ec *executionContext) _ConfigPostgresResources(ctx context.Context, sel as
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "replicas":
+			out.Values[i] = ec._ConfigPostgresResources_replicas(ctx, field, obj)
 		case "enablePublicAccess":
 			out.Values[i] = ec._ConfigPostgresResources_enablePublicAccess(ctx, field, obj)
 		default:

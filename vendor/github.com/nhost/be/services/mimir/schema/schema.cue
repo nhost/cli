@@ -117,13 +117,13 @@ import (
 	compute?: #ResourcesCompute
 
 	// Number of replicas for a service
-	replicas?:    uint8 & >=1 & <=10 | *1
+	replicas:    uint8 & >=1 & <=10 | *1
 	autoscaler?: #Autoscaler
 
 	_validateReplicasMustBeSmallerThanMaxReplicas: (replicas <= autoscaler.maxReplicas) & true @cuegraph(skip)
 
 	_validateMultipleReplicasNeedsCompute: (
-						(replicas == _|_ | replicas == 1) && autoscaler == _|_ |
+						replicas == 1 && autoscaler == _|_ |
 							compute != _|_) & true @cuegraph(skip)
 	_validateMultipleReplicasRatioMustBe1For2: (
 							replicas == 1 && autoscaler == _|_ |
@@ -262,6 +262,8 @@ import (
 		storage: {
 			capacity: uint32 & >=1 & <=1000 // GiB
 		}
+
+        replicas?: 1
 
 		enablePublicAccess?: bool | *false
 	}

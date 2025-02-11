@@ -3031,18 +3031,24 @@ type ConfigPostgresResources {
     """
 
     """
+    replicas: Int
+    """
+
+    """
     enablePublicAccess: Boolean
 }
 
 input ConfigPostgresResourcesUpdateInput {
     compute: ConfigResourcesComputeUpdateInput
     storage: ConfigPostgresResourcesStorageUpdateInput
+    replicas: Int
     enablePublicAccess: Boolean
 }
 
 input ConfigPostgresResourcesInsertInput {
     compute: ConfigResourcesComputeInsertInput
     storage: ConfigPostgresResourcesStorageInsertInput!
+    replicas: Int
     enablePublicAccess: Boolean
 }
 
@@ -3052,6 +3058,7 @@ input ConfigPostgresResourcesComparisonExp {
     _or: [ConfigPostgresResourcesComparisonExp!]
     compute: ConfigResourcesComputeComparisonExp
     storage: ConfigPostgresResourcesStorageComparisonExp
+    replicas: ConfigIntComparisonExp
     enablePublicAccess: ConfigBooleanComparisonExp
 }
 
