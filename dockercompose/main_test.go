@@ -338,7 +338,7 @@ func getConfig() *model.ConfigConfig { //nolint:maintidx
 				},
 				EnablePublicAccess: ptr(false),
 				Storage:            nil,
-				Replicas:           ptr(int(1)),
+				Replicas:           nil,
 			},
 			Settings: nil,
 		},
