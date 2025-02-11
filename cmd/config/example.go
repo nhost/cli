@@ -394,6 +394,7 @@ func commandExample(cCtx *cli.Context) error { //nolint:funlen,maintidx
 				Storage: &model.ConfigPostgresResourcesStorage{
 					Capacity: 20,
 				},
+				Replicas: ptr(1),
 			},
 			Settings: &model.ConfigPostgresSettings{
 				Jit:                           ptr("off"),
