@@ -92,6 +92,7 @@
             buildInputs = with pkgs; [
               certbot-full
               python312Packages.certbot-dns-route53
+              nodejs
               pnpm
             ] ++ checkDeps ++ buildInputs ++ nativeBuildInputs;
           };
