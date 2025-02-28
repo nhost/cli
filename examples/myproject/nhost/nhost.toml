@@ -128,6 +128,7 @@ timeout = 60000
 [auth.totp]
 enabled = false
 
+
 [postgres]
 version = '16.2-20240901-1'
 
