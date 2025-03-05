@@ -261,7 +261,7 @@ func minio(subdomain, dataFolder string) (*Service, error) {
 		return nil, fmt.Errorf("failed to create minio data folder: %w", err)
 	}
 	return &Service{
-		Image:      "minio/minio:RELEASE.2022-07-08T00-05-23Z",
+		Image:      "minio/minio:RELEASE.2025-02-28T09-55-16Z",
 		DependsOn:  nil,
 		EntryPoint: []string{"/bin/sh"},
 		Command: []string{

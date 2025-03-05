@@ -33,7 +33,7 @@ It's recommended to use the Nhost CLI and the [Nhost GitHub Integration](https:/
 ### Install the Nhost CLI
 
 ```bash
-sudo curl -L https://raw.githubusercontent.com/nhost/cli/main/get.sh | bash
+sudo curl -L https://raw.githubusercontent.com/tmsxtechnology/nhost-cli/main/get.sh | bash
 ```
 
 ### Initialize a project
