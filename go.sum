@@ -1047,6 +1047,8 @@ github.com/nhost/be v0.0.0-20250310123133-ee75171519da h1:iEtYFVVPugRfDSeBsaS95w
 github.com/nhost/be v0.0.0-20250310123133-ee75171519da/go.mod h1:fP5Cg4/QxIDRdYYo0dcxgKBzfcz57fCVWPD1vTcbzrQ=
 github.com/nhost/be v0.0.0-20250311150005-8152f1a79ae5 h1:ab3MQqvYxCAqVZPx6HGkwq/1qAenRBtjS8/LFIWzVr0=
 github.com/nhost/be v0.0.0-20250311150005-8152f1a79ae5/go.mod h1:fP5Cg4/QxIDRdYYo0dcxgKBzfcz57fCVWPD1vTcbzrQ=
+github.com/nhost/be v0.0.0-20250311152547-ef89a5f87b44 h1:17L03oM8qPOLIUnKYxhHeWnTBZdno0dbl07o8u74rG8=
+github.com/nhost/be v0.0.0-20250311152547-ef89a5f87b44/go.mod h1:fP5Cg4/QxIDRdYYo0dcxgKBzfcz57fCVWPD1vTcbzrQ=
 github.com/onsi/gomega v1.34.1 h1:EUMJIKUjM8sKjYbtxQI9A4z2o+rruxnzNvpknOXie6k=
 github.com/onsi/gomega v1.34.1/go.mod h1:kU1QgUvBDLXBJq618Xvm2LUX6rSAfRaFRTcdOeDLwwY=
 github.com/pelletier/go-toml/v2 v2.2.3 h1:YmeHyLY8mFWbdkNWwpr+qIL2bEqT0o95WSdkNHvL12M=
