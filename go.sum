@@ -1043,6 +1043,10 @@ github.com/nhost/be v0.0.0-20250211083240-96c835d9c359 h1:vFgKEHSPsLQbw1kpW1fuD+
 github.com/nhost/be v0.0.0-20250211083240-96c835d9c359/go.mod h1:ptZc9rgaLJcew/L9b8w0nN4AfOGxqUINqMvCe4uMV/M=
 github.com/nhost/be v0.0.0-20250307134124-0fafe7b7b665 h1:cXrQ+u1W6bc26obDLSNBqdykO/Mh1e/v8F39u3eF4bw=
 github.com/nhost/be v0.0.0-20250307134124-0fafe7b7b665/go.mod h1:fP5Cg4/QxIDRdYYo0dcxgKBzfcz57fCVWPD1vTcbzrQ=
+github.com/nhost/be v0.0.0-20250310123133-ee75171519da h1:iEtYFVVPugRfDSeBsaS95wrM7fydr9nKpj1fWLVJbfI=
+github.com/nhost/be v0.0.0-20250310123133-ee75171519da/go.mod h1:fP5Cg4/QxIDRdYYo0dcxgKBzfcz57fCVWPD1vTcbzrQ=
+github.com/nhost/be v0.0.0-20250311150005-8152f1a79ae5 h1:ab3MQqvYxCAqVZPx6HGkwq/1qAenRBtjS8/LFIWzVr0=
+github.com/nhost/be v0.0.0-20250311150005-8152f1a79ae5/go.mod h1:fP5Cg4/QxIDRdYYo0dcxgKBzfcz57fCVWPD1vTcbzrQ=
 github.com/onsi/gomega v1.34.1 h1:EUMJIKUjM8sKjYbtxQI9A4z2o+rruxnzNvpknOXie6k=
 github.com/onsi/gomega v1.34.1/go.mod h1:kU1QgUvBDLXBJq618Xvm2LUX6rSAfRaFRTcdOeDLwwY=
 github.com/pelletier/go-toml/v2 v2.2.3 h1:YmeHyLY8mFWbdkNWwpr+qIL2bEqT0o95WSdkNHvL12M=

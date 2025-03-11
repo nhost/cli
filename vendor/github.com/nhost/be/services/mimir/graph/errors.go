@@ -25,7 +25,8 @@ var (
 	ErrDatabaseVersionMustBeGreater = errors.New(
 		"new version must be greater than the current version",
 	)
-	ErrAppMustBeLive = errors.New("app must be live")
+	ErrAppMustBeLive  = errors.New("app must be live")
+	ErrPitrMinVersion = errors.New("PiTR requires a version with date greater than 20250311")
 )
 
 type VariableRequiredError struct {

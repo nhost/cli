@@ -254,7 +254,7 @@ import (
 #Postgres: {
 	// Version of postgres, you can see available versions in the URL below:
 	// https://hub.docker.com/r/nhost/postgres/tags
-	version: string | *"14.15-20250226-1"
+	version: string | *"14.15-20250311-1"
 
 	// Resources for the service
 	resources: {
