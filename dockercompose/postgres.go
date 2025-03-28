@@ -16,10 +16,6 @@ func postgres( //nolint:funlen
 	dataFolder string,
 	volumeName string,
 ) (*Service, error) {
-	if err := os.MkdirAll(dataFolder+"/db/pgdata", 0o755); err != nil { //nolint:mnd
-		return nil, fmt.Errorf("failed to create postgres data folder: %w", err)
-	}
-
 	f, err := os.Create(dataFolder + "/db/pg_hba_local.conf")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pg_hba_local.conf: %w", err)
