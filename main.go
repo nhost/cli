@@ -58,7 +58,7 @@ func main() {
 					if err != nil {
 						return fmt.Errorf("failed to generate docs: %w", err)
 					}
-					fmt.Println(s)
+					fmt.Println(s) //nolint:forbidigo
 					return nil
 				},
 			},
@@ -73,11 +73,9 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		var graphqlErr *clientv2.ErrorResponse
 
-		switch {
-		case errors.As(err, &graphqlErr):
+		if errors.As(err, &graphqlErr) {
 			log.Fatal(graphqlErr.GqlErrors)
-		case err != nil:
-			log.Fatal(err)
 		}
+		log.Fatal(err)
 	}
 }
