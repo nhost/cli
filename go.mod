@@ -1,6 +1,6 @@
 module github.com/nhost/cli
 
-go 1.23.4
+go 1.23.8
 
 toolchain go1.23.5
 
