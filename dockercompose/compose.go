@@ -208,6 +208,18 @@ func traefik(subdomain, projectName string, port uint, dotnhostfolder string) (*
 	if err := trafikFiles(dotnhostfolder); err != nil {
 		return nil, fmt.Errorf("failed to create traefik files: %w", err)
 	}
+	socket, valid := os.LookupEnv("DOCKER_HOST")
+	var path string
+	if !valid {
+		// If DOCKER_HOST is not set, default to unix:///var/run/docker.sock
+		path = "/var/run/docker.sock"
+	} else {
+		protocol, socket_path, valid := strings.Cut(socket, "//")
+		if !valid || protocol != "unix:" {
+			return nil, fmt.Errorf("unsupported DOCKER_HOST protocol: %s", protocol)
+		}
+		path = socket_path
+	}
 
 	return &Service{
 		Image:      "traefik:v3.1",
@@ -241,7 +253,7 @@ func traefik(subdomain, projectName string, port uint, dotnhostfolder string) (*
 		Volumes: []Volume{
 			{
 				Type:     "bind",
-				Source:   "/var/run/docker.sock",
+				Source:   path,
 				Target:   "/var/run/docker.sock",
 				ReadOnly: ptr(true),
 			},
