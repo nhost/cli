@@ -10,6 +10,7 @@ import (
 
 	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/ssl"
+	"net/url"
 )
 
 const (
@@ -216,7 +217,7 @@ func traefik(subdomain, projectName string, port uint, dotnhostfolder string) (*
 		   return nil, fmt.Errorf("failed to parse DOCKER_HOST: %w", err)
 		}
 		if u.Scheme != "unix" {
-			return nil, fmt.Errorf("unsupported scheme %s in DOCKER_HOST, only unix supported", protocol)
+			return nil, fmt.Errorf("unsupported scheme %s in DOCKER_HOST, only unix supported", u.Scheme)
 		}
 		path = u.Path
 	}
