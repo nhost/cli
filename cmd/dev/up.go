@@ -39,6 +39,8 @@ const (
 	flagsFunctionsPort     = "functions-port"
 	flagsHasuraPort        = "hasura-port"
 	flagsHasuraConsolePort = "hasura-console-port"
+	flagDashboardPort      = "dashboard-port"
+	flagMailhogPort        = "mailhog-port"
 	flagDashboardVersion   = "dashboard-version"
 	flagConfigserverImage  = "configserver-image"
 	flagRunService         = "run-service"
@@ -107,6 +109,16 @@ func CommandUp() *cli.Command { //nolint:funlen
 				Usage: "If specified, expose hasura console on this port. Not recommended",
 				Value: 0,
 			},
+			&cli.UintFlag{ //nolint:exhaustruct
+				Name:    flagDashboardPort,
+				Usage:   "If specified, expose dashboard on this port. Not recommended",
+				Value:   0,
+			},
+			&cli.UintFlag{ //nolint:exhaustruct
+				Name:    flagMailhogPort,
+				Usage:   "If specified, expose mailhog on this port. Not recommended",
+				Value:   0,
+			},
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:    flagDashboardVersion,
 				Usage:   "Dashboard version to use",
@@ -174,6 +186,8 @@ func commandUp(cCtx *cli.Context) error {
 			Graphql:   cCtx.Uint(flagsHasuraPort),
 			Console:   cCtx.Uint(flagsHasuraConsolePort),
 			Functions: cCtx.Uint(flagsFunctionsPort),
+			Dashboard: cCtx.Uint(flagDashboardPort),
+			Mailhog:   cCtx.Uint(flagMailhogPort),
 		},
 		cCtx.String(flagDashboardVersion),
 		configserverImage,
@@ -442,10 +456,10 @@ func printInfo(
 		subdomain, "storage", httpPort, useTLS))
 	fmt.Fprintf(w, "- Functions:\t\t%s\n", dockercompose.URL(
 		subdomain, "functions", httpPort, useTLS))
-	fmt.Fprintf(w, "- Dashboard:\t\t%s\n", dockercompose.URL(
-		subdomain, "dashboard", httpPort, useTLS))
-	fmt.Fprintf(w, "- Mailhog:\t\t%s\n", dockercompose.URL(
-		subdomain, "mailhog", httpPort, useTLS))
+		fmt.Fprintf(w, "- Dashboard:\t\t%s\n", dockercompose.URL(
+			subdomain, "dashboard", httpPort, useTLS))
+		fmt.Fprintf(w, "- Mailhog:\t\t%s\n", dockercompose.URL(
+			subdomain, "mailhog", httpPort, useTLS))
 
 	for _, svc := range runServices {
 		for _, port := range svc.Config.GetPorts() {
