@@ -51,12 +51,12 @@ jobs:
           export CONTAINER_NAME=nhost/cli
 
           skopeo copy --insecure-policy \
-            dir:/home/runner/artifacts/cli-docker-image-$VERSION-linux-amd64/result \
+            dir:/home/runner/artifacts/cli-docker-image-$VERSION-linux-amd64 \
             docker-daemon:$CONTAINER_NAME:$VERSION-amd64
           docker push $CONTAINER_NAME:$VERSION-amd64
 
           skopeo copy --insecure-policy \
-            dir:/home/runner/artifacts/cli-docker-image-$VERSION-linux-arm64/result \
+            dir:/home/runner/artifacts/cli-docker-image-$VERSION-linux-arm64 \
             docker-daemon:$CONTAINER_NAME:$VERSION-arm64
           docker push $CONTAINER_NAME:$VERSION-arm64
 
