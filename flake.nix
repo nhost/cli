@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixops.url = "github:nhost/nixops";
+    nixops.url = "github:nhost/nixops?ref=arch";
     nixpkgs.follows = "nixops/nixpkgs";
     flake-utils.follows = "nixops/flake-utils";
     nix-filter.follows = "nixops/nix-filter";
@@ -147,12 +147,14 @@
 
           docker-image-arm64 = nixops-lib.go.docker-image {
             inherit name version created buildInputs;
+            arch = "arm64";
 
             package = cli-arm64-linux;
           };
 
           docker-image-amd64 = nixops-lib.go.docker-image {
             inherit name version created buildInputs;
+            arch = "amd64";
 
             package = cli-amd64-linux;
           };

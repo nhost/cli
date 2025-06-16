@@ -38,7 +38,9 @@ build-docker-image:  ## Build docker image
 	nix build $(docker-build-options) \
 		.\#packages.$(HOST_ARCH)-linux.docker-image-$(ARCH) \
 		--print-build-logs
-	skopeo copy --insecure-policy dir:./result docker-daemon:nhost/cli:$(VERSION)
+	skopeo copy --insecure-policy \
+		--override-arch $(ARCH) \
+		dir:./result docker-daemon:nhost/cli:$(VERSION)
 
 
 .PHONY: get-version
