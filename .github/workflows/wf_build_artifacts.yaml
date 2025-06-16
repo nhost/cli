@@ -70,7 +70,7 @@ jobs:
     - name: "Create a new project"
       run: |
         export NHOST_DOMAIN=staging.nhost.run
-        export NHOST_CONFIGSERVER_IMAGE=cli:${{ steps.vars.outputs.VERSION }}
+        export NHOST_CONFIGSERVER_IMAGE=nhost/cli:${{ steps.vars.outputs.VERSION }}
 
         mkdir new-project
         cd new-project
