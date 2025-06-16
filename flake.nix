@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixops.url = "github:nhost/nixops?ref=arch";
+    nixops.url = "github:nhost/nixops";
     nixpkgs.follows = "nixops/nixpkgs";
     flake-utils.follows = "nixops/flake-utils";
     nix-filter.follows = "nixops/nix-filter";
