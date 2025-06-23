@@ -110,14 +110,14 @@ func CommandUp() *cli.Command { //nolint:funlen
 				Value: 0,
 			},
 			&cli.UintFlag{ //nolint:exhaustruct
-				Name:    flagDashboardPort,
-				Usage:   "If specified, expose dashboard on this port. Not recommended",
-				Value:   0,
+				Name:  flagDashboardPort,
+				Usage: "If specified, expose dashboard on this port. Not recommended",
+				Value: 0,
 			},
 			&cli.UintFlag{ //nolint:exhaustruct
-				Name:    flagMailhogPort,
-				Usage:   "If specified, expose mailhog on this port. Not recommended",
-				Value:   0,
+				Name:  flagMailhogPort,
+				Usage: "If specified, expose mailhog on this port. Not recommended",
+				Value: 0,
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:    flagDashboardVersion,
@@ -455,10 +455,10 @@ func printInfo(
 		subdomain, "storage", httpPort, useTLS))
 	fmt.Fprintf(w, "- Functions:\t\t%s\n", dockercompose.URL(
 		subdomain, "functions", httpPort, useTLS))
-		fmt.Fprintf(w, "- Dashboard:\t\t%s\n", dockercompose.URL(
-			subdomain, "dashboard", httpPort, useTLS))
-		fmt.Fprintf(w, "- Mailhog:\t\t%s\n", dockercompose.URL(
-			subdomain, "mailhog", httpPort, useTLS))
+	fmt.Fprintf(w, "- Dashboard:\t\t%s\n", dockercompose.URL(
+		subdomain, "dashboard", httpPort, useTLS))
+	fmt.Fprintf(w, "- Mailhog:\t\t%s\n", dockercompose.URL(
+		subdomain, "mailhog", httpPort, useTLS))
 
 	for _, svc := range runServices {
 		for _, port := range svc.Config.GetPorts() {
