@@ -122,7 +122,7 @@ func CommandUp() *cli.Command { //nolint:funlen
 			&cli.StringFlag{ //nolint:exhaustruct
 				Name:    flagDashboardVersion,
 				Usage:   "Dashboard version to use",
-				Value:   "nhost/dashboard:2.29.0",
+				Value:   "nhost/dashboard:2.30.0",
 				EnvVars: []string{"NHOST_DASHBOARD_VERSION"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
@@ -377,7 +377,6 @@ func up( //nolint:funlen,cyclop
 		httpPort,
 		useTLS,
 		postgresPort,
-		ce.Path.DataFolder(),
 		ce.Path.NhostFolder(),
 		ce.Path.DotNhostFolder(),
 		ce.Path.Root(),

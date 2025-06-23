@@ -518,7 +518,6 @@ func getServices( //nolint: funlen,cyclop
 	httpPort uint,
 	useTLS bool,
 	postgresPort uint,
-	dataFolder string,
 	nhostFolder string,
 	dotNhostFolder string,
 	rootFolder string,
@@ -538,6 +537,7 @@ func getServices( //nolint: funlen,cyclop
 	}
 
 	pgVolumeName := "pgdata_" + sanitizeBranch(branch)
+	dataFolder := filepath.Join(dotNhostFolder, "data")
 	postgres, err := postgres(cfg, subdomain, postgresPort, dataFolder, pgVolumeName)
 	if err != nil {
 		return nil, err
@@ -639,7 +639,6 @@ func ComposeFileFromConfig( //nolint:funlen
 	httpPort uint,
 	useTLS bool,
 	postgresPort uint,
-	dataFolder string,
 	nhostFolder string,
 	dotNhostFolder string,
 	rootFolder string,
@@ -658,7 +657,6 @@ func ComposeFileFromConfig( //nolint:funlen
 		httpPort,
 		useTLS,
 		postgresPort,
-		dataFolder,
 		nhostFolder,
 		dotNhostFolder,
 		rootFolder,
