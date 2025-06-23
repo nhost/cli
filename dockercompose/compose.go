@@ -315,6 +315,7 @@ func dashboard(
 	dashboardVersion string,
 	httpPort uint,
 	useTLS bool,
+	port uint,
 ) *Service {
 	return &Service{
 		Image:      dashboardVersion,
@@ -355,7 +356,7 @@ func dashboard(
 				Rewrite: nil,
 			},
 		}.Labels(),
-		Ports:      []Port{},
+		Ports:      ports(port, dashboardPort),
 		Restart:    "",
 		Volumes:    []Volume{},
 		WorkingDir: new(string),
@@ -444,7 +445,7 @@ func functions( //nolint:funlen
 	}
 }
 
-func mailhog(subdomain, volumeName string, useTLS bool) *Service {
+func mailhog(subdomain, volumeName string, useTLS bool, port uint) *Service {
 	return &Service{
 		Image:      "jcalonso/mailhog:v1.0.1",
 		DependsOn:  nil,
@@ -469,7 +470,7 @@ func mailhog(subdomain, volumeName string, useTLS bool) *Service {
 				Rewrite: nil,
 			},
 		}.Labels(),
-		Ports:   nil,
+		Ports:   ports(port, mailhogPort),
 		Restart: "always",
 		Volumes: []Volume{
 			{
@@ -489,6 +490,8 @@ type ExposePorts struct {
 	Graphql   uint
 	Console   uint
 	Functions uint
+	Dashboard uint
+	Mailhog   uint
 }
 
 func sanitizeBranch(name string) string {
@@ -557,11 +560,11 @@ func getServices( //nolint: funlen,cyclop
 	}
 
 	mailhogVolumeName := "mailhog_" + sanitizeBranch(branch)
-	mailhog := mailhog(subdomain, mailhogVolumeName, useTLS)
+	mailhog := mailhog(subdomain, mailhogVolumeName, useTLS, ports.Mailhog)
 
 	services := map[string]*Service{
 		"console":   console,
-		"dashboard": dashboard(cfg, subdomain, dashboardVersion, httpPort, useTLS),
+		"dashboard": dashboard(cfg, subdomain, dashboardVersion, httpPort, useTLS, ports.Dashboard),
 		"graphql":   graphql,
 		"minio":     minio,
 		"postgres":  postgres,
