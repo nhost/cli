@@ -43,7 +43,7 @@ func commandValidate(cCtx *cli.Context) error {
 			return fmt.Errorf("failed to get app info: %w", err)
 		}
 
-		_, err = ValidateRemote(
+		_, _, err = ValidateRemote(
 			cCtx.Context,
 			ce,
 			proj.GetSubdomain(),
@@ -142,45 +142,45 @@ func ValidateRemote(
 	ce *clienv.CliEnv,
 	subdomain string,
 	appID string,
-) (*model.ConfigConfig, error) {
+) (*model.ConfigConfig, *model.ConfigConfig, error) {
 	cfg := &model.ConfigConfig{} //nolint:exhaustruct
 	if err := clienv.UnmarshalFile(ce.Path.NhostToml(), cfg, toml.Unmarshal); err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+		return nil, nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	schema, err := schema.New()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create schema: %w", err)
+		return nil, nil, fmt.Errorf("failed to create schema: %w", err)
 	}
 
 	ce.Infoln("Getting secrets...")
 	cl, err := ce.GetNhostClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get nhost client: %w", err)
+		return nil, nil, fmt.Errorf("failed to get nhost client: %w", err)
 	}
 	secretsResp, err := cl.GetSecrets(
 		ctx,
 		appID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get secrets: %w", err)
+		return nil, nil, fmt.Errorf("failed to get secrets: %w", err)
 	}
 
 	if clienv.PathExists(ce.Path.Overlay(subdomain)) {
 		var err error
 		cfg, err = ApplyJSONPatches(*cfg, ce.Path.Overlay(subdomain))
 		if err != nil {
-			return nil, fmt.Errorf("failed to apply json patches: %w", err)
+			return nil, nil, fmt.Errorf("failed to apply json patches: %w", err)
 		}
 	}
 
 	secrets := respToSecrets(secretsResp.GetAppSecrets(), false)
-	_, err = appconfig.SecretsResolver[model.ConfigConfig](cfg, secrets, schema.Fill)
+	cfgSecrets, err := appconfig.SecretsResolver[model.ConfigConfig](cfg, secrets, schema.Fill)
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate config: %w", err)
+		return nil, nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	ce.Infoln("Config is valid!")
 
-	return cfg, nil
+	return cfg, cfgSecrets, nil
 }

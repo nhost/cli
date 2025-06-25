@@ -42,7 +42,7 @@ func commandApply(cCtx *cli.Context) error {
 	}
 
 	ce.Infoln("Validating configuration...")
-	cfg, err := ValidateRemote(
+	cfg, _, err := ValidateRemote(
 		cCtx.Context,
 		ce,
 		proj.GetSubdomain(),

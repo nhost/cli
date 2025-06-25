@@ -20,7 +20,6 @@ import (
 
 const (
 	flagSubdomain   = "subdomain"
-	flagAdminSecret = "admin-secret"
 	flagPostgresURL = "postgres-url"
 )
 
@@ -82,12 +81,6 @@ func CommandCloud() *cli.Command {
 				EnvVars: []string{"NHOST_SUBDOMAIN"},
 			},
 			&cli.StringFlag{ //nolint:exhaustruct
-				Name:     flagAdminSecret,
-				Usage:    "Admin secret to use for connecting to the GraphQL API from the console",
-				Required: true,
-				EnvVars:  []string{"NHOST_ADMIN_SECRET"},
-			},
-			&cli.StringFlag{ //nolint:exhaustruct
 				Name:     flagPostgresURL,
 				Usage:    "Postgres URL",
 				Required: true,
@@ -141,7 +134,6 @@ func commandCloud(cCtx *cli.Context) error {
 		cCtx.String(flagCACertificates),
 		cCtx.Bool(flagDownOnError),
 		proj,
-		cCtx.String(flagAdminSecret),
 		cCtx.String(flagPostgresURL),
 	)
 }
@@ -159,7 +151,6 @@ func cloud( //nolint:funlen
 	configserverImage string,
 	caCertificatesPath string,
 	proj *graphql.AppSummaryFragment,
-	adminSecret string,
 	postgresURL string,
 ) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -172,7 +163,7 @@ func cloud( //nolint:funlen
 	}()
 
 	ce.Infoln("Validating configuration...")
-	cfg, err := config.ValidateRemote(
+	cfg, cfgSecrets, err := config.ValidateRemote(
 		ctx,
 		ce,
 		proj.GetSubdomain(),
@@ -195,7 +186,7 @@ func cloud( //nolint:funlen
 		ce.LocalSubdomain(),
 		proj.GetSubdomain(),
 		proj.GetRegion().GetName(),
-		adminSecret,
+		cfgSecrets.Hasura.GetAdminSecret(),
 		postgresURL,
 		ce.ProjectName(),
 		httpPort,
@@ -245,7 +236,7 @@ func cloud( //nolint:funlen
 		"--skip-update-check",
 		"--log-level", "ERROR",
 		"--endpoint", endpoint,
-		"--admin-secret", adminSecret,
+		"--admin-secret", cfgSecrets.Hasura.GetAdminSecret(),
 	); err != nil {
 		return fmt.Errorf("failed to create metadata: %w", err)
 	}
@@ -283,7 +274,6 @@ func Cloud(
 	caCertificatesPath string,
 	downOnError bool,
 	proj *graphql.AppSummaryFragment,
-	adminSecret string,
 	postgresURL string,
 ) error {
 	dc := dockercompose.New(ce.Path.WorkingDir(), ce.Path.DockerCompose(), ce.ProjectName())
@@ -301,7 +291,6 @@ func Cloud(
 		configserverImage,
 		caCertificatesPath,
 		proj,
-		adminSecret,
 		postgresURL,
 	); err != nil {
 		return upErr(ce, dc, downOnError, err) //nolint:contextcheck
