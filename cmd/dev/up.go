@@ -135,6 +135,9 @@ func CommandUp() *cli.Command { //nolint:funlen
 				EnvVars: []string{"NHOST_CA_CERTIFICATES"},
 			},
 		},
+		Subcommands: []*cli.Command{
+			CommandCloud(),
+		},
 	}
 }
 

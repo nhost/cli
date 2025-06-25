@@ -39,7 +39,6 @@ func main() {
 			configserver.Command(),
 			deployments.Command(),
 			dev.Command(),
-			dev.CommandCloud(),
 			dev.CommandUp(),
 			dev.CommandDown(),
 			dev.CommandLogs(),

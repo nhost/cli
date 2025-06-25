@@ -85,7 +85,7 @@ func consoleCloud(
 	return console, nil
 }
 
-func getServicesCloud( //nolint:funlen
+func getServicesCloud(
 	cfg *model.ConfigConfig,
 	subdomain string,
 	cloudSubdomain string,
@@ -99,14 +99,9 @@ func getServicesCloud( //nolint:funlen
 	dotNhostFolder string,
 	rootFolder string,
 	ports ExposePorts,
-	branch string,
 	dashboardVersion string,
 	configserviceImage string,
-	startFunctions bool,
-	runServices ...*RunService,
 ) (map[string]*Service, error) {
-	const jwtSecret = "FIXME"
-
 	traefik, err := traefik(subdomain, projectName, httpPort, dotNhostFolder)
 	if err != nil {
 		return nil, err
@@ -146,20 +141,7 @@ func getServicesCloud( //nolint:funlen
 			rootFolder,
 			nhostFolder,
 			useTLS,
-			runServices...),
-	}
-
-	if startFunctions {
-		services["functions"] = functions(
-			cfg,
-			subdomain,
-			httpPort,
-			useTLS,
-			rootFolder,
-			jwtSecret,
-			ports.Functions,
-			branch,
-		)
+		),
 	}
 
 	return services, nil
@@ -179,10 +161,8 @@ func CloudComposeFileFromConfig(
 	dotNhostFolder string,
 	rootFolder string,
 	ports ExposePorts,
-	branch string,
 	dashboardVersion string,
 	configserverImage string,
-	startFunctions bool,
 	caCertificatesPath string,
 ) (*ComposeFile, error) {
 	services, err := getServicesCloud(
@@ -199,21 +179,11 @@ func CloudComposeFileFromConfig(
 		dotNhostFolder,
 		rootFolder,
 		ports,
-		branch,
 		dashboardVersion,
 		configserverImage,
-		startFunctions,
 	)
 	if err != nil {
 		return nil, err
-	}
-
-	volumes := map[string]struct{}{
-		rootNodeModules(branch): {},
-	}
-
-	if startFunctions {
-		volumes[functionsNodeModules(branch)] = struct{}{}
 	}
 
 	if caCertificatesPath != "" {
@@ -222,6 +192,6 @@ func CloudComposeFileFromConfig(
 
 	return &ComposeFile{
 		Services: services,
-		Volumes:  volumes,
+		Volumes:  nil,
 	}, nil
 }

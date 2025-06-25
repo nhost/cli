@@ -10,13 +10,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/nhost/be/services/mimir/model"
 	"github.com/nhost/cli/clienv"
 	"github.com/nhost/cli/cmd/config"
 	"github.com/nhost/cli/cmd/software"
 	"github.com/nhost/cli/dockercompose"
 	"github.com/nhost/cli/nhostclient/graphql"
-	"github.com/nhost/cli/project/env"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,7 +24,7 @@ const (
 	flagPostgresURL = "postgres-url"
 )
 
-func CommandCloud() *cli.Command { //nolint:funlen
+func CommandCloud() *cli.Command {
 	return &cli.Command{ //nolint:exhaustruct
 		Name:    "cloud",
 		Aliases: []string{},
@@ -50,11 +48,6 @@ func CommandCloud() *cli.Command { //nolint:funlen
 				Usage:   "Apply seeds. If the .nhost folder does not exist, seeds will be applied regardless of this flag",
 				Value:   false,
 				EnvVars: []string{"NHOST_APPLY_SEEDS"},
-			},
-			&cli.UintFlag{ //nolint:exhaustruct
-				Name:  flagsFunctionsPort,
-				Usage: "If specified, expose functions on this port. Not recommended",
-				Value: 0,
 			},
 			&cli.UintFlag{ //nolint:exhaustruct
 				Name:  flagsHasuraConsolePort,
@@ -178,17 +171,15 @@ func cloud( //nolint:funlen
 		cancel()
 	}()
 
-	var secrets model.Secrets
-	if err := clienv.UnmarshalFile(ce.Path.Secrets(), &secrets, env.Unmarshal); err != nil {
-		return fmt.Errorf(
-			"failed to parse secrets, make sure secret values are between quotes: %w",
-			err,
-		)
-	}
-
-	cfg, err := config.Validate(ce, "local", secrets)
+	ce.Infoln("Validating configuration...")
+	cfg, err := config.ValidateRemote(
+		ctx,
+		ce,
+		proj.GetSubdomain(),
+		proj.GetID(),
+	)
 	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return fmt.Errorf("failed to validate configuration: %w", err)
 	}
 
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second) //nolint:mnd
@@ -213,10 +204,8 @@ func cloud( //nolint:funlen
 		ce.Path.DotNhostFolder(),
 		ce.Path.Root(),
 		ports,
-		ce.Branch(),
 		dashboardVersion,
 		configserverImage,
-		clienv.PathExists(ce.Path.Functions()),
 		caCertificatesPath,
 	)
 	if err != nil {
@@ -229,6 +218,11 @@ func cloud( //nolint:funlen
 	ce.Infoln("Starting Nhost development environment...")
 	if err = dc.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start Nhost development environment: %w", err)
+	}
+
+	ce.Infoln("Applying configuration to Nhost Cloud project...")
+	if err = config.Apply(ctx, ce, proj.GetID(), cfg, true); err != nil {
+		return fmt.Errorf("failed to apply configuration: %w", err)
 	}
 
 	endpoint := fmt.Sprintf(
