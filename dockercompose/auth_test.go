@@ -150,8 +150,8 @@ func expectedAuth() *Service {
 			"ENV1":                                      "VALUE1",
 			"ENV2":                                      "VALUE2",
 			"HASURA_GRAPHQL_ADMIN_SECRET":               "adminSecret",
-			"HASURA_GRAPHQL_DATABASE_URL":               "postgres://nhost_hasura@postgres:5432/local",
-			"POSTGRES_MIGRATIONS_CONNECTION":            "postgres://nhost_auth_admin@postgres:5432/local",
+			"HASURA_GRAPHQL_DATABASE_URL":               "postgres://nhost_hasura@postgres:5432/local?sslmode=disable",
+			"POSTGRES_MIGRATIONS_CONNECTION":            "postgres://nhost_auth_admin@postgres:5432/local?sslmode=disable",
 			"HASURA_GRAPHQL_GRAPHQL_URL":                "http://graphql:8080/v1/graphql",
 			"HASURA_GRAPHQL_JWT_SECRET":                 `{"claims_map":{"x-hasura-allowed-roles":{"path":"$.roles"},"x-hasura-default-role":"viewer","x-hasura-org-id":{"default":"public","path":"$.org"},"x-hasura-user-id":{"path":"$.sub"}},"key":"jwtSecretKey","type":"HS256"}`,
 		},
@@ -228,7 +228,7 @@ func TestAuth(t *testing.T) {
 				svc.Labels["traefik.http.middlewares.replace-auth.replacepathregex.replacement"] = "/$$2"
 				svc.Labels["traefik.http.routers.auth.middlewares"] = "replace-auth"
 				svc.Labels["traefik.http.routers.auth.rule"] = "(HostRegexp(`^.+\\.auth\\.local\\.nhost\\.run$`) || Host(`local.auth.nhost.run`)) && PathPrefix(`/v1`)" //nolint:lll
-				svc.Environment["HASURA_GRAPHQL_DATABASE_URL"] = "postgres://nhost_auth_admin@postgres:5432/local"
+				svc.Environment["HASURA_GRAPHQL_DATABASE_URL"] = "postgres://nhost_auth_admin@postgres:5432/local?sslmode=disable"
 				return svc
 			},
 		},
