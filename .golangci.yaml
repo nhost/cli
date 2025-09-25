@@ -1,13 +1,23 @@
 version: "2"
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
 linters:
   default: all
+  settings:
+    funlen:
+      lines: 65
   disable:
+    - canonicalheader
     - depguard
     - gomoddirectives
+    - musttag
     - nlreturn
+    - tagliatelle
     - varnamelen
     - wsl
     - noinlineerr
+    - funcorder
   exclusions:
     generated: lax
     presets:
@@ -26,13 +36,16 @@ linters:
       - linters:
           - gochecknoglobals
         text: Version is a global variable
+      - linters:
+          - ireturn
+          - lll
+        path: schema\.resolvers\.go
     paths:
       - third_party$
       - builtin$
       - examples$
 formatters:
   enable:
-    - gci
     - gofmt
     - gofumpt
     - goimports
@@ -42,3 +55,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - schema\.resolvers\.go
