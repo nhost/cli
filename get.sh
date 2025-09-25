@@ -18,7 +18,7 @@ NC='\033[0m'
 # basic variables
 INSTALL_PATH=${INSTALL_PATH:-"/usr/local/bin"}
 NEED_SUDO=${NEED_SUDO:-1}
-REPO="nhost/cli"
+REPO="nhost/nhost"
 
 # check for existing installation
 hasCli=$(which nhost)
@@ -38,12 +38,13 @@ if [ "$?" = "1" ]; then
 fi
 
 # get release version
-release=${1:-latest}
-log "Getting $release version..."
-if [[ "$release" == "latest" ]]; then
-    version=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' |  sed -E 's/.*"([^"]+)".*/\1/')
+version=${1:-latest}
+log "Getting $version version..."
+if [[ "$version" == "latest" ]]; then
+    release=$(curl --silent https://api.github.com/repos/nhost/nhost/releases\?per_page=100 | grep tag_name | grep \"cli\@ | head -n 1 | sed 's/.*"tag_name": "\([^"]*\)".*/\1/')
+    version=$( echo $release | sed 's/.*@//')
 else
-    version=$(curl --silent "https://api.github.com/repos/nhost/cli/tags" | grep "name" | sed -E 's/.*"([^"]+)".*/\1/' | grep "^$release$")
+    release="cli@$release"
 fi
 
 # check version exists
@@ -96,14 +97,15 @@ suffix="-${platform}-${arch}"
 
 if [[ "$platform" != 'windows' ]]; then
     extension=".tar.gz"
-else 
+else
     extension='.zip'
 fi
 
 # variables for install
 targetFile="cli-$version$suffix$extension"
 
-url="https://github.com/${REPO}/releases/download/${version}/${targetFile}"
+encodedRelease=$(echo $release | sed 's/@/%40/g')
+url="https://github.com/${REPO}/releases/download/${encodedRelease}/${targetFile}"
 
 # remove previous download
 if [ -e $targetFile ]; then
@@ -119,7 +121,7 @@ try chmod +x $targetFile
 
 if [[ "$platform" != 'windows' ]]; then
     try tar -xvf $targetFile
-else 
+else
     try unzip $targetFile
 fi
 
