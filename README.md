@@ -1,3 +1,5 @@
+NOTE: This repository is deprecated. All development has moved to https://github.com/nhost/nhost
+
 <div align="center">
   <h1 style="font-size: 3em; font-weight: bold;">Nhost CLI</h1>
 </div>
